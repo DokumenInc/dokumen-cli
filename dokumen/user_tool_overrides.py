@@ -23,7 +23,6 @@ CANONICAL_TO_CLI: dict[str, str] = {
     "glob_files": "glob",
     "list_files": "list_directory",
     "search_files": "search_file_content",
-    "code_list": "code_list_directory",
 }
 CLI_TO_CANONICAL: dict[str, str] = {v: k for k, v in CANONICAL_TO_CLI.items()}
 
@@ -32,17 +31,15 @@ VALID_OVERRIDE_SYSTEMS = frozenset({"chat", "test", "explore"})
 
 # Tools that are safe for the explore phase (read-only, no side effects).
 # Canonical IDs only -- CLI maps internally via CANONICAL_TO_CLI.
-EXPLORE_SAFE_TOOLS = frozenset({
-    "read_file",
-    "list_files",
-    "search_files",
-    "glob_files",
-    "code_read_file",
-    "code_glob",
-    "code_search",
-    "code_list",
-    "explore_code",
-})
+EXPLORE_SAFE_TOOLS = frozenset(
+    {
+        "read_file",
+        "list_files",
+        "search_files",
+        "glob_files",
+        "explore_code",
+    }
+)
 
 # Which systems have executable runtime code for each tool.
 # Mirrored from backend/tools/user_tool_overrides.py -- kept standalone
@@ -65,11 +62,6 @@ IMPLEMENTABLE_IN: dict[str, frozenset[str]] = {
     "delegate_to_agent": frozenset({"test"}),
     # Chat + CLI execution
     "run_shell_command": frozenset({"chat", "test"}),
-    # Code tools
-    "code_read_file": frozenset({"chat", "test", "explore"}),
-    "code_glob": frozenset({"chat", "test", "explore"}),
-    "code_search": frozenset({"chat", "test", "explore"}),
-    "code_list": frozenset({"chat", "test", "explore"}),
     # CLI-only read tools
     "read_many_files": frozenset({"test"}),
     # CLI-only network tools
@@ -181,8 +173,7 @@ def validate_tool_overrides(
             # Explore safety check
             if system == "explore" and tool_name not in EXPLORE_SAFE_TOOLS:
                 errors.append(
-                    f"Tool '{tool_name}' is not safe for explore "
-                    f"(only read-only tools allowed)"
+                    f"Tool '{tool_name}' is not safe for explore " f"(only read-only tools allowed)"
                 )
                 continue
 
@@ -226,15 +217,11 @@ def load_overrides_from_dir(project_root: str) -> Optional[ToolOverridesResult]:
     raw: dict[str, list[str]] = {}
     parse_errors: list[str] = []
 
-    for yaml_path in sorted(
-        list(overrides_dir.glob("*.yaml")) + list(overrides_dir.glob("*.yml"))
-    ):
+    for yaml_path in sorted(list(overrides_dir.glob("*.yaml")) + list(overrides_dir.glob("*.yml"))):
         try:
             data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
-                parse_errors.append(
-                    f"Invalid YAML in {yaml_path.name}: not a mapping"
-                )
+                parse_errors.append(f"Invalid YAML in {yaml_path.name}: not a mapping")
                 logger.warning(
                     "user_tool_overrides.not_mapping",
                     file=yaml_path.name,

@@ -3,7 +3,7 @@ Tool mapping: Dokumen tool names -> Claude Code SDK tools.
 
 Splits scaffold tools into three categories:
 1. SDK built-ins (Read, Write, Bash, Glob, Grep, WebFetch, WebSearch)
-2. Dokumen MCP tools (code_read_file, code_glob, etc.) -- served via in-process MCP
+2. Dokumen MCP tools such as read_many_files and explore
 3. Playwright MCP tools (browser_*) -- served via external Playwright MCP server
 """
 
@@ -40,6 +40,7 @@ class AgentContext:
     base_dir: str = "."
     timeout: float = 120.0
     is_subagent: bool = False
+
 
 # Import BROWSER_TOOLS at module level for patchability in tests.
 # Falls back to empty dict if playwright_tools is unavailable.
@@ -108,7 +109,7 @@ def resolve_sdk_tools(
         tools_config: Optional tool configuration from dokumen.yaml.
         dokumen_tool_definitions: ToolDefinition objects already resolved by
             the CLI loader. These are used for Dokumen-specific MCP tools such
-            as read_many_files, code repository tools, task tools, explore, and ask.
+            as read_many_files, task tools, and explore.
 
     Returns:
         ResolvedTools with categorized tool sets.
@@ -128,8 +129,7 @@ def resolve_sdk_tools(
 
     seen_sdk: set = set()
     provided_dokumen_tools = {
-        tool_def.name: tool_def
-        for tool_def in (dokumen_tool_definitions or [])
+        tool_def.name: tool_def for tool_def in (dokumen_tool_definitions or [])
     }
 
     for tool_name in scaffold_tools:
@@ -196,9 +196,7 @@ def resolve_sdk_tools(
             resolved = resolve_dokumen_tool(tool_name, tools_config=tools_config)
         if resolved.name not in {tool.name for tool in dokumen_tools}:
             dokumen_tools.append(resolved)
-        logger.debug(
-            "Resolved as Dokumen MCP tool", extra={"tool": tool_name}
-        )
+        logger.debug("Resolved as Dokumen MCP tool", extra={"tool": tool_name})
 
     # Auto-inject Read for browser tests (agents need to read files)
     if playwright_names and "Read" not in seen_sdk:
@@ -383,9 +381,7 @@ def get_playwright_mcp_config(
 
     # Resolve output directory
     if not output_dir:
-        output_dir = os.path.join(
-            ".dokumen-cache", "output", test_name or "default", "recordings"
-        )
+        output_dir = os.path.join(".dokumen-cache", "output", test_name or "default", "recordings")
 
     # Determine command: prefer local Playwright MCP fork, fall back to upstream
     # Path: sdk/tools.py → sdk/ → dokumen/ → dokumen-cli/ → dokumen/ (repo root)
@@ -394,17 +390,13 @@ def get_playwright_mcp_config(
         fork_path = os.path.join(
             os.path.dirname(  # dokumen/ (repo root)
                 os.path.dirname(  # dokumen-cli/
-                    os.path.dirname(  # dokumen/
-                        os.path.dirname(__file__)  # sdk/
-                    )
+                    os.path.dirname(os.path.dirname(__file__))  # dokumen/  # sdk/
                 )
             ),
             "playwright-mcp-fork",
         )
     cli_path = os.path.join(fork_path, "packages", "playwright", "cli.js")
-    built_program = os.path.join(
-        fork_path, "packages", "playwright", "lib", "program.js"
-    )
+    built_program = os.path.join(fork_path, "packages", "playwright", "lib", "program.js")
 
     if os.path.exists(cli_path) and os.path.exists(built_program):
         command = "node"

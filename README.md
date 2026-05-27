@@ -33,7 +33,6 @@ successfully.
 - Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
 - Generate new test scaffolds from a natural-language goal.
-- Ask grounded questions against an existing test corpus.
 - Emit JSON, JUnit, TAP, and text output for CI and dashboards.
 
 ## Installation
@@ -117,7 +116,6 @@ dokumen run --output junit
 | `dokumen coverage` | Show source coverage. |
 | `dokumen status` | Emit a compact CI status summary. |
 | `dokumen explore` | Discover files relevant to a topic. |
-| `dokumen ask` | Answer questions using project knowledge and test context. |
 | `dokumen create` | Generate a scaffold from a natural-language goal. |
 | `dokumen summarize` | Build summary indexes for large source sets. |
 | `dokumen config` | View or edit project configuration. |
@@ -167,17 +165,17 @@ The cache directory is local run output and should not be committed.
 Run the repository smoke checks while iterating:
 
 ```bash
-python -m compileall -q dokumen dokumen_schema
-dokumen --help
-dokumen validate --config-only
-pytest tests/contracts -q
+uv run --extra dev python -m compileall -q dokumen dokumen_schema tests/contracts
+uv run --extra dev dokumen --help
+uv run --extra dev dokumen validate --config-only
+uv run --extra dev pytest tests/contracts -q
 ```
 
 Run formatting and linting when those tools are installed:
 
 ```bash
-ruff check dokumen tests
-black dokumen tests
+uv run --extra dev ruff check dokumen dokumen_schema tests
+uv run --extra dev black --check dokumen dokumen_schema tests
 ```
 
 The committed test suite is intentionally small. `tests/contracts` protects the

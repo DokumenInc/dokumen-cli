@@ -7,6 +7,7 @@ Generates valid test scaffolds by:
 3. Generating executor prompts and judge criteria
 4. Outputting valid YAML scaffold format
 """
+
 import logging
 import re
 import time
@@ -164,6 +165,7 @@ Output ONLY the YAML scaffold in a ```yaml code block."""
 @dataclass
 class CreateResult:
     """Result from CreateAgent.create() method."""
+
     success: bool
     scaffold_yaml: str
     scaffold_dict: Dict[str, Any]
@@ -221,7 +223,7 @@ class CreateAgent:
                 "base_dir": base_dir,
                 "timeout": timeout,
                 "tools_count": len(self.tools),
-            }
+            },
         )
 
     async def create(
@@ -280,10 +282,13 @@ class CreateAgent:
                 discovered_files = [f.path for f in explore_result.files]
 
                 if on_progress:
-                    on_progress("explore_complete", {
-                        "files_found": len(discovered_files),
-                        "files": discovered_files,
-                    })
+                    on_progress(
+                        "explore_complete",
+                        {
+                            "files_found": len(discovered_files),
+                            "files": discovered_files,
+                        },
+                    )
 
                 logger.info(f"[CREATE] Found {len(discovered_files)} files")
             else:
@@ -299,7 +304,9 @@ class CreateAgent:
             if on_progress:
                 on_progress("scaffold_generating", {"name": temp_name})
 
-            scaffold_yaml = await self._generate_scaffold(goal, temp_name, discovered_files, doc_analysis, test_type=test_type)
+            scaffold_yaml = await self._generate_scaffold(
+                goal, temp_name, discovered_files, doc_analysis, test_type=test_type
+            )
 
             # Step 4: Parse and extract name
             scaffold_dict = yaml.safe_load(scaffold_yaml)
@@ -323,10 +330,13 @@ class CreateAgent:
             duration = time.time() - start_time
 
             if on_progress:
-                on_progress("scaffold_generated", {
-                    "name": name,
-                    "files": discovered_files,
-                })
+                on_progress(
+                    "scaffold_generated",
+                    {
+                        "name": name,
+                        "files": discovered_files,
+                    },
+                )
 
             logger.info(f"[CREATE] Scaffold generated successfully in {duration:.2f}s")
 
@@ -373,12 +383,10 @@ class CreateAgent:
             ExploreResult with discovered files.
         """
         explore_agent = ExploreAgent(
-            provider=self.provider,
             base_dir=self.base_dir,
             max_files=20,
-            max_iterations=50,
+            max_turns=50,
             timeout=60.0,
-            tools=self.tools,
         )
 
         return await explore_agent.explore(goal, on_progress)
@@ -435,7 +443,9 @@ Provide a brief analysis of what these documents likely cover based on their pat
             YAML scaffold string.
         """
         # Select prompt based on test type
-        prompt = CREATE_BROWSER_SCAFFOLD_PROMPT if test_type == "browser" else CREATE_SCAFFOLD_PROMPT
+        prompt = (
+            CREATE_BROWSER_SCAFFOLD_PROMPT if test_type == "browser" else CREATE_SCAFFOLD_PROMPT
+        )
 
         file_list = "\n".join(f"- {f}" for f in files)
         user_prompt = f"""Generate a test scaffold for the following:
@@ -501,13 +511,13 @@ Generate a complete, valid test scaffold YAML."""
         if not name or not isinstance(name, str):
             return False
         # Must be kebab-case (lowercase alphanumeric + hyphens, no leading/trailing)
-        if not re.match(r'^[a-z0-9]+(-[a-z0-9]+)*$', name):
+        if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", name):
             return False
         # Max 40 chars
         if len(name) > 40:
             return False
         # At least 2 words (single word is too vague)
-        if name.count('-') < 1:
+        if name.count("-") < 1:
             return False
         return True
 
@@ -545,7 +555,9 @@ Generate a complete, valid test scaffold YAML."""
                     return candidate
 
         # Fallback to goal-based generation
-        logger.info(f"[CREATE] LLM name invalid or missing ('{llm_name}'), falling back to goal-based name")
+        logger.info(
+            f"[CREATE] LLM name invalid or missing ('{llm_name}'), falling back to goal-based name"
+        )
         return self._generate_unique_name(goal, existing_tests)
 
     def _goal_to_kebab(self, goal: str) -> str:

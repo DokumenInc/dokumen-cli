@@ -90,13 +90,13 @@ The presentation-ready path is local and SDK-backed:
   operate on local config, scaffolds, and cache artifacts.
 - `dokumen run` uses the Claude Agent SDK for executor and judge agents.
 - Browser tools are passed to the SDK-managed Playwright MCP server.
-- Dokumen-specific helpers, such as `read_many_files`, `explore`, and `ask`, are
+- Dokumen-specific helpers, such as `read_many_files` and `explore`, are
   exposed as Dokumen MCP tools only when explicitly requested.
 
 Some integration code remains intentionally optional:
 
 - `DokuRouter` and direct provider classes still support non-test commands such
-  as `ask`, `create`, and `summarize`.
+  as `create` and `summarize`.
 - Backend-oriented stdin modes and workspace resolution are adapters for the
   hosted product, not required for local scaffold execution.
 - Coordinator, task tracking, and memory are advanced paths and are disabled by

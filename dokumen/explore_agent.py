@@ -109,7 +109,7 @@ Respond with a natural language description of relevant files:
 - Group documentation files and code files separately
 - List the MOST IMPORTANT files first in each group
 - For each file, briefly explain why it's relevant
-- Note any cross-references between docs and code
+- Note how the relevant documentation and implementation files relate
 
 Keep your response concise (under 500 words).
 """

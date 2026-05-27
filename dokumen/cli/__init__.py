@@ -8,6 +8,7 @@ Phase 0 Commands:
     dokumen coverage          View source coverage (file-level)
     dokumen status            Quick coverage status for CI/CD
 """
+
 from pathlib import Path
 from typing import Optional, List
 from importlib.metadata import version as get_version
@@ -17,6 +18,28 @@ from dotenv import load_dotenv
 
 from ..logging_config import LogConfig, setup_logging, get_logger
 from ..sentry_config import init_sentry
+from .commands import run, coverage, status, list_cmd, validate
+from .commands.config_cmd import config
+from .commands.create import create
+from .commands.explore import explore
+from .commands.run import _run_tests as _run_tests
+from .commands.summarize import summarize
+from .helpers import (
+    DEFAULT_CONFIG as DEFAULT_CONFIG,
+    EXIT_CONFIG_ERROR as EXIT_CONFIG_ERROR,
+    EXIT_FAILURE as EXIT_FAILURE,
+    EXIT_INVALID_ARGS as EXIT_INVALID_ARGS,
+    EXIT_RUNTIME_ERROR as EXIT_RUNTIME_ERROR,
+    EXIT_SUCCESS as EXIT_SUCCESS,
+    deep_merge,
+    discover_doc_files,
+    filter_tests,
+    get_coverage_stats as get_coverage_stats,
+    get_uncovered_files as get_uncovered_files,
+    load_config,
+    normalize_path as normalize_path,
+    run_async,
+)
 
 # Load .env file from current directory
 load_dotenv()
@@ -26,35 +49,6 @@ init_sentry()
 
 # Initialize module-level logger (configured in cli() function)
 logger = get_logger(__name__)
-
-# Import Phase 0 commands only
-from .commands import run, coverage, status, list_cmd, validate
-from .commands.explore import explore
-from .commands.ask import ask
-from .commands.create import create
-from .commands.summarize import summarize
-from .commands.config_cmd import config
-
-# Import _run_tests for backward compatibility (tests patch this)
-from .commands.run import _run_tests
-
-# Import helpers for backward compatibility
-from .helpers import (
-    EXIT_SUCCESS,
-    EXIT_FAILURE,
-    EXIT_CONFIG_ERROR,
-    EXIT_RUNTIME_ERROR,
-    EXIT_INVALID_ARGS,
-    run_async,
-    DEFAULT_CONFIG,
-    load_config,
-    deep_merge,
-    normalize_path,
-    get_coverage_stats,
-    discover_doc_files,
-    get_uncovered_files,
-    filter_tests,
-)
 
 # Re-export with old names for backward compatibility
 _load_config = load_config
@@ -83,16 +77,15 @@ class DokumenGroup(click.Group):
 
     # Define which commands are "main" vs "other"
     MAIN_COMMANDS = {
-        'run',
-        'validate',
-        'list',
-        'coverage',
-        'status',
-        'explore',
-        'ask',
-        'create',
-        'summarize',
-        'config',
+        "run",
+        "validate",
+        "list",
+        "coverage",
+        "status",
+        "explore",
+        "create",
+        "summarize",
+        "config",
     }
 
     def __init__(self, *args, **kwargs):
@@ -159,7 +152,7 @@ class DokumenGroup(click.Group):
                 formatter.write_dl(opts)
 
     def format_help(self, ctx, formatter):
-        formatter.write(click.style(BANNER, fg='blue', bold=True))
+        formatter.write(click.style(BANNER, fg="blue", bold=True))
         formatter.write("\n")
         self.format_usage(ctx, formatter)
         self.format_help_text(ctx, formatter)
@@ -170,11 +163,19 @@ class DokumenGroup(click.Group):
 
 @click.group(cls=DokumenGroup)
 @click.version_option(version=get_version("dokumen"), prog_name="dokumen")
-@click.option('--config', '-c', type=click.Path(), help='Configuration file path')
-@click.option('--debug', is_flag=True, help='Debug mode with trace file output to .dokumen-cache/debug-traces/')
-@click.option('--log-level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR'], case_sensitive=False),
-              default='INFO', help='Logging level')
-@click.option('--log-file', type=click.Path(), help='Log file path for persistent logging')
+@click.option("--config", "-c", type=click.Path(), help="Configuration file path")
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Debug mode with trace file output to .dokumen-cache/debug-traces/",
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+    help="Logging level",
+)
+@click.option("--log-file", type=click.Path(), help="Log file path for persistent logging")
 @click.pass_context
 def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optional[str]):
     """Test AI skills with executable agent tasks.
@@ -183,11 +184,11 @@ def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optio
     knowledge, tools, and documentation, then judge agents evaluate the result.
     """
     ctx.ensure_object(dict)
-    ctx.obj['config_path'] = config
-    ctx.obj['debug'] = debug
+    ctx.obj["config_path"] = config
+    ctx.obj["debug"] = debug
     if debug:
-        ctx.obj['verbose'] = True  # --debug implies --verbose
-        log_level = 'DEBUG'  # --debug implies DEBUG log level
+        ctx.obj["verbose"] = True  # --debug implies --verbose
+        log_level = "DEBUG"  # --debug implies DEBUG log level
 
     # Configure logging
     log_config = LogConfig(
@@ -207,7 +208,6 @@ cli.add_command(list_cmd)
 cli.add_command(coverage)
 cli.add_command(status)
 cli.add_command(explore)
-cli.add_command(ask)
 cli.add_command(create)
 cli.add_command(summarize)
 cli.add_command(config)
@@ -216,6 +216,7 @@ cli.add_command(config)
 # =============================================================================
 # Helper functions for tests (backward compatibility)
 # =============================================================================
+
 
 def run_test_suite(tests=None, **kwargs):
     """Run test suite - callable by tests."""
@@ -232,8 +233,8 @@ def run_test_by_id(test_id: str) -> dict:
     """Run single test by ID - callable by tests."""
     result = run_test_suite(tests=(test_id,))
     if result.test_results:
-        return {'passed': result.test_results[0].passed}
-    return {'passed': False}
+        return {"passed": result.test_results[0].passed}
+    return {"passed": False}
 
 
 def find_tests_for_file(file_path: str) -> List[str]:
@@ -249,19 +250,20 @@ def get_failed_tests() -> List[str]:
     return []
 
 
-async def _run_tests_impl(tests, timeout=None, bail=False, use_cache=True, config=None, quiet=False):
+async def _run_tests_impl(
+    tests, timeout=None, bail=False, use_cache=True, config=None, quiet=False
+):
     """Async test runner implementation (sequential only in Phase 0)."""
     from ..test_suite import TestSuite, TestSuiteConfig
-    from ..loader import get_configured_provider
     from .formatters import make_progress_callback
 
-    provider = get_configured_provider()
-
-    suite = TestSuite(TestSuiteConfig(
-        name="cli-run",
-        parallel_execution=False,  # Phase 0: sequential only
-        max_concurrency=1,
-    ))
+    suite = TestSuite(
+        TestSuiteConfig(
+            name="cli-run",
+            parallel_execution=False,  # Phase 0: sequential only
+            max_concurrency=1,
+        )
+    )
 
     for test in tests:
         if timeout:
@@ -288,5 +290,5 @@ async def _run_tests_impl(tests, timeout=None, bail=False, use_cache=True, confi
 # Entry Point
 # =============================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

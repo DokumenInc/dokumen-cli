@@ -67,16 +67,6 @@ _BUILTINS: dict[str, AgentDefinition] = {
         capabilities=["research"],
         research=ResearchConfig(enabled=True),
     ),
-    "code-reviewer": AgentDefinition(
-        name="code-reviewer",
-        description="Code-aware documentation review executor.",
-        system_prompt=(
-            "You are a Dokumen code review executor. Cross-reference docs with "
-            "the linked source code and report implementation-grounded findings."
-        ),
-        tools=["code_read_file", "code_search", "code_glob"],
-        capabilities=["code"],
-    ),
 }
 
 

@@ -5,8 +5,7 @@ Handles YAML scaffold parsing, prompt variable substitution, browser/viewport
 config parsing, model normalization, and file path extraction.
 """
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 import re
 
@@ -118,16 +117,13 @@ def parse_max_iterations(value: Any, default: Optional[int] = None) -> Optional[
 def default_executor_iterations(tool_names: List[str]) -> int:
     """Determine default max iterations based on tool types.
 
-    Browser, research, and code tools get higher iteration limits.
+    Browser and research tools get higher iteration limits.
     """
     from .playwright_tools import BROWSER_TOOLS
-    from .tools_object import CODE_TOOLS
 
     if any(name in BROWSER_TOOLS for name in tool_names):
         return 100
     if "web_search" in tool_names:
-        return 100
-    if any(name in CODE_TOOLS for name in tool_names):
         return 100
     return 100
 

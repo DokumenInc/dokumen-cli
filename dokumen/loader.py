@@ -10,22 +10,16 @@ Thin orchestrator that delegates to focused sub-modules:
 All public symbols are re-exported here for backward compatibility.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple
-from pathlib import Path
+from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import os
 import yaml
 
-from dokumen_schema.constants import KNOWN_MODEL_ALIASES
 from dokumen_schema.skills import SkillLoader
 
 from .agent_loader import get_agent_skills
-from .agent_object import AgentType
-from .config import _preprocess_yaml
 from .logging_config import get_logger
-from .test_object import TestObject, BrowserConfig
-from .tools.types import ToolDefinition, ToolResult
-from .user_tool_overrides import load_overrides_from_dir, is_tool_enabled_for_test
+from .test_object import TestObject
+from .user_tool_overrides import load_overrides_from_dir
 
 # Re-export from scaffold_parser
 from .scaffold_parser import (
@@ -49,8 +43,6 @@ from .tool_resolver import (
     filter_tools_with_overrides,
     filter_judge_tools,
     resolve_tools,
-    _create_placeholder_tool,
-    _get_agent_tool_config,
 )
 
 # Re-export from agent_resolver
@@ -60,7 +52,6 @@ from .agent_resolver import (
     get_agent_capabilities,
     compute_user_dirs,
     format_skills_for_prompt,
-    collect_skills as _collect_skills_impl,
     RESEARCH_SOURCES_JUDGE_PROMPT,
     RESEARCH_VERDICT_JUDGE_PROMPT,
 )
@@ -69,14 +60,17 @@ from .agent_resolver import (
 from .test_builder import (
     create_provider,
     find_config_file,
-    get_configured_provider,
-    get_configured_providers,
+    get_configured_provider as get_configured_provider,
+    get_configured_providers as get_configured_providers,
     build_sdk_executor,
     build_sdk_judge,
     build_research_judge,
 )
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from .config import AgentsConfig, ExecutionConfig, ExploreConfig, ToolsConfig
 
 
 # ── Backward-compatible aliases (private names used by existing tests) ────────
@@ -173,7 +167,6 @@ def load_scaffold(
     explore_config: Optional["ExploreConfig"] = None,
     tools_config: Optional["ToolsConfig"] = None,
     execution_config: Optional["ExecutionConfig"] = None,
-    code_repos_config: Optional[List[Dict[str, Any]]] = None,
     provider_name: Optional[str] = None,
     api_key: Optional[str] = None,
     agents_config: Optional["AgentsConfig"] = None,
@@ -199,7 +192,6 @@ def load_scaffold(
         explore_config: Optional explore configuration
         tools_config: Optional project-level tool configuration
         execution_config: Optional execution configuration
-        code_repos_config: Optional list of code repo configs
         provider_name: Optional provider name for per-test model providers
         api_key: Optional API key for per-test model providers
         agents_config: Optional agents configuration
@@ -323,7 +315,6 @@ def load_scaffold(
         executor_tool_names,
         base_dir=base_dir,
         tools_config=tools_config,
-        code_repos_config=code_repos_config,
     )
 
     # ── Step 7: Build executor system prompt with skills ──────────────────
@@ -524,29 +515,6 @@ def load_all_scaffolds(
         explore_config = None
         execution_config = None
 
-    # Clone linked code repos
-    code_repos_config = None
-    if config is not None and getattr(config, "code_repos", None):
-        try:
-            from .secrets import get_gitlab_token
-
-            token = get_gitlab_token()
-            gitlab_url_fallback = os.environ.get("GITLAB_URL") or os.environ.get("CI_SERVER_URL")
-            cloned = clone_code_repos(
-                config.code_repos,
-                token=token,
-                gitlab_url_fallback=gitlab_url_fallback,
-            )
-            if cloned:
-                code_repos_config = cloned
-                logger.info(
-                    "code_repos.setup_complete",
-                    count=len(code_repos_config),
-                    names=[r["name"] for r in code_repos_config],
-                )
-        except Exception as e:
-            logger.warning("code_repos.setup_failed", error=str(e))
-
     # Extract provider info for per-test model overrides
     provider_name_for_overrides = None
     api_key_for_overrides = None
@@ -574,7 +542,6 @@ def load_all_scaffolds(
                 explore_config=explore_config,
                 tools_config=tools_config,
                 execution_config=execution_config,
-                code_repos_config=code_repos_config,
                 provider_name=provider_name_for_overrides,
                 api_key=api_key_for_overrides,
                 agents_config=config.agents if config else None,
@@ -597,138 +564,6 @@ def load_all_scaffolds(
             )
 
     return tests, load_errors
-
-
-# ── clone_code_repos (kept in loader for backward compat) ─────────────────────
-
-
-def clone_code_repos(
-    code_repos: list,
-    token: Optional[str] = None,
-    cache_dir: str = ".dokumen-cache",
-    gitlab_url_fallback: Optional[str] = None,
-) -> list:
-    """Clone or update linked code repos and return code_repos_config dicts.
-
-    For each CodeRepoConfig, calls the GitLab API to get the HTTP clone URL,
-    then clones (or fetches) into {cache_dir}/repos/{name}/.
-
-    Args:
-        code_repos: List of CodeRepoConfig objects from dokumen.yaml
-        token: GitLab access token for authentication
-        cache_dir: Base cache directory
-        gitlab_url_fallback: Default GitLab URL when a repo has no gitlab_url set
-
-    Returns:
-        List of code_repos_config dicts
-    """
-    import json
-    import subprocess
-    from urllib.request import Request, urlopen
-    from urllib.parse import urlparse, urlunparse
-
-    result = []
-
-    for repo in code_repos:
-        repo_name = repo.name
-        gitlab_url = (getattr(repo, "gitlab_url", None) or gitlab_url_fallback or "").rstrip("/")
-
-        if not gitlab_url:
-            logger.warning("code_repos.clone.skip_no_url", repo_name=repo_name)
-            continue
-
-        api_url = f"{gitlab_url}/api/v4/projects/{repo.gitlab_project_id}"
-        req = Request(api_url)
-        if token:
-            req.add_header("PRIVATE-TOKEN", token)
-
-        try:
-            with urlopen(req, timeout=30) as resp:
-                project_info = json.loads(resp.read())
-        except Exception as e:
-            logger.warning(
-                "code_repos.clone.api_failed",
-                repo_name=repo_name,
-                api_url=api_url,
-                error=str(e),
-            )
-            continue
-
-        http_url = project_info.get("http_url_to_repo", "")
-        if not http_url:
-            logger.warning(
-                "code_repos.clone.no_clone_url",
-                repo_name=repo_name,
-                project_id=repo.gitlab_project_id,
-            )
-            continue
-
-        if token:
-            parsed = urlparse(http_url)
-            port_suffix = f":{parsed.port}" if parsed.port else ""
-            authenticated_url = urlunparse(
-                parsed._replace(netloc=f"oauth2:{token}@{parsed.hostname}{port_suffix}")
-            )
-        else:
-            authenticated_url = http_url
-
-        branch = getattr(repo, "branch", "main")
-        dest = Path(cache_dir) / "repos" / repo_name
-        dest.parent.mkdir(parents=True, exist_ok=True)
-
-        if dest.exists():
-            logger.info("code_repos.clone.updating", repo_name=repo_name, dest=str(dest))
-            subprocess.run(
-                ["git", "-C", str(dest), "fetch", "origin", "--depth=1"],
-                capture_output=True,
-                timeout=120,
-            )
-            subprocess.run(
-                ["git", "-C", str(dest), "checkout", branch],
-                capture_output=True,
-                timeout=30,
-            )
-            subprocess.run(
-                ["git", "-C", str(dest), "reset", "--hard", f"origin/{branch}"],
-                capture_output=True,
-                timeout=30,
-            )
-        else:
-            logger.info(
-                "code_repos.clone.cloning",
-                repo_name=repo_name,
-                branch=branch,
-                dest=str(dest),
-            )
-            proc = subprocess.run(
-                ["git", "clone", "--depth=1", "-b", branch, authenticated_url, str(dest)],
-                capture_output=True,
-                timeout=300,
-            )
-            if proc.returncode != 0:
-                logger.warning(
-                    "code_repos.clone.clone_failed",
-                    repo_name=repo_name,
-                    returncode=proc.returncode,
-                    stderr=(proc.stderr.decode(errors="replace")[:500] if proc.stderr else ""),
-                )
-                continue
-
-        if not dest.exists():
-            logger.warning("code_repos.clone.dest_missing", repo_name=repo_name, dest=str(dest))
-            continue
-
-        result.append(
-            {
-                "name": repo_name,
-                "base_dir": str(dest),
-                "include_patterns": list(getattr(repo, "paths_include", [])),
-                "exclude_patterns": list(getattr(repo, "paths_exclude", [])),
-            }
-        )
-        logger.info("code_repos.clone.ready", repo_name=repo_name, base_dir=str(dest))
-
-    return result
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────

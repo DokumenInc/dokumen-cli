@@ -1,6 +1,7 @@
 """
 List command group for dokumen CLI.
 """
+
 import json as json_module
 from pathlib import Path
 
@@ -13,10 +14,11 @@ from ..helpers import load_config
 def _get_coverage_stats(config):
     """Wrapper to allow patching at dokumen.cli level."""
     import dokumen.cli
+
     return dokumen.cli.get_coverage_stats(config=config)
 
 
-@click.group(name='list')
+@click.group(name="list")
 @click.pass_context
 def list_cmd(ctx):
     """List resources (tests, files, tools).
@@ -47,10 +49,10 @@ def _normalize_folder_path_for_list(file_path: str) -> str:
     return ""
 
 
-@list_cmd.command('tests')
-@click.option('--verbose', '-v', is_flag=True, help='Show details')
-@click.option('--json', 'json_output', is_flag=True, help='Output as JSON')
-@click.option('--tree', 'tree_output', is_flag=True, help='Show tests grouped by folder')
+@list_cmd.command("tests")
+@click.option("--verbose", "-v", is_flag=True, help="Show details")
+@click.option("--json", "json_output", is_flag=True, help="Output as JSON")
+@click.option("--tree", "tree_output", is_flag=True, help="Show tests grouped by folder")
 @click.pass_context
 def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
     """List all test scaffolds."""
@@ -66,25 +68,29 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
                 with open(scaffold_path) as f:
                     data = yaml.safe_load(f) or {}
 
-                name = data.get('name', Path(scaffold_path).stem)
-                reason = data.get('reason', '')
-                files_covered = len(data.get('files', []))
+                name = data.get("name", Path(scaffold_path).stem)
+                reason = data.get("reason", "")
+                files_covered = len(data.get("files", []))
                 folder_path = _normalize_folder_path_for_list(scaffold_path)
 
-                tests_data.append({
-                    "name": name,
-                    "file": scaffold_path,
-                    "folder_path": folder_path,
-                    "reason": reason.strip() if reason else None,
-                    "files_count": files_covered
-                })
+                tests_data.append(
+                    {
+                        "name": name,
+                        "file": scaffold_path,
+                        "folder_path": folder_path,
+                        "reason": reason.strip() if reason else None,
+                        "files_count": files_covered,
+                    }
+                )
             except (IOError, yaml.YAMLError):
-                tests_data.append({
-                    "name": Path(scaffold_path).stem,
-                    "file": scaffold_path,
-                    "folder_path": _normalize_folder_path_for_list(scaffold_path),
-                    "error": "Failed to parse"
-                })
+                tests_data.append(
+                    {
+                        "name": Path(scaffold_path).stem,
+                        "file": scaffold_path,
+                        "folder_path": _normalize_folder_path_for_list(scaffold_path),
+                        "error": "Failed to parse",
+                    }
+                )
 
         click.echo(json_module.dumps({"tests": tests_data}, indent=2))
         return
@@ -106,8 +112,8 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
             try:
                 with open(scaffold_path) as f:
                     data = yaml.safe_load(f) or {}
-                name = data.get('name', Path(scaffold_path).stem)
-                files_covered = len(data.get('files', []))
+                name = data.get("name", Path(scaffold_path).stem)
+                files_covered = len(data.get("files", []))
                 folder = _normalize_folder_path_for_list(scaffold_path)
                 if folder not in folder_tests:
                     folder_tests[folder] = []
@@ -141,14 +147,14 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
             with open(scaffold_path) as f:
                 data = yaml.safe_load(f) or {}
 
-            name = data.get('name', Path(scaffold_path).stem)
-            files_covered = len(data.get('files', []))
+            name = data.get("name", Path(scaffold_path).stem)
+            files_covered = len(data.get("files", []))
 
             if verbose:
                 click.echo(f"\n  {name}")
                 click.echo(f"    Path: {scaffold_path}")
                 click.echo(f"    Files: {files_covered}")
-                if data.get('reason'):
+                if data.get("reason"):
                     click.echo(f"    Reason: {data.get('reason')}")
             else:
                 click.echo(f"  - {name} ({files_covered} file(s))")
@@ -157,20 +163,20 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
             click.echo(f"  - {scaffold_path} (error: {e})", err=True)
 
 
-@list_cmd.command('files')
-@click.option('--metrics', '-m', is_flag=True, help='Show coverage metrics')
+@list_cmd.command("files")
+@click.option("--metrics", "-m", is_flag=True, help="Show coverage metrics")
 @click.pass_context
 def list_files(ctx, metrics: bool):
     """List tracked source files."""
     from ..formatters import print_coverage_tree
 
-    config = load_config(ctx.obj.get('config_path'))
+    config = load_config(ctx.obj.get("config_path"))
     stats = _get_coverage_stats(config=config)
 
     all_files = (
-        stats.get('covered_files', []) +
-        stats.get('failed_files', []) +
-        stats.get('uncovered_files', [])
+        stats.get("covered_files", [])
+        + stats.get("failed_files", [])
+        + stats.get("uncovered_files", [])
     )
 
     if not all_files:
@@ -182,8 +188,8 @@ def list_files(ctx, metrics: bool):
     print_coverage_tree(stats)
 
     if metrics:
-        covered_set = set(stats.get('covered_files', []))
-        pct = stats['percentage']
+        covered_set = set(stats.get("covered_files", []))
+        pct = stats["percentage"]
         if pct >= 80:
             pct_color = "green"
         elif pct >= 50:
@@ -194,7 +200,7 @@ def list_files(ctx, metrics: bool):
         click.echo(f"\nSummary: {len(covered_set)}/{len(all_files)} files covered ({pct_str})")
 
 
-@list_cmd.command('tools')
+@list_cmd.command("tools")
 @click.pass_context
 def list_tools(ctx):
     """List available tools for test scaffolds."""
@@ -207,15 +213,8 @@ def list_tools(ctx):
         "web_fetch": "Fetch and summarize web pages.",
         "web_search": "Search the web through the SDK WebSearch tool.",
     }
-    code_tools = {
-        "code_read_file": "Read files from configured code repositories.",
-        "code_glob": "Find code files by glob pattern.",
-        "code_search": "Search configured code repositories.",
-        "code_list_directory": "List files in configured code repositories.",
-    }
     agent_tools = {
         "explore": "Run a focused workspace exploration sub-agent.",
-        "ask": "Ask a grounded follow-up question.",
     }
 
     click.echo("\nAvailable Tools")
@@ -237,5 +236,5 @@ def list_tools(ctx):
         click.echo(f"  - {name}")
 
     click.echo("\nOptional Dokumen MCP Tools:")
-    for name, desc in {**code_tools, **agent_tools}.items():
+    for name, desc in agent_tools.items():
         click.echo(f"  - {name}: {desc}")

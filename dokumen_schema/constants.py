@@ -18,10 +18,6 @@ CLI_RESOLVABLE_TOOLS = {
     "legacy_web_fetch",
     "web_search",
     "anthropic_web_search",
-    "code_read_file",
-    "code_glob",
-    "code_search",
-    "code_list_directory",
     "task_create",
     "task_update",
     "task_list",
@@ -52,6 +48,6 @@ BROWSER_TOOLS = {
     "browser_evaluate",
 }
 
-AGENT_TOOLS = {"explore", "ask"}
+AGENT_TOOLS = {"explore"}
 
 VALID_EXECUTOR_TOOLS = CLI_RESOLVABLE_TOOLS | SDK_TOOL_ALIASES | BROWSER_TOOLS | AGENT_TOOLS

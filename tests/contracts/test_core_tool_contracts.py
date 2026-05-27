@@ -23,6 +23,11 @@ def test_removed_tools_are_not_public():
     assert "code_graph_dead_code" not in public_tools
     assert "code_graph_complexity" not in public_tools
     assert "read_pdf_section" not in public_tools
+    assert "ask" not in public_tools
+    assert "code_read_file" not in public_tools
+    assert "code_glob" not in public_tools
+    assert "code_search" not in public_tools
+    assert "code_list_directory" not in public_tools
 
 
 def test_sdk_resolver_keeps_core_tools_sdk_native():

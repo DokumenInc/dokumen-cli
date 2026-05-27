@@ -315,7 +315,9 @@ class CompactionConfig(BaseModel):
 class CoordinatorConfig(BaseModel):
     """Configuration for coordinator (multi-agent) mode."""
 
-    enabled: bool = Field(False, description="Enable coordinator mode for parallel worker execution")
+    enabled: bool = Field(
+        False, description="Enable coordinator mode for parallel worker execution"
+    )
     max_workers: int = Field(5, ge=1, le=20, description="Maximum number of parallel worker agents")
     synthesis_strategy: str = Field(
         "merge", description="How to combine worker results: merge, vote, or chain"
@@ -352,26 +354,9 @@ class SkillsConfig(BaseModel):
     dir: Optional[str] = Field(
         "skills/", description="Directory for project-specific skill files (yaml/md)"
     )
-    include_system: bool = Field(
-        True, description="Include system skills (qa-check, link-check)"
-    )
+    include_system: bool = Field(True, description="Include system skills (qa-check, link-check)")
     max_skills_per_prompt: int = Field(
         10, ge=1, le=20, description="Maximum skills to inject into a single prompt"
-    )
-
-
-class CodeRepoConfig(BaseModel):
-    """Configuration for a linked code repository."""
-
-    name: str = Field(..., min_length=1, description="Display name for the code repository")
-    gitlab_project_id: int = Field(..., gt=0, description="GitLab project ID")
-    gitlab_url: Optional[str] = Field(None, description="GitLab URL (defaults to project's)")
-    branch: str = Field("main", min_length=1, description="Branch to use")
-    paths_include: list[str] = Field(
-        default_factory=list, description="Glob patterns for files to include"
-    )
-    paths_exclude: list[str] = Field(
-        default_factory=list, description="Glob patterns for files to exclude"
     )
 
 
@@ -416,9 +401,6 @@ class DokumenConfig(BaseModel):
     agents: AgentsConfig = Field(
         default_factory=AgentsConfig, description="User-defined agent configuration"
     )
-    code_repos: list[CodeRepoConfig] = Field(
-        default_factory=list, description="Linked code repositories for cross-referencing"
-    )
     memory: MemoryConfig = Field(
         default_factory=MemoryConfig, description="Agent memory settings (off by default)"
     )
@@ -437,15 +419,6 @@ class DokumenConfig(BaseModel):
     judge_model: Optional[str] = Field(
         None, description="Model to use for test judges (overrides provider.model)"
     )
-
-    @model_validator(mode="after")
-    def validate_unique_code_repo_names(self) -> "DokumenConfig":
-        """Validate that code repo names are unique."""
-        names = [r.name for r in self.code_repos]
-        duplicates = [n for n in names if names.count(n) > 1]
-        if duplicates:
-            raise ValueError(f"Duplicate code_repos names: {', '.join(set(duplicates))}")
-        return self
 
     def get_executor_model(self) -> str:
         """Get the model to use for executors (executor_model or provider.model)."""
@@ -495,14 +468,5 @@ def load_config(config_path: Optional[str] = None) -> DokumenConfig:
             msg = error["msg"]
             error_msgs.append(f"{loc}: {msg}")
         raise ConfigError(f"Configuration validation failed: {'; '.join(error_msgs)}")
-
-    if config.code_repos:
-        logger.debug(
-            "Parsed code_repos from config",
-            extra={
-                "count": len(config.code_repos),
-                "repos": [r.name for r in config.code_repos],
-            },
-        )
 
     return config

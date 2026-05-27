@@ -24,7 +24,6 @@ AGENT_TOOL_NAME_MAP = {
     "glob_files": "glob",
     # These are the same in both systems:
     # read_file, run_shell_command, web_fetch, web_search, glob
-    # code_read_file, code_glob, code_search, code_list_directory
 }
 
 # Cache to avoid repeated API calls within the same CLI run
@@ -99,7 +98,10 @@ def load_agent_config() -> Optional[dict]:
         auth_resp.raise_for_status()
         logger.info(
             "Agent loader authenticated",
-            extra={"agent_id": agent_id, "username": auth_resp.json().get("user", {}).get("username")},
+            extra={
+                "agent_id": agent_id,
+                "username": auth_resp.json().get("user", {}).get("username"),
+            },
         )
 
         # Fetch agent config using session cookie
