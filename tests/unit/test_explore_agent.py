@@ -51,7 +51,7 @@ def make_result(
 
 
 # ---------------------------------------------------------------------------
-# Type tests (shared dokumen_explore types, still valid)
+# Type tests for local explore result models
 # ---------------------------------------------------------------------------
 
 class TestFileDiscovery:
@@ -493,11 +493,11 @@ class TestExploreType:
 
 
 # ---------------------------------------------------------------------------
-# Response parsing tests (shared logic from dokumen_explore)
+# Response parsing tests
 # ---------------------------------------------------------------------------
 
 class TestParseExploreResponse:
-    """Tests for _parse_explore_response (delegates to dokumen_explore)."""
+    """Tests for _parse_explore_response."""
 
     def test_extracts_pdf_file_paths(self):
         """Extracts file paths from response text."""

@@ -3,6 +3,7 @@ Configuration module for dokumen-cli.
 
 Provides Pydantic models for parsing and validating dokumen.yaml configuration files.
 """
+
 import logging
 import os
 from pathlib import Path
@@ -45,38 +46,40 @@ class ConfigError(Exception):
 class ProviderConfig(BaseModel):
     """Provider configuration for AI model."""
 
-    name: Literal["anthropic", "openai", "google", "gemini", "mistral", "deepseek", "groq", "together", "bedrock", "vertex", "custom", "mock"] = Field(
-        ..., description="Provider name (e.g., 'anthropic', 'openai', 'google', 'custom')"
-    )
+    name: Literal[
+        "anthropic",
+        "openai",
+        "google",
+        "gemini",
+        "mistral",
+        "deepseek",
+        "groq",
+        "together",
+        "bedrock",
+        "vertex",
+        "custom",
+        "mock",
+    ] = Field(..., description="Provider name (e.g., 'anthropic', 'openai', 'google', 'custom')")
     api_base: Optional[str] = Field(
         None, description="Custom API base URL (for self-hosted or proxy endpoints)"
     )
-    model: str = Field(
-        DEFAULT_FAST_MODEL, description="Model name to use"
-    )
+    model: str = Field(DEFAULT_FAST_MODEL, description="Model name to use")
 
 
 class ExecutionConfig(BaseModel):
     """Execution configuration for test runs."""
 
-    timeout: int = Field(
-        3600, ge=1, description="Timeout per test in seconds"
-    )
+    timeout: int = Field(3600, ge=1, description="Timeout per test in seconds")
     max_tool_result_chars: int = Field(
-        50000,
-        description="Max chars per tool result before truncation. 0 disables."
+        50000, description="Max chars per tool result before truncation. 0 disables."
     )
-    judge_retries: int = Field(
-        2, ge=0, le=5, description="Max retries for judge structural errors"
-    )
+    judge_retries: int = Field(2, ge=0, le=5, description="Max retries for judge structural errors")
 
     @model_validator(mode="after")
     def validate_max_tool_result_chars(self) -> "ExecutionConfig":
         v = self.max_tool_result_chars
         if v != 0 and (v < 1000 or v > 500000):
-            raise ValueError(
-                f"max_tool_result_chars must be 0 (disabled) or 1000-500000, got {v}"
-            )
+            raise ValueError(f"max_tool_result_chars must be 0 (disabled) or 1000-500000, got {v}")
         return self
 
 
@@ -115,18 +118,10 @@ class CoverageConfig(BaseModel):
 class ExploreDebugConfig(BaseModel):
     """Settings for explore phase debug output on failure."""
 
-    max_tool_calls: int = Field(
-        10, ge=1, le=100, description="Max tool calls to show on failure"
-    )
-    max_command_chars: int = Field(
-        200, ge=50, le=1000, description="Max chars for command display"
-    )
-    max_output_chars: int = Field(
-        500, ge=100, le=5000, description="Max chars for tool output"
-    )
-    max_output_lines: int = Field(
-        10, ge=1, le=50, description="Max lines for tool output"
-    )
+    max_tool_calls: int = Field(10, ge=1, le=100, description="Max tool calls to show on failure")
+    max_command_chars: int = Field(200, ge=50, le=1000, description="Max chars for command display")
+    max_output_chars: int = Field(500, ge=100, le=5000, description="Max chars for tool output")
+    max_output_lines: int = Field(10, ge=1, le=50, description="Max lines for tool output")
 
 
 DEFAULT_EXPLORE_TOOL_NAMES = [
@@ -144,29 +139,22 @@ class ExploreConfig(BaseModel):
     relevant documentation files.
     """
 
-    enabled: bool = Field(
-        True, description="Enable/disable the explore phase"
-    )
+    enabled: bool = Field(True, description="Enable/disable the explore phase")
     model: str = Field(
         DEFAULT_BALANCED_MODEL,
-        description="Model to use for explore agents (can use cheaper/faster model)"
+        description="Model to use for explore agents (can use cheaper/faster model)",
     )
-    max_files: int = Field(
-        100, ge=1, le=500, description="Maximum number of files to discover"
-    )
+    max_files: int = Field(100, ge=1, le=500, description="Maximum number of files to discover")
     max_iterations: int = Field(
         50, ge=1, le=100, description="Maximum tool call iterations before stopping"
     )
-    timeout: int = Field(
-        60, ge=1, le=300, description="Timeout for explore phase in seconds"
-    )
+    timeout: int = Field(60, ge=1, le=300, description="Timeout for explore phase in seconds")
     allowed_tools: list[str] = Field(
         default_factory=lambda: list(DEFAULT_EXPLORE_TOOL_NAMES),
-        description="Allowed tool names for explore agents (browser tools are not permitted)"
+        description="Allowed tool names for explore agents (browser tools are not permitted)",
     )
     debug: ExploreDebugConfig = Field(
-        default_factory=ExploreDebugConfig,
-        description="Debug output settings for explore failures"
+        default_factory=ExploreDebugConfig, description="Debug output settings for explore failures"
     )
 
 
@@ -176,9 +164,7 @@ class PerplexityConfig(BaseModel):
     api_key: Optional[str] = Field(
         None, description="Perplexity API key (or use PERPLEXITY_API_KEY env var)"
     )
-    model: str = Field(
-        "sonar", description="Perplexity model to use"
-    )
+    model: str = Field("sonar", description="Perplexity model to use")
     max_searches_per_test: int = Field(
         5, ge=1, le=20, description="Maximum web searches per test execution"
     )
@@ -199,9 +185,14 @@ class HttpToolConfig(BaseModel):
 class WebSearchToolConfig(BaseModel):
     """Per-tool configuration for web_search."""
 
-    model: Optional[str] = Field(None, description="Perplexity model (falls back to perplexity.model)")
+    model: Optional[str] = Field(
+        None, description="Perplexity model (falls back to perplexity.model)"
+    )
     max_searches: Optional[int] = Field(
-        None, ge=1, le=200, description="Max searches per test (falls back to perplexity.max_searches_per_test)"
+        None,
+        ge=1,
+        le=200,
+        description="Max searches per test (falls back to perplexity.max_searches_per_test)",
     )
 
 
@@ -209,8 +200,12 @@ class AnthropicWebSearchConfig(BaseModel):
     """Per-tool configuration for anthropic_web_search (server-side tool)."""
 
     max_uses: Optional[int] = Field(None, ge=1, le=50, description="Max web searches per API call")
-    allowed_domains: Optional[list[str]] = Field(None, description="Restrict searches to these domains")
-    blocked_domains: Optional[list[str]] = Field(None, description="Block searches from these domains")
+    allowed_domains: Optional[list[str]] = Field(
+        None, description="Restrict searches to these domains"
+    )
+    blocked_domains: Optional[list[str]] = Field(
+        None, description="Block searches from these domains"
+    )
 
 
 class ToolConfigMap(BaseModel):
@@ -244,9 +239,7 @@ class ToolsConfig(BaseModel):
     allowed: Optional[list[str]] = Field(
         None, description="Project-level allowlist (None = all valid tools allowed)"
     )
-    blocked: Optional[list[str]] = Field(
-        None, description="Tools explicitly disabled via UI"
-    )
+    blocked: Optional[list[str]] = Field(None, description="Tools explicitly disabled via UI")
     config: ToolConfigMap = Field(default_factory=ToolConfigMap)
 
     @model_validator(mode="after")
@@ -268,21 +261,6 @@ class ToolsConfig(BaseModel):
         return self
 
 
-class PageIndexConfig(BaseModel):
-    """PageIndex tree indexing configuration."""
-
-    enabled: bool = Field(
-        False, description="Enable PageIndex tree-based indexing and retrieval"
-    )
-    model: str = Field(
-        DEFAULT_FAST_MODEL,
-        description="Model to use for tree generation"
-    )
-    max_files: int = Field(
-        50, ge=1, le=500, description="Maximum files to index"
-    )
-
-
 class MemoryConfig(BaseModel):
     """Configuration for agent memory system."""
 
@@ -297,19 +275,23 @@ class MemoryConfig(BaseModel):
         description="LLM model for memory extraction and decisions",
     )
     similarity_threshold: float = Field(
-        0.7, ge=0.0, le=1.0, description="Minimum similarity for memory retrieval",
+        0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity for memory retrieval",
     )
     max_memories_per_query: int = Field(
-        10, ge=1, le=100, description="Max memories to retrieve per query",
+        10,
+        ge=1,
+        le=100,
+        description="Max memories to retrieve per query",
     )
 
 
 class CompactionConfig(BaseModel):
     """Configuration for context compaction."""
 
-    enabled: bool = Field(
-        True, description="Enable automatic context compaction during execution"
-    )
+    enabled: bool = Field(True, description="Enable automatic context compaction during execution")
     token_threshold: float = Field(
         0.9, ge=0.1, le=0.95, description="Compact when token usage exceeds this fraction of budget"
     )
@@ -333,12 +315,8 @@ class CompactionConfig(BaseModel):
 class CoordinatorConfig(BaseModel):
     """Configuration for coordinator (multi-agent) mode."""
 
-    enabled: bool = Field(
-        True, description="Enable coordinator mode for parallel worker execution"
-    )
-    max_workers: int = Field(
-        5, ge=1, le=20, description="Maximum number of parallel worker agents"
-    )
+    enabled: bool = Field(True, description="Enable coordinator mode for parallel worker execution")
+    max_workers: int = Field(5, ge=1, le=20, description="Maximum number of parallel worker agents")
     synthesis_strategy: str = Field(
         "merge", description="How to combine worker results: merge, vote, or chain"
     )
@@ -362,15 +340,9 @@ class CoordinatorConfig(BaseModel):
 class TasksConfig(BaseModel):
     """Configuration for the task tracking system."""
 
-    enabled: bool = Field(
-        True, description="Enable task tracking during execution"
-    )
-    persist_to_disk: bool = Field(
-        True, description="Persist tasks to .dokumen-cache/tasks/"
-    )
-    max_tasks: int = Field(
-        200, ge=1, le=1000, description="Maximum number of tasks per run"
-    )
+    enabled: bool = Field(True, description="Enable task tracking during execution")
+    persist_to_disk: bool = Field(True, description="Persist tasks to .dokumen-cache/tasks/")
+    max_tasks: int = Field(200, ge=1, le=1000, description="Maximum number of tasks per run")
 
 
 class MimickConfig(BaseModel):
@@ -393,9 +365,7 @@ class MimickConfig(BaseModel):
 class SkillsConfig(BaseModel):
     """Configuration for the skill system."""
 
-    enabled: bool = Field(
-        True, description="Enable skill injection into agent prompts"
-    )
+    enabled: bool = Field(True, description="Enable skill injection into agent prompts")
     dir: Optional[str] = Field(
         "skills/", description="Directory for project-specific skill files (yaml/md)"
     )
@@ -407,12 +377,6 @@ class SkillsConfig(BaseModel):
     )
 
 
-class AgentsConfig(BaseModel):
-    """Configuration for user-defined agents."""
-
-    dir: str = Field("agents", description="Directory for user-defined agent YAML files")
-
-
 class CodeRepoConfig(BaseModel):
     """Configuration for a linked code repository."""
 
@@ -420,8 +384,12 @@ class CodeRepoConfig(BaseModel):
     gitlab_project_id: int = Field(..., gt=0, description="GitLab project ID")
     gitlab_url: Optional[str] = Field(None, description="GitLab URL (defaults to project's)")
     branch: str = Field("main", min_length=1, description="Branch to use")
-    paths_include: list[str] = Field(default_factory=list, description="Glob patterns for files to include")
-    paths_exclude: list[str] = Field(default_factory=list, description="Glob patterns for files to exclude")
+    paths_include: list[str] = Field(
+        default_factory=list, description="Glob patterns for files to include"
+    )
+    paths_exclude: list[str] = Field(
+        default_factory=list, description="Glob patterns for files to exclude"
+    )
 
 
 class AgentsConfig(BaseModel):
@@ -436,13 +404,9 @@ class AgentsConfig(BaseModel):
         if not v:
             return "agents/"
         if os.path.isabs(v):
-            raise ValueError(
-                f"agents.dir must be a relative path, got absolute: '{v}'"
-            )
+            raise ValueError(f"agents.dir must be a relative path, got absolute: '{v}'")
         if ".." in v.split(os.sep):
-            raise ValueError(
-                f"agents.dir must not contain '..', got: '{v}'"
-            )
+            raise ValueError(f"agents.dir must not contain '..', got: '{v}'")
         return v
 
 
@@ -472,9 +436,6 @@ class DokumenConfig(BaseModel):
     code_repos: list[CodeRepoConfig] = Field(
         default_factory=list, description="Linked code repositories for cross-referencing"
     )
-    pageindex: PageIndexConfig = Field(
-        default_factory=PageIndexConfig, description="PageIndex tree indexing settings"
-    )
     memory: MemoryConfig = Field(
         default_factory=MemoryConfig, description="Agent memory settings (off by default)"
     )
@@ -484,12 +445,8 @@ class DokumenConfig(BaseModel):
     coordinator: CoordinatorConfig = Field(
         default_factory=CoordinatorConfig, description="Coordinator multi-agent settings"
     )
-    tasks: TasksConfig = Field(
-        default_factory=TasksConfig, description="Task tracking settings"
-    )
-    skills: SkillsConfig = Field(
-        default_factory=SkillsConfig, description="Skill system settings"
-    )
+    tasks: TasksConfig = Field(default_factory=TasksConfig, description="Task tracking settings")
+    skills: SkillsConfig = Field(default_factory=SkillsConfig, description="Skill system settings")
     mimick: MimickConfig = Field(
         default_factory=MimickConfig, description="Mimick architecture analysis settings"
     )
@@ -500,6 +457,7 @@ class DokumenConfig(BaseModel):
     judge_model: Optional[str] = Field(
         None, description="Model to use for test judges (overrides provider.model)"
     )
+
     @model_validator(mode="after")
     def validate_unique_code_repo_names(self) -> "DokumenConfig":
         """Validate that code repo names are unique."""

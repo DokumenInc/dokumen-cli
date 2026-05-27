@@ -3,6 +3,7 @@ Tools Object module for the Documentation Unit Test Framework.
 
 Provides tool definitions for agents, with support for multiple LLM provider formats.
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Awaitable, TYPE_CHECKING
 from datetime import datetime
@@ -26,6 +27,7 @@ PDF_EXTENSION = ".pdf"
 @dataclass
 class ToolResult:
     """Result from executing a tool."""
+
     success: bool
     output: Any
     error: Optional[str] = None
@@ -34,6 +36,7 @@ class ToolResult:
 @dataclass
 class ToolCall:
     """Record of a tool invocation."""
+
     tool_name: str
     parameters: Dict[str, Any]
     result: ToolResult
@@ -44,6 +47,7 @@ class ToolCall:
 @dataclass
 class SubagentResult:
     """Result from a single subagent execution."""
+
     file_path: str
     start_line: int
     end_line: int
@@ -66,7 +70,7 @@ class SubagentResult:
             "tool_calls": self.tool_calls,
             "covered_lines": self.covered_lines,
             "coverage_confidence": self.coverage_confidence,
-            "error": self.error
+            "error": self.error,
         }
 
 
@@ -77,6 +81,7 @@ ToolHandler = Callable[[Dict[str, Any]], Awaitable[ToolResult]]
 @dataclass
 class ToolDefinition:
     """Definition of a tool available to agents."""
+
     name: str
     description: str
     parameters: Dict[str, Any]  # JSON Schema
@@ -127,11 +132,7 @@ class ToolsObject:
         """
         return self._tools.get(tool_name)
 
-    async def execute(
-        self,
-        tool_name: str,
-        params: Dict[str, Any]
-    ) -> ToolResult:
+    async def execute(self, tool_name: str, params: Dict[str, Any]) -> ToolResult:
         """Execute a tool by name with provided parameters.
 
         Args:
@@ -144,11 +145,7 @@ class ToolsObject:
         logger.debug("tools.execute.start", tool_name=tool_name, params=params)
         if tool_name not in self._tools:
             logger.warning("tools.execute.not_found", tool_name=tool_name)
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Tool not found: {tool_name}"
-            )
+            return ToolResult(success=False, output=None, error=f"Tool not found: {tool_name}")
 
         tool = self._tools[tool_name]
 
@@ -158,6 +155,7 @@ class ToolsObject:
 
             # Execute the handler
             import time
+
             start = time.time()
             result = await tool.handler(params)
             duration = time.time() - start
@@ -165,16 +163,12 @@ class ToolsObject:
                 "tools.execute.complete",
                 tool_name=tool_name,
                 success=result.success,
-                duration_ms=int(duration * 1000)
+                duration_ms=int(duration * 1000),
             )
             return result
         except Exception as e:
             logger.error("tools.execute.error", tool_name=tool_name, error=str(e))
-            return ToolResult(
-                success=False,
-                output=None,
-                error=str(e)
-            )
+            return ToolResult(success=False, output=None, error=str(e))
 
     def get_definitions(self) -> List[ToolDefinition]:
         """Return all registered tool definitions."""
@@ -188,8 +182,8 @@ class ToolsObject:
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": tool.parameters
-                }
+                    "parameters": tool.parameters,
+                },
             }
             for tool in self._tools.values()
         ]
@@ -197,22 +191,14 @@ class ToolsObject:
     def to_anthropic_format(self) -> List[Dict[str, Any]]:
         """Convert tools to Anthropic tool use format."""
         return [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.parameters
-            }
+            {"name": tool.name, "description": tool.description, "input_schema": tool.parameters}
             for tool in self._tools.values()
         ]
 
     def to_fastmcp_format(self) -> List[Dict[str, Any]]:
         """Convert tools to fastMCP-compatible format."""
         return [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "inputSchema": tool.parameters
-            }
+            {"name": tool.name, "description": tool.description, "inputSchema": tool.parameters}
             for tool in self._tools.values()
         ]
 
@@ -234,9 +220,7 @@ class ToolsObject:
 
 
 def create_bash_tool(
-    sandbox: Optional['Sandbox'] = None,
-    timeout: float = 30.0,
-    base_dir: str = "."
+    sandbox: Optional["Sandbox"] = None, timeout: float = 30.0, base_dir: str = "."
 ) -> ToolDefinition:
     """Create a bash tool that executes shell commands.
 
@@ -252,20 +236,20 @@ def create_bash_tool(
 
     # Patterns that indicate attempts to escape workspace
     RESTRICTED_PATTERNS = [
-        r'\bfind\s+/',           # find / (searching from root)
-        r'\bls\s+/',             # ls / (listing from root)
-        r'\bcat\s+/',            # cat /etc/passwd etc
-        r'\bhead\s+/',           # head /etc/passwd etc
-        r'\btail\s+/',           # tail /var/log/syslog etc
-        r'\bcd\s+/',             # cd /home etc
-        r'\.\./',                # ../../../ path traversal
-        r'/etc\b',               # /etc access
-        r'/usr\b',               # /usr access
-        r'/var\b',               # /var access
-        r'/home\b',              # /home access
-        r'/root\b',              # /root access
-        r'/proc\b',              # /proc access
-        r'/sys\b',               # /sys access
+        r"\bfind\s+/",  # find / (searching from root)
+        r"\bls\s+/",  # ls / (listing from root)
+        r"\bcat\s+/",  # cat /etc/passwd etc
+        r"\bhead\s+/",  # head /etc/passwd etc
+        r"\btail\s+/",  # tail /var/log/syslog etc
+        r"\bcd\s+/",  # cd /home etc
+        r"\.\./",  # ../../../ path traversal
+        r"/etc\b",  # /etc access
+        r"/usr\b",  # /usr access
+        r"/var\b",  # /var access
+        r"/home\b",  # /home access
+        r"/root\b",  # /root access
+        r"/proc\b",  # /proc access
+        r"/sys\b",  # /sys access
     ]
 
     def _is_restricted_command(cmd: str) -> Optional[str]:
@@ -288,30 +272,26 @@ def create_bash_tool(
                 effective_timeout = max(1.0, min(val, timeout))
                 logger.debug(
                     "Per-invocation timeout resolved",
-                    extra={"model_requested": model_timeout, "effective": effective_timeout, "config_max": timeout}
+                    extra={
+                        "model_requested": model_timeout,
+                        "effective": effective_timeout,
+                        "config_max": timeout,
+                    },
                 )
             except (TypeError, ValueError):
                 logger.warning(
                     "Invalid timeout value from model, using config default",
-                    extra={"model_timeout": model_timeout, "config_default": timeout}
+                    extra={"model_timeout": model_timeout, "config_default": timeout},
                 )
 
         if not command:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'command' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'command' parameter")
 
         # Check for restricted patterns when running in sandbox
         if sandbox:
             restriction_error = _is_restricted_command(command)
             if restriction_error:
-                return ToolResult(
-                    success=False,
-                    output=None,
-                    error=restriction_error
-                )
+                return ToolResult(success=False, output=None, error=restriction_error)
 
         try:
             if sandbox:
@@ -320,44 +300,33 @@ def create_bash_tool(
                 output = result.stdout
                 if result.stderr:
                     output += f"\n\nSTDERR:\n{result.stderr}"
-                return ToolResult(
-                    success=result.success,
-                    output=output,
-                    error=result.error
-                )
+                return ToolResult(success=result.success, output=output, error=result.error)
             else:
                 # Direct execution (for development/testing only)
                 proc = await asyncio.create_subprocess_shell(
-                    command,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                 )
                 try:
                     stdout, stderr = await asyncio.wait_for(
-                        proc.communicate(),
-                        timeout=effective_timeout
+                        proc.communicate(), timeout=effective_timeout
                     )
-                    output = stdout.decode('utf-8', errors='replace')
+                    output = stdout.decode("utf-8", errors="replace")
                     if stderr:
                         output += f"\n\nSTDERR:\n{stderr.decode('utf-8', errors='replace')}"
                     return ToolResult(
                         success=proc.returncode == 0,
                         output=output,
-                        error=None if proc.returncode == 0 else f"Exit code: {proc.returncode}"
+                        error=None if proc.returncode == 0 else f"Exit code: {proc.returncode}",
                     )
                 except asyncio.TimeoutError:
                     proc.kill()
                     return ToolResult(
                         success=False,
                         output=f"Error: Command timed out after {effective_timeout} seconds",
-                        error=f"Command timed out after {effective_timeout} seconds"
+                        error=f"Command timed out after {effective_timeout} seconds",
                     )
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=f"Error: {str(e)}",
-                error=str(e)
-            )
+            return ToolResult(success=False, output=f"Error: {str(e)}", error=str(e))
 
     # Build description with actual working directory
     working_dir_desc = base_dir if base_dir != "." else "the current directory"
@@ -372,26 +341,23 @@ def create_bash_tool(
         parameters={
             "type": "object",
             "properties": {
-                "command": {
-                    "type": "string",
-                    "description": "The shell command to execute"
-                },
+                "command": {"type": "string", "description": "The shell command to execute"},
                 "timeout": {
                     "type": "number",
                     "description": (
                         f"Optional timeout in seconds for this command (1 to "
                         f"{timeout:.0f}s). If omitted, uses the configured default "
                         f"of {timeout:.0f}s. Use higher values for slow API calls or scripts."
-                    )
-                }
+                    ),
+                },
             },
-            "required": ["command"]
+            "required": ["command"],
         },
-        handler=bash_handler
+        handler=bash_handler,
     )
 
 
-def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -> ToolDefinition:
+def create_grep_tool(sandbox: Optional["Sandbox"] = None, base_dir: str = ".") -> ToolDefinition:
     """Create a grep tool for searching file contents with regex patterns.
 
     Args:
@@ -410,9 +376,7 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
 
         if not pattern:
             return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: pattern"
+                success=False, output=None, error="Missing required parameter: pattern"
             )
 
         try:
@@ -428,7 +392,7 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
             # Also escape path to prevent injection via path parameter
             escaped_path = shlex.quote(path)
 
-            command = f'grep {flags} -- {escaped_pattern} {escaped_path}'
+            command = f"grep {flags} -- {escaped_pattern} {escaped_path}"
 
             if sandbox:
                 result = await sandbox.execute(command)
@@ -442,7 +406,7 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
                     return ToolResult(
                         success=False,
                         output=None,
-                        error=result.stderr or f"grep failed with code {result.returncode}"
+                        error=result.stderr or f"grep failed with code {result.returncode}",
                     )
             else:
                 # Direct execution fallback (matches create_bash_tool pattern)
@@ -451,13 +415,10 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
                     command,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    cwd=base_dir
+                    cwd=base_dir,
                 )
-                stdout, stderr = await asyncio.wait_for(
-                    proc.communicate(),
-                    timeout=30.0
-                )
-                output = stdout.decode('utf-8', errors='replace')
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30.0)
+                output = stdout.decode("utf-8", errors="replace")
 
                 # grep returns 0 for matches, 1 for no matches, >1 for errors
                 if proc.returncode == 0:
@@ -465,11 +426,11 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
                 elif proc.returncode == 1:
                     return ToolResult(success=True, output="No matches found")
                 else:
-                    error_msg = stderr.decode('utf-8', errors='replace')
+                    error_msg = stderr.decode("utf-8", errors="replace")
                     return ToolResult(
                         success=False,
                         output=None,
-                        error=error_msg or f"grep failed with code {proc.returncode}"
+                        error=error_msg or f"grep failed with code {proc.returncode}",
                     )
         except Exception as e:
             return ToolResult(success=False, output=None, error=str(e))
@@ -480,26 +441,23 @@ def create_grep_tool(sandbox: Optional['Sandbox'] = None, base_dir: str = ".") -
         parameters={
             "type": "object",
             "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "The regex pattern to search for"
-                },
+                "pattern": {"type": "string", "description": "The regex pattern to search for"},
                 "path": {
                     "type": "string",
-                    "description": "File or directory to search in (default: current directory)"
+                    "description": "File or directory to search in (default: current directory)",
                 },
                 "case_insensitive": {
                     "type": "boolean",
-                    "description": "Whether to ignore case (default: false)"
-                }
+                    "description": "Whether to ignore case (default: false)",
+                },
             },
-            "required": ["pattern"]
+            "required": ["pattern"],
         },
-        handler=grep_handler
+        handler=grep_handler,
     )
 
 
-def create_web_search_tool(sandbox: 'Sandbox') -> ToolDefinition:
+def create_web_search_tool(sandbox: "Sandbox") -> ToolDefinition:
     """Create a web search tool using DuckDuckGo.
 
     Args:
@@ -514,11 +472,7 @@ def create_web_search_tool(sandbox: 'Sandbox') -> ToolDefinition:
         max_results = params.get("max_results", 5)
 
         if not query:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: query"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: query")
 
         try:
             # Use repr() to safely escape query for embedding in Python source
@@ -526,7 +480,7 @@ def create_web_search_tool(sandbox: 'Sandbox') -> ToolDefinition:
             safe_max_results = int(max_results)
 
             # Python script to run in sandbox
-            script = f'''
+            script = f"""
 import json
 import sys
 
@@ -541,10 +495,11 @@ except ImportError:
 except Exception as e:
     print(json.dumps({{"error": str(e)}}))
     sys.exit(1)
-'''
+"""
             # Write script to temp file to avoid shell metacharacter issues with -c
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
                 f.write(script)
                 script_path = f.name
             try:
@@ -566,18 +521,15 @@ except Exception as e:
         parameters={
             "type": "object",
             "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The search query"
-                },
+                "query": {"type": "string", "description": "The search query"},
                 "max_results": {
                     "type": "integer",
-                    "description": "Maximum number of results to return (default: 5)"
-                }
+                    "description": "Maximum number of results to return (default: 5)",
+                },
             },
-            "required": ["query"]
+            "required": ["query"],
         },
-        handler=web_search_handler
+        handler=web_search_handler,
     )
 
 
@@ -614,30 +566,37 @@ def create_perplexity_web_search_tool(
 
         if not resolved_key:
             return ToolResult(
-                success=False, output="",
-                error="Perplexity API key not configured. Set perplexity.api_key in dokumen.yaml or PERPLEXITY_API_KEY env var."
+                success=False,
+                output="",
+                error="Perplexity API key not configured. Set perplexity.api_key in dokumen.yaml or PERPLEXITY_API_KEY env var.",
             )
 
         search_count += 1
         if search_count > max_searches:
             return ToolResult(
-                success=False, output="",
-                error=f"Rate limit: maximum {max_searches} web searches per test execution exceeded."
+                success=False,
+                output="",
+                error=f"Rate limit: maximum {max_searches} web searches per test execution exceeded.",
             )
 
         query_hash = hashlib.sha256(query.encode()).hexdigest()[:8]
         truncated_query = query[:1000]
         logger.info(
             "tools.web_search.start",
-            query_length=len(query), query_hash=query_hash, model=model,
-            search_number=search_count, max_searches=max_searches,
+            query_length=len(query),
+            query_hash=query_hash,
+            model=model,
+            search_number=search_count,
+            max_searches=max_searches,
         )
 
         try:
-            request_body = json.dumps({
-                "model": model,
-                "messages": [{"role": "user", "content": truncated_query}],
-            }).encode("utf-8")
+            request_body = json.dumps(
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": truncated_query}],
+                }
+            ).encode("utf-8")
 
             req = urllib.request.Request(
                 "https://api.perplexity.ai/chat/completions",
@@ -680,8 +639,10 @@ def create_perplexity_web_search_tool(
 
             logger.info(
                 "tools.web_search.complete",
-                query_hash=query_hash, answer_length=len(answer),
-                citation_count=len(citations), search_number=search_count,
+                query_hash=query_hash,
+                answer_length=len(answer),
+                citation_count=len(citations),
+                search_number=search_count,
             )
 
             return ToolResult(success=True, output=result_text)
@@ -690,9 +651,13 @@ def create_perplexity_web_search_tool(
             error_body = e.read().decode("utf-8", errors="replace") if e.fp else ""
             logger.error(
                 "tools.web_search.http_error",
-                status=e.code, query_hash=query_hash, error=error_body[:200],
+                status=e.code,
+                query_hash=query_hash,
+                error=error_body[:200],
             )
-            return ToolResult(success=False, output="", error=f"Perplexity API error (HTTP {e.code})")
+            return ToolResult(
+                success=False, output="", error=f"Perplexity API error (HTTP {e.code})"
+            )
         except Exception as e:
             logger.error("tools.web_search.error", query_hash=query_hash, error=str(e))
             return ToolResult(success=False, output="", error=f"Web search failed: {str(e)}")
@@ -784,7 +749,7 @@ def create_anthropic_web_search_tool(
     )
 
 
-def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -> ToolDefinition:
+def create_http_request_tool(sandbox: "Sandbox" = None, timeout: float = 30.0) -> ToolDefinition:
     """Create an http_request tool for making HTTP requests.
 
     Args:
@@ -799,20 +764,22 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
     import ipaddress
     import socket
 
-    debug(f"[DEBUG TOOLS] create_http_request_tool called with sandbox={sandbox} (id={id(sandbox) if sandbox else None})")
+    debug(
+        f"[DEBUG TOOLS] create_http_request_tool called with sandbox={sandbox} (id={id(sandbox) if sandbox else None})"
+    )
 
     # SSRF Protection: Block internal/private hosts
     # These hosts could expose internal services, cloud metadata, or sensitive data
     BLOCKED_HOSTNAMES = {
-        'localhost',
-        'localhost.localdomain',
-        '127.0.0.1',
-        '0.0.0.0',
-        '::1',
-        '169.254.169.254',  # AWS/GCP/Azure metadata endpoint
-        'metadata.google.internal',  # GCP metadata
-        'metadata.google',
-        '169.254.170.2',  # AWS ECS metadata
+        "localhost",
+        "localhost.localdomain",
+        "127.0.0.1",
+        "0.0.0.0",
+        "::1",
+        "169.254.169.254",  # AWS/GCP/Azure metadata endpoint
+        "metadata.google.internal",  # GCP metadata
+        "metadata.google",
+        "169.254.170.2",  # AWS ECS metadata
     }
 
     def _is_private_ip(ip_str: str) -> bool:
@@ -820,11 +787,11 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
         try:
             ip = ipaddress.ip_address(ip_str)
             return (
-                ip.is_private or
-                ip.is_loopback or
-                ip.is_link_local or
-                ip.is_reserved or
-                ip.is_multicast
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
             )
         except ValueError:
             return False
@@ -864,6 +831,7 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
 
     async def http_request_handler(params: Dict[str, Any]) -> ToolResult:
         from .debug import debug
+
         url = params.get("url")
         method = params.get("method", "GET").upper()
         headers = params.get("headers", {})
@@ -878,11 +846,7 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
             debug(f"[DEBUG TOOLS]   sandbox type: {type(sandbox).__name__}")
 
         if not url:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'url' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'url' parameter")
 
         # SSRF Protection: Validate URL and block internal hosts
         try:
@@ -891,9 +855,7 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
 
             if not hostname:
                 return ToolResult(
-                    success=False,
-                    output=None,
-                    error="Invalid URL: could not extract hostname"
+                    success=False, output=None, error="Invalid URL: could not extract hostname"
                 )
 
             is_blocked, reason = _is_blocked_host(hostname)
@@ -902,23 +864,19 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Request blocked for security: {reason}. Only external URLs are allowed."
+                    error=f"Request blocked for security: {reason}. Only external URLs are allowed.",
                 )
 
             # Block non-HTTP(S) schemes
-            if parsed.scheme not in ('http', 'https'):
+            if parsed.scheme not in ("http", "https"):
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed."
+                    error=f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed.",
                 )
 
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Invalid URL: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Invalid URL: {str(e)}")
 
         # If sandbox is active, use curl inside the container
         if sandbox:
@@ -930,13 +888,14 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
             # Use aiohttp if available, fall back to urllib
             try:
                 import aiohttp
+
                 async with aiohttp.ClientSession() as session:
                     async with session.request(
                         method,
                         url,
                         headers=headers,
                         data=body,
-                        timeout=aiohttp.ClientTimeout(total=timeout)
+                        timeout=aiohttp.ClientTimeout(total=timeout),
                     ) as response:
                         content = await response.text()
                         return ToolResult(
@@ -944,8 +903,8 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
                             output={
                                 "status": response.status,
                                 "headers": dict(response.headers),
-                                "body": content
-                            }
+                                "body": content,
+                            },
                         )
             except ImportError:
                 # Fall back to urllib (synchronous)
@@ -957,36 +916,28 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
                 for key, value in headers.items():
                     req.add_header(key, value)
 
-                data = body.encode('utf-8') if body else None
+                data = body.encode("utf-8") if body else None
 
                 try:
                     with urllib.request.urlopen(req, data=data, timeout=timeout) as response:
-                        content = response.read().decode('utf-8', errors='replace')
+                        content = response.read().decode("utf-8", errors="replace")
                         return ToolResult(
                             success=True,
                             output={
                                 "status": response.status,
                                 "headers": dict(response.headers),
-                                "body": content
-                            }
+                                "body": content,
+                            },
                         )
                 except urllib.error.HTTPError as e:
-                    content = e.read().decode('utf-8', errors='replace') if e.fp else ""
+                    content = e.read().decode("utf-8", errors="replace") if e.fp else ""
                     return ToolResult(
                         success=False,
-                        output={
-                            "status": e.code,
-                            "headers": dict(e.headers),
-                            "body": content
-                        },
-                        error=f"HTTP {e.code}: {e.reason}"
+                        output={"status": e.code, "headers": dict(e.headers), "body": content},
+                        error=f"HTTP {e.code}: {e.reason}",
                     )
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=f"Error: {str(e)}",
-                error=str(e)
-            )
+            return ToolResult(success=False, output=f"Error: {str(e)}", error=str(e))
 
     return ToolDefinition(
         name="web_fetch",
@@ -997,38 +948,27 @@ def create_http_request_tool(sandbox: 'Sandbox' = None, timeout: float = 30.0) -
         parameters={
             "type": "object",
             "properties": {
-                "url": {
-                    "type": "string",
-                    "description": "The URL to request"
-                },
+                "url": {"type": "string", "description": "The URL to request"},
                 "method": {
                     "type": "string",
                     "description": "HTTP method (GET, POST, PUT, DELETE, etc.)",
-                    "default": "GET"
+                    "default": "GET",
                 },
                 "headers": {
                     "type": "object",
                     "description": "HTTP headers as key-value pairs",
-                    "additionalProperties": {"type": "string"}
+                    "additionalProperties": {"type": "string"},
                 },
-                "body": {
-                    "type": "string",
-                    "description": "Request body (for POST, PUT, etc.)"
-                }
+                "body": {"type": "string", "description": "Request body (for POST, PUT, etc.)"},
             },
-            "required": ["url"]
+            "required": ["url"],
         },
-        handler=http_request_handler
+        handler=http_request_handler,
     )
 
 
 async def _http_request_via_sandbox(
-    sandbox: 'Sandbox',
-    url: str,
-    method: str,
-    headers: Dict[str, str],
-    body: str,
-    timeout: float
+    sandbox: "Sandbox", url: str, method: str, headers: Dict[str, str], body: str, timeout: float
 ) -> ToolResult:
     """Execute HTTP request inside sandbox using Python (guaranteed available).
 
@@ -1044,6 +984,7 @@ async def _http_request_via_sandbox(
         ToolResult with response data
     """
     from .debug import debug
+
     debug(f"[DEBUG TOOLS] _http_request_via_sandbox called:")
     debug(f"[DEBUG TOOLS]   sandbox type: {type(sandbox).__name__}")
     debug(f"[DEBUG TOOLS]   sandbox id: {id(sandbox)}")
@@ -1056,7 +997,7 @@ async def _http_request_via_sandbox(
     headers_json = json_module.dumps(headers)
     body_escaped = body.replace("'", "\\'") if body else ""
 
-    python_script = f'''
+    python_script = f"""
 import urllib.request
 import urllib.error
 import json
@@ -1091,7 +1032,7 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(json.dumps({{"error": str(e)}}))
     sys.exit(1)
-'''
+"""
 
     # Write script to temp file and execute (avoids shell escaping issues)
     # Use heredoc approach similar to write_file
@@ -1111,11 +1052,7 @@ python3 /tmp/_http_request.py"""
 
         if not result.stdout:
             error_msg = result.error or result.stderr or "No response from server"
-            return ToolResult(
-                success=False,
-                output=f"Error: {error_msg}",
-                error=error_msg
-            )
+            return ToolResult(success=False, output=f"Error: {error_msg}", error=error_msg)
 
         # Parse JSON output
         try:
@@ -1124,14 +1061,14 @@ python3 /tmp/_http_request.py"""
             return ToolResult(
                 success=False,
                 output=f"Error: Failed to parse response: {result.stdout}",
-                error=f"Failed to parse response: {result.stdout}"
+                error=f"Failed to parse response: {result.stdout}",
             )
 
         if "error" in response_data and "status" not in response_data:
             return ToolResult(
                 success=False,
                 output=f"Error: {response_data['error']}",
-                error=response_data["error"]
+                error=response_data["error"],
             )
 
         status_code = response_data.get("status", 500)
@@ -1140,16 +1077,12 @@ python3 /tmp/_http_request.py"""
             output={
                 "status": status_code,
                 "headers": response_data.get("headers", {}),
-                "body": response_data.get("body", "")
+                "body": response_data.get("body", ""),
             },
-            error=response_data.get("error") if not (200 <= status_code < 400) else None
+            error=response_data.get("error") if not (200 <= status_code < 400) else None,
         )
     except Exception as e:
-        return ToolResult(
-            success=False,
-            output=f"Error: {str(e)}",
-            error=str(e)
-        )
+        return ToolResult(success=False, output=f"Error: {str(e)}", error=str(e))
 
 
 # ============================================================================
@@ -1158,9 +1091,9 @@ python3 /tmp/_http_request.py"""
 
 
 def create_delegate_to_agent_tool(
-    registry: 'AgentRegistry',
-    provider: 'Provider',
-    sandbox: Optional['Sandbox'] = None,
+    registry: "AgentRegistry",
+    provider: "Provider",
+    sandbox: Optional["Sandbox"] = None,
     timeout: float = 60.0,
     parent_tools: Optional[List[ToolDefinition]] = None,
 ) -> ToolDefinition:
@@ -1195,15 +1128,11 @@ def create_delegate_to_agent_tool(
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Invalid thoroughness: {thoroughness}. Must be one of: {', '.join(valid_thoroughness)}"
+                error=f"Invalid thoroughness: {thoroughness}. Must be one of: {', '.join(valid_thoroughness)}",
             )
 
         if not agent_name:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: agent"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: agent")
 
         if input_text is None:
             input_text = ""
@@ -1215,7 +1144,7 @@ def create_delegate_to_agent_tool(
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Agent not found: {agent_name}. Available agents: {', '.join(available)}"
+                error=f"Agent not found: {agent_name}. Available agents: {', '.join(available)}",
             )
 
         # Log subagent spawning
@@ -1241,9 +1170,9 @@ def create_delegate_to_agent_tool(
                     sandbox=sandbox,
                     timeout=timeout,
                     is_subagent=True,  # Prevents recursive delegation
-                    thoroughness=thoroughness
+                    thoroughness=thoroughness,
                 ),
-                timeout=timeout
+                timeout=timeout,
             )
 
             if result.success:
@@ -1253,26 +1182,20 @@ def create_delegate_to_agent_tool(
                         "agent": agent_name,
                         "output": result.output,
                         "duration": result.duration,
-                        "tool_calls": len(result.tool_calls)
-                    }
+                        "tool_calls": len(result.tool_calls),
+                    },
                 )
             else:
                 return ToolResult(
-                    success=False,
-                    output=None,
-                    error=f"Agent {agent_name} failed: {result.error}"
+                    success=False, output=None, error=f"Agent {agent_name} failed: {result.error}"
                 )
         except asyncio.TimeoutError:
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Agent {agent_name} timed out after {timeout}s"
+                success=False, output=None, error=f"Agent {agent_name} timed out after {timeout}s"
             )
         except Exception as e:
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Error delegating to {agent_name}: {str(e)}"
+                success=False, output=None, error=f"Error delegating to {agent_name}: {str(e)}"
             )
 
     # Build description based on whether parent tools restrict the subagent
@@ -1300,21 +1223,18 @@ def create_delegate_to_agent_tool(
             "properties": {
                 "agent": {
                     "type": "string",
-                    "description": "Name of the agent to delegate to (e.g., 'explore')"
+                    "description": "Name of the agent to delegate to (e.g., 'explore')",
                 },
-                "input": {
-                    "type": "string",
-                    "description": "The task or question for the agent"
-                },
+                "input": {"type": "string", "description": "The task or question for the agent"},
                 "thoroughness": {
                     "type": "string",
                     "enum": ["quick", "medium", "very-thorough"],
-                    "description": "Search depth (explore agent only). quick=fast surface search, medium=balanced, very-thorough=comprehensive. Default: medium"
-                }
+                    "description": "Search depth (explore agent only). quick=fast surface search, medium=balanced, very-thorough=comprehensive. Default: medium",
+                },
             },
-            "required": ["agent", "input"]
+            "required": ["agent", "input"],
         },
-        handler=delegate_to_agent_handler
+        handler=delegate_to_agent_handler,
     )
 
 
@@ -1340,11 +1260,11 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
     import os
 
     IMAGE_TYPES = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
     }
 
     # Text file size limit (matches backend MAX_FILE_SIZE)
@@ -1357,11 +1277,7 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
         limit = params.get("limit")  # None means read all
 
         if not file_path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'file_path' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'file_path' parameter")
 
         # Resolve path relative to base_dir
         if not os.path.isabs(file_path):
@@ -1375,20 +1291,19 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
         # Path traversal protection: resolve symlinks and ensure path is within base_dir
         normalized_base = os.path.realpath(base_dir)
         normalized_full = os.path.realpath(full_path)
-        if not normalized_full.startswith(normalized_base + os.sep) and normalized_full != normalized_base:
+        if (
+            not normalized_full.startswith(normalized_base + os.sep)
+            and normalized_full != normalized_base
+        ):
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory."
+                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         # Check file exists
         if not os.path.exists(full_path):
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"File not found: {file_path}"
-            )
+            return ToolResult(success=False, output=None, error=f"File not found: {file_path}")
 
         if os.path.isdir(full_path):
             # Check if this is a PDF document folder (contains _tree_index.json or _metadata.json)
@@ -1401,7 +1316,7 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Path is a directory, not a file: {file_path}. Use list_directory instead."
+                    error=f"Path is a directory, not a file: {file_path}. Use list_directory instead.",
                 )
 
         # Check if it's an image
@@ -1413,19 +1328,17 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                     return ToolResult(
                         success=False,
                         output=None,
-                        error=f"Image too large ({image_size:,} bytes, max {MAX_IMAGE_FILE_SIZE:,} bytes)."
+                        error=f"Image too large ({image_size:,} bytes, max {MAX_IMAGE_FILE_SIZE:,} bytes).",
                     )
-                with open(full_path, 'rb') as f:
+                with open(full_path, "rb") as f:
                     image_data = f.read()
-                base64_data = base64.b64encode(image_data).decode('utf-8')
+                base64_data = base64.b64encode(image_data).decode("utf-8")
                 media_type = IMAGE_TYPES[ext]
                 output = f"__IMAGE_DATA__\nmedia_type: {media_type}\nprompt: {file_path}\ndata: {base64_data}\n__END_IMAGE_DATA__"
                 return ToolResult(success=True, output=output)
             except Exception as e:
                 return ToolResult(
-                    success=False,
-                    output=None,
-                    error=f"Failed to read image: {str(e)}"
+                    success=False, output=None, error=f"Failed to read image: {str(e)}"
                 )
 
         # PDF files — return tree index overview if available
@@ -1447,9 +1360,9 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                     with open(tree_index_path, "r", encoding="utf-8") as f:
                         tree_data = json.load(f)
 
-                    # Build outline from tree
-                    from dokumen_pageindex.types import DocumentTree
-                    tree = DocumentTree.from_dict(tree_data)
+                    from .pdf_tree import parse_pdf_tree
+
+                    tree = parse_pdf_tree(tree_data)
                     outline = tree.get_outline(max_depth=3)
 
                     return ToolResult(
@@ -1458,17 +1371,16 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                             f"# PDF Document: {os.path.basename(file_path)}\n\n"
                             f"## Tree Index Overview\n\n{outline}\n\n"
                             f"Use read_pdf_section(file_path, node_id) to read specific sections."
-                        )
+                        ),
                     )
                 except Exception as e:
-                    logger.error("Failed to read PDF tree index", extra={
-                        "path": tree_index_path,
-                        "error": str(e)
-                    }, exc_info=True)
+                    logger.error(
+                        "Failed to read PDF tree index",
+                        extra={"path": tree_index_path, "error": str(e)},
+                        exc_info=True,
+                    )
                     return ToolResult(
-                        success=False,
-                        output=None,
-                        error=f"Failed to read PDF tree index: {str(e)}"
+                        success=False, output=None, error=f"Failed to read PDF tree index: {str(e)}"
                     )
             elif os.path.exists(metadata_path):
                 try:
@@ -1484,19 +1396,18 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                             f"# PDF Document: {metadata.get('original_filename', os.path.basename(file_path))}\n\n"
                             f"Page count: {metadata.get('page_count', 'unknown')}\n"
                             f"Converted: {metadata.get('converted_at', 'unknown')}\n\n"
-                            "No tree index available. Re-import this PDF with PageIndex enabled "
+                            "No tree index available. Re-import this PDF through Dokumen "
                             "to get structured navigation."
-                        )
+                        ),
                     )
                 except Exception as e:
-                    logger.error("Failed to read PDF metadata", extra={
-                        "path": metadata_path,
-                        "error": str(e)
-                    }, exc_info=True)
+                    logger.error(
+                        "Failed to read PDF metadata",
+                        extra={"path": metadata_path, "error": str(e)},
+                        exc_info=True,
+                    )
                     return ToolResult(
-                        success=False,
-                        output=None,
-                        error=f"Failed to read PDF metadata: {str(e)}"
+                        success=False, output=None, error=f"Failed to read PDF metadata: {str(e)}"
                     )
             else:
                 logger.info(
@@ -1510,7 +1421,7 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
                         f"Cannot read raw PDF file '{file_path}'. "
                         "Import this PDF through the Dokumen UI to create a tree index, "
                         "then use the document folder path to read the structured content."
-                    )
+                    ),
                 )
 
         # Check text file size
@@ -1519,12 +1430,12 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"File too large ({file_size:,} bytes, max {MAX_TEXT_FILE_SIZE:,} bytes). Use offset and limit parameters to read specific sections."
+                error=f"File too large ({file_size:,} bytes, max {MAX_TEXT_FILE_SIZE:,} bytes). Use offset and limit parameters to read specific sections.",
             )
 
         # Read text file
         try:
-            with open(full_path, 'r', encoding='utf-8', errors='replace') as f:
+            with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                 lines = f.readlines()
 
             total_lines = len(lines)
@@ -1542,31 +1453,24 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
             output_lines = []
             for i in range(start_idx, end_idx):
                 line_num = i + 1
-                line_content = lines[i].rstrip('\n\r')
+                line_content = lines[i].rstrip("\n\r")
                 output_lines.append(f"{line_num:6d}\t{line_content}")
 
-            result_text = '\n'.join(output_lines)
+            result_text = "\n".join(output_lines)
 
             # Add metadata header
             header = f"File: {file_path}\nLines: {start_idx + 1}-{end_idx} of {total_lines}\n\n"
 
-            return ToolResult(
-                success=True,
-                output=header + result_text
-            )
+            return ToolResult(success=True, output=header + result_text)
 
         except UnicodeDecodeError:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"File appears to be binary, not text: {file_path}"
+                error=f"File appears to be binary, not text: {file_path}",
             )
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to read file: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Failed to read file: {str(e)}")
 
     return ToolDefinition(
         name="read_file",
@@ -1581,20 +1485,20 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the file (relative to project root or absolute)"
+                    "description": "Path to the file (relative to project root or absolute)",
                 },
                 "offset": {
                     "type": "integer",
-                    "description": "Starting line number (1-indexed). Default: 1"
+                    "description": "Starting line number (1-indexed). Default: 1",
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Maximum number of lines to read. Default: all lines"
-                }
+                    "description": "Maximum number of lines to read. Default: all lines",
+                },
             },
-            "required": ["file_path"]
+            "required": ["file_path"],
         },
-        handler=read_file_handler
+        handler=read_file_handler,
     )
 
 
@@ -1620,11 +1524,7 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
         respect_gitignore = params.get("respect_gitignore", True)
 
         if not pattern:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'pattern' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'pattern' parameter")
 
         # Resolve base path
         if not os.path.isabs(path):
@@ -1640,15 +1540,11 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory."
+                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         if not os.path.exists(search_path):
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Path not found: {path}"
-            )
+            return ToolResult(success=False, output=None, error=f"Path not found: {path}")
 
         # Build full glob pattern
         full_pattern = os.path.join(search_path, pattern)
@@ -1671,13 +1567,13 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
             # Load gitignore patterns if requested
             ignored_patterns = set()
             if respect_gitignore:
-                gitignore_path = os.path.join(base_dir, '.gitignore')
+                gitignore_path = os.path.join(base_dir, ".gitignore")
                 if os.path.exists(gitignore_path):
                     try:
-                        with open(gitignore_path, 'r') as f:
+                        with open(gitignore_path, "r") as f:
                             for line in f:
                                 line = line.strip()
-                                if line and not line.startswith('#'):
+                                if line and not line.startswith("#"):
                                     ignored_patterns.add(line)
                     except Exception:
                         pass
@@ -1704,21 +1600,16 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
 
             if not rel_files:
                 return ToolResult(
-                    success=True,
-                    output=f"No files found matching pattern: {pattern}"
+                    success=True, output=f"No files found matching pattern: {pattern}"
                 )
 
             output = f"Found {len(rel_files)} files matching '{pattern}':\n\n"
-            output += '\n'.join(rel_files)
+            output += "\n".join(rel_files)
 
             return ToolResult(success=True, output=output)
 
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Glob search failed: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Glob search failed: {str(e)}")
 
     return ToolDefinition(
         name="glob",
@@ -1731,20 +1622,20 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
             "properties": {
                 "pattern": {
                     "type": "string",
-                    "description": "Glob pattern (e.g., '**/*.py', 'src/*.ts', '*.md')"
+                    "description": "Glob pattern (e.g., '**/*.py', 'src/*.ts', '*.md')",
                 },
                 "path": {
                     "type": "string",
-                    "description": "Base directory to search in. Default: project root"
+                    "description": "Base directory to search in. Default: project root",
                 },
                 "respect_gitignore": {
                     "type": "boolean",
-                    "description": "Whether to respect .gitignore patterns. Default: true"
-                }
+                    "description": "Whether to respect .gitignore patterns. Default: true",
+                },
             },
-            "required": ["pattern"]
+            "required": ["pattern"],
         },
-        handler=glob_handler
+        handler=glob_handler,
     )
 
 
@@ -1782,21 +1673,17 @@ def create_list_directory_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory."
+                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         if not os.path.exists(full_path):
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Directory not found: {path}"
-            )
+            return ToolResult(success=False, output=None, error=f"Directory not found: {path}")
 
         if not os.path.isdir(full_path):
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Path is not a directory: {path}. Use read_file instead."
+                error=f"Path is not a directory: {path}. Use read_file instead.",
             )
 
         try:
@@ -1806,67 +1693,72 @@ def create_list_directory_tool(base_dir: str = ".") -> ToolDefinition:
                 for root, dirs, files in os.walk(full_path):
                     # Filter hidden if needed
                     if not include_hidden:
-                        dirs[:] = [d for d in dirs if not d.startswith('.')]
-                        files = [f for f in files if not f.startswith('.')]
+                        dirs[:] = [d for d in dirs if not d.startswith(".")]
+                        files = [f for f in files if not f.startswith(".")]
 
                     rel_root = os.path.relpath(root, full_path)
-                    if rel_root == '.':
-                        rel_root = ''
+                    if rel_root == ".":
+                        rel_root = ""
 
                     for d in dirs:
                         dir_path = os.path.join(root, d)
                         rel_path = os.path.join(rel_root, d) if rel_root else d
                         mtime = datetime.fromtimestamp(os.path.getmtime(dir_path))
-                        entries.append({
-                            'name': rel_path + '/',
-                            'type': 'dir',
-                            'size': '-',
-                            'modified': mtime.strftime('%Y-%m-%d %H:%M')
-                        })
+                        entries.append(
+                            {
+                                "name": rel_path + "/",
+                                "type": "dir",
+                                "size": "-",
+                                "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                            }
+                        )
 
                     for f in files:
                         file_path = os.path.join(root, f)
                         rel_path = os.path.join(rel_root, f) if rel_root else f
                         size = os.path.getsize(file_path)
                         mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
-                        entries.append({
-                            'name': rel_path,
-                            'type': 'file',
-                            'size': _format_size(size),
-                            'modified': mtime.strftime('%Y-%m-%d %H:%M')
-                        })
+                        entries.append(
+                            {
+                                "name": rel_path,
+                                "type": "file",
+                                "size": _format_size(size),
+                                "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                            }
+                        )
             else:
                 for name in os.listdir(full_path):
-                    if not include_hidden and name.startswith('.'):
+                    if not include_hidden and name.startswith("."):
                         continue
 
                     item_path = os.path.join(full_path, name)
                     mtime = datetime.fromtimestamp(os.path.getmtime(item_path))
 
                     if os.path.isdir(item_path):
-                        entries.append({
-                            'name': name + '/',
-                            'type': 'dir',
-                            'size': '-',
-                            'modified': mtime.strftime('%Y-%m-%d %H:%M')
-                        })
+                        entries.append(
+                            {
+                                "name": name + "/",
+                                "type": "dir",
+                                "size": "-",
+                                "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                            }
+                        )
                     else:
                         size = os.path.getsize(item_path)
-                        entries.append({
-                            'name': name,
-                            'type': 'file',
-                            'size': _format_size(size),
-                            'modified': mtime.strftime('%Y-%m-%d %H:%M')
-                        })
+                        entries.append(
+                            {
+                                "name": name,
+                                "type": "file",
+                                "size": _format_size(size),
+                                "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                            }
+                        )
 
             # Sort: directories first, then files, alphabetically
-            entries.sort(key=lambda e: (0 if e['type'] == 'dir' else 1, e['name'].lower()))
+            entries.sort(key=lambda e: (0 if e["type"] == "dir" else 1, e["name"].lower()))
 
             if not entries:
-                return ToolResult(
-                    success=True,
-                    output=f"Directory is empty: {path}"
-                )
+                return ToolResult(success=True, output=f"Directory is empty: {path}")
 
             # Format output
             output = f"Contents of {path}:\n\n"
@@ -1881,16 +1773,10 @@ def create_list_directory_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(success=True, output=output)
 
         except PermissionError:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Permission denied: {path}"
-            )
+            return ToolResult(success=False, output=None, error=f"Permission denied: {path}")
         except Exception as e:
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to list directory: {str(e)}"
+                success=False, output=None, error=f"Failed to list directory: {str(e)}"
             )
 
     return ToolDefinition(
@@ -1904,28 +1790,28 @@ def create_list_directory_tool(base_dir: str = ".") -> ToolDefinition:
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "Directory path to list. Default: current directory"
+                    "description": "Directory path to list. Default: current directory",
                 },
                 "recursive": {
                     "type": "boolean",
-                    "description": "List subdirectories recursively. Default: false"
+                    "description": "List subdirectories recursively. Default: false",
                 },
                 "include_hidden": {
                     "type": "boolean",
-                    "description": "Include hidden files (starting with '.'). Default: false"
-                }
+                    "description": "Include hidden files (starting with '.'). Default: false",
+                },
             },
-            "required": []
+            "required": [],
         },
-        handler=list_directory_handler
+        handler=list_directory_handler,
     )
 
 
 def _format_size(size_bytes: int) -> str:
     """Format file size in human-readable format."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
+    for unit in ["B", "KB", "MB", "GB"]:
         if size_bytes < 1024:
-            return f"{size_bytes:.1f}{unit}" if unit != 'B' else f"{size_bytes}{unit}"
+            return f"{size_bytes:.1f}{unit}" if unit != "B" else f"{size_bytes}{unit}"
         size_bytes /= 1024
     return f"{size_bytes:.1f}TB"
 
@@ -1955,7 +1841,7 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error="Missing 'patterns' parameter - provide list of glob patterns"
+                error="Missing 'patterns' parameter - provide list of glob patterns",
             )
 
         if isinstance(patterns, str):
@@ -1985,8 +1871,7 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
 
             if not files_list:
                 return ToolResult(
-                    success=True,
-                    output="No files found matching the provided patterns."
+                    success=True, output="No files found matching the provided patterns."
                 )
 
             # Read each file
@@ -1994,15 +1879,17 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
             for file_path in files_list:
                 rel_path = os.path.relpath(file_path, base_dir)
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                         lines = f.readlines()
 
                     # Apply line limit
                     if len(lines) > max_lines_per_file:
-                        content = ''.join(lines[:max_lines_per_file])
-                        content += f"\n... (truncated, {len(lines) - max_lines_per_file} more lines)"
+                        content = "".join(lines[:max_lines_per_file])
+                        content += (
+                            f"\n... (truncated, {len(lines) - max_lines_per_file} more lines)"
+                        )
                     else:
-                        content = ''.join(lines)
+                        content = "".join(lines)
 
                     results.append(f"=== {rel_path} ===\n{content}")
 
@@ -2010,7 +1897,7 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
                     results.append(f"=== {rel_path} ===\n[Error reading file: {str(e)}]")
 
             output = f"Read {len(files_list)} files:\n\n"
-            output += '\n\n'.join(results)
+            output += "\n\n".join(results)
 
             if len(all_files) > max_files:
                 output += f"\n\n[Note: {len(all_files) - max_files} additional files not shown due to max_files limit]"
@@ -2018,11 +1905,7 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(success=True, output=output)
 
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to read files: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Failed to read files: {str(e)}")
 
     return ToolDefinition(
         name="read_many_files",
@@ -2036,29 +1919,29 @@ def create_read_many_files_tool(base_dir: str = ".") -> ToolDefinition:
                 "patterns": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of glob patterns (e.g., ['src/**/*.py', 'tests/*.py'])"
+                    "description": "List of glob patterns (e.g., ['src/**/*.py', 'tests/*.py'])",
                 },
                 "exclude": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Patterns to exclude from results"
+                    "description": "Patterns to exclude from results",
                 },
                 "max_files": {
                     "type": "integer",
-                    "description": "Maximum number of files to read. Default: 50"
+                    "description": "Maximum number of files to read. Default: 50",
                 },
                 "max_lines_per_file": {
                     "type": "integer",
-                    "description": "Maximum lines per file. Default: 500"
-                }
+                    "description": "Maximum lines per file. Default: 500",
+                },
             },
-            "required": ["patterns"]
+            "required": ["patterns"],
         },
-        handler=read_many_files_handler
+        handler=read_many_files_handler,
     )
 
 
-def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
+def create_edit_tool(sandbox: "Sandbox") -> ToolDefinition:
     """Create an edit tool for find/replace in files.
 
     Matches gemini-cli's replace/edit tool. Finds content in a file and
@@ -2077,37 +1960,25 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
         new_content = params.get("new_content")
 
         if not file_path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'file_path' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'file_path' parameter")
 
         if old_content is None:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'old_content' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'old_content' parameter")
 
         if new_content is None:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'new_content' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'new_content' parameter")
 
         try:
             # Read through sandbox
             read_result = await sandbox.read_file(file_path)
-            if not read_result.get('success', False):
+            if not read_result.get("success", False):
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Failed to read file: {read_result.get('error', 'Unknown error')}"
+                    error=f"Failed to read file: {read_result.get('error', 'Unknown error')}",
                 )
 
-            content = read_result.get('content', '')
+            content = read_result.get("content", "")
 
             # Check if old_content exists
             if old_content not in content:
@@ -2116,7 +1987,7 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Could not find the specified content to replace in {file_path}.\n\nFile preview:\n{preview}"
+                    error=f"Could not find the specified content to replace in {file_path}.\n\nFile preview:\n{preview}",
                 )
 
             # Count occurrences
@@ -2125,7 +1996,7 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Found {occurrences} occurrences of the content. Please provide more context to make the match unique."
+                    error=f"Found {occurrences} occurrences of the content. Please provide more context to make the match unique.",
                 )
 
             # Perform replacement
@@ -2133,16 +2004,16 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
 
             # Write through sandbox
             write_result = await sandbox.write_file(file_path, new_file_content)
-            if not write_result.get('success', False):
+            if not write_result.get("success", False):
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Failed to write file: {write_result.get('error', 'Unknown error')}"
+                    error=f"Failed to write file: {write_result.get('error', 'Unknown error')}",
                 )
 
             # Generate simple diff
-            old_lines = old_content.split('\n')
-            new_lines = new_content.split('\n')
+            old_lines = old_content.split("\n")
+            new_lines = new_content.split("\n")
 
             diff_output = f"Edited {file_path}:\n\n"
             diff_output += "--- Before:\n"
@@ -2160,11 +2031,7 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
             return ToolResult(success=True, output=diff_output)
 
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Edit failed: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Edit failed: {str(e)}")
 
     return ToolDefinition(
         name="edit",
@@ -2175,22 +2042,16 @@ def create_edit_tool(sandbox: 'Sandbox') -> ToolDefinition:
         parameters={
             "type": "object",
             "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "Path to the file to edit"
-                },
+                "file_path": {"type": "string", "description": "Path to the file to edit"},
                 "old_content": {
                     "type": "string",
-                    "description": "The exact content to find and replace (must be unique in file)"
+                    "description": "The exact content to find and replace (must be unique in file)",
                 },
-                "new_content": {
-                    "type": "string",
-                    "description": "The new content to replace with"
-                }
+                "new_content": {"type": "string", "description": "The new content to replace with"},
             },
-            "required": ["file_path", "old_content", "new_content"]
+            "required": ["file_path", "old_content", "new_content"],
         },
-        handler=edit_handler
+        handler=edit_handler,
     )
 
 
@@ -2242,10 +2103,10 @@ def _validate_code_path(
     )
 
     # Normalize path
-    normalized = os.path.normpath(path).lstrip('/')
+    normalized = os.path.normpath(path).lstrip("/")
 
     # Check traversal
-    if '..' in normalized or os.path.isabs(path):
+    if ".." in normalized or os.path.isabs(path):
         logger.warning("code_tools.path_traversal_blocked", path=path)
         return False, "Path traversal not allowed"
 
@@ -2311,7 +2172,7 @@ def create_code_read_file_tool(
             logger.warning("code_tools.read_file.rejected", file_path=file_path, reason=err)
             return ToolResult(success=False, output=None, error=err)
 
-        full_path = os.path.join(base_dir, os.path.normpath(file_path).lstrip('/'))
+        full_path = os.path.join(base_dir, os.path.normpath(file_path).lstrip("/"))
         if not os.path.exists(full_path):
             return ToolResult(
                 success=False,
@@ -2622,20 +2483,24 @@ def create_code_list_directory_tool(
                 mtime = datetime.fromtimestamp(os.path.getmtime(item_path))
 
                 if os.path.isdir(item_path):
-                    entries.append({
-                        "name": name + "/",
-                        "type": "dir",
-                        "size": "-",
-                        "modified": mtime.strftime("%Y-%m-%d %H:%M"),
-                    })
+                    entries.append(
+                        {
+                            "name": name + "/",
+                            "type": "dir",
+                            "size": "-",
+                            "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                        }
+                    )
                 else:
                     size = os.path.getsize(item_path)
-                    entries.append({
-                        "name": name,
-                        "type": "file",
-                        "size": _format_size(size),
-                        "modified": mtime.strftime("%Y-%m-%d %H:%M"),
-                    })
+                    entries.append(
+                        {
+                            "name": name,
+                            "type": "file",
+                            "size": _format_size(size),
+                            "modified": mtime.strftime("%Y-%m-%d %H:%M"),
+                        }
+                    )
 
             # Sort: directories first, then files, alphabetically
             entries.sort(key=lambda e: (0 if e["type"] == "dir" else 1, e["name"].lower()))
@@ -2708,18 +2573,10 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
         append = params.get("append", False)
 
         if not file_path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'file_path' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'file_path' parameter")
 
         if content is None:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'content' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'content' parameter")
 
         # Resolve path relative to base_dir
         if not os.path.isabs(file_path):
@@ -2737,7 +2594,7 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error="Access denied: path traversal not allowed. Path must be within base directory."
+                error="Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         # Block symlinks pointing outside base_dir
@@ -2747,7 +2604,7 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
                 return ToolResult(
                     success=False,
                     output=None,
-                    error="Access denied: symlink target is outside base directory."
+                    error="Access denied: symlink target is outside base directory.",
                 )
 
         try:
@@ -2770,15 +2627,11 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=True,
                 output=f"{action} {file_path} ({len(content)} bytes written, total size: {file_size} bytes)",
-                error=None
+                error=None,
             )
         except (OSError, ValueError) as e:
             logger.error("tool.write_file.error", file_path=file_path, error=str(e))
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to write file: {e}"
-            )
+            return ToolResult(success=False, output=None, error=f"Failed to write file: {e}")
 
     return ToolDefinition(
         name="write_file",
@@ -2788,28 +2641,25 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the file to write (relative to workspace root)"
+                    "description": "Path to the file to write (relative to workspace root)",
                 },
-                "content": {
-                    "type": "string",
-                    "description": "Content to write to the file"
-                },
+                "content": {"type": "string", "description": "Content to write to the file"},
                 "append": {
                     "type": "boolean",
-                    "description": "If true, append to the file instead of overwriting. Default: false"
-                }
+                    "description": "If true, append to the file instead of overwriting. Default: false",
+                },
             },
-            "required": ["file_path", "content"]
+            "required": ["file_path", "content"],
         },
-        handler=write_file_handler
+        handler=write_file_handler,
     )
 
 
 def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
     """Create a read_pdf_section tool for reading specific sections from indexed PDFs.
 
-    Allows agents to drill into specific sections of a PDF document that has been
-    indexed with PageIndex. The agent can search by section title (case-insensitive)
+    Allows agents to drill into specific sections of a PDF document that has a
+    Dokumen tree index. The agent can search by section title (case-insensitive)
     or by node_id from the tree index.
 
     Args:
@@ -2896,17 +2746,9 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
         section = params.get("section")
 
         if not file_path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'file_path' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'file_path' parameter")
         if not section:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'section' parameter"
-            )
+            return ToolResult(success=False, output=None, error="Missing 'section' parameter")
 
         logger.info(
             "read_pdf_section called",
@@ -2919,7 +2761,10 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
         # Path traversal protection
         normalized_base = os.path.realpath(base_dir)
         normalized_folder = os.path.realpath(pdf_folder)
-        if not normalized_folder.startswith(normalized_base + os.sep) and normalized_folder != normalized_base:
+        if (
+            not normalized_folder.startswith(normalized_base + os.sep)
+            and normalized_folder != normalized_base
+        ):
             logger.warning(
                 "read_pdf_section path traversal blocked",
                 extra={"file_path": file_path, "resolved": pdf_folder},
@@ -2927,7 +2772,7 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error="Access denied: path traversal not allowed. Path must be within base directory."
+                error="Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         # Find _tree_index.json
@@ -2944,7 +2789,7 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
                     f"No tree index found at '{file_path}'. "
                     "Use read_file on the PDF folder first to see the tree overview, "
                     "or import the PDF through the Dokumen UI to create a tree index."
-                )
+                ),
             )
 
         # Load tree index
@@ -2952,8 +2797,9 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
             with open(tree_index_path, "r", encoding="utf-8") as f:
                 tree_data = json.load(f)
 
-            from dokumen_pageindex.types import DocumentTree
-            tree = DocumentTree.from_dict(tree_data)
+            from .pdf_tree import parse_pdf_tree
+
+            tree = parse_pdf_tree(tree_data)
         except Exception as e:
             logger.error(
                 "read_pdf_section: failed to load tree index",
@@ -2961,9 +2807,7 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
                 exc_info=True,
             )
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to read tree index: {str(e)}"
+                success=False, output=None, error=f"Failed to read tree index: {str(e)}"
             )
 
         # Search for the section — try node_id first, then title
@@ -2987,7 +2831,7 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
                 error=(
                     f"Section '{section}' not found in the tree index.\n\n"
                     f"Available top-level sections:\n{hint}"
-                )
+                ),
             )
 
         logger.info(
@@ -3017,14 +2861,14 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the PDF folder or PDF file"
+                    "description": "Path to the PDF folder or PDF file",
                 },
                 "section": {
                     "type": "string",
-                    "description": "Section title or node ID to find in the tree index"
-                }
+                    "description": "Section title or node ID to find in the tree index",
+                },
             },
-            "required": ["file_path", "section"]
+            "required": ["file_path", "section"],
         },
         handler=read_pdf_section_handler,
     )
@@ -3050,6 +2894,7 @@ SANDBOX_TOOLS = {
     "search_file_content": create_grep_tool,
 }
 
+
 # Phase 0: Standalone tools (don't require sandbox)
 def _create_new_web_fetch_tool(sandbox=None, **kwargs):
     """default web_fetch — uses the improved WebFetcher with ProviderSummarizer (haiku)."""
@@ -3060,6 +2905,7 @@ def _create_new_web_fetch_tool(sandbox=None, **kwargs):
         summarizer = None
         try:
             from .test_builder import get_configured_provider, create_provider
+
             provider = create_provider("anthropic", model="claude-haiku-4-5-20251001")
             if provider:
                 summarizer = ProviderSummarizer(provider)
@@ -3071,6 +2917,7 @@ def _create_new_web_fetch_tool(sandbox=None, **kwargs):
     except Exception:
         # fallback to legacy if anything goes wrong
         return create_http_request_tool(sandbox=sandbox)
+
 
 # legacy_web_fetch: the old raw HTTP tool, kept as fallback
 legacy_web_fetch = create_http_request_tool
@@ -3089,6 +2936,7 @@ CONTEXT_TOOLS = {}
 # these let the executor create/track subtasks mid-run
 TASK_TOOLS = {}
 
+
 def _register_task_tools():
     """lazily register task tools from dokumen.tasks.tools."""
     global TASK_TOOLS
@@ -3096,6 +2944,7 @@ def _register_task_tools():
         return
     try:
         from .tasks.tools import TASK_TOOL_DEFINITIONS
+
         for defn in TASK_TOOL_DEFINITIONS:
             name = defn["name"]
             handler = defn["handler"]
@@ -3108,6 +2957,7 @@ def _register_task_tools():
         logger.info("tools.task_tools_registered", extra={"count": len(TASK_TOOLS)})
     except ImportError as e:
         logger.debug("tools.task_tools_unavailable", extra={"error": str(e)})
+
 
 # Code repository tools (read-only, for cross-referencing docs with code)
 CODE_TOOLS = {
@@ -3127,6 +2977,7 @@ def _is_cgc_available() -> bool:
     """Check if codegraphcontext package is installed."""
     try:
         import codegraphcontext  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -3141,9 +2992,13 @@ def _get_cgc_service():
     """
     try:
         from backend.services.cgc_index_service import CGCIndexService
+
         return CGCIndexService()
     except ImportError:
-        logger.debug("code_graph_tools.inline_service", msg="Using inline CGCIndexService (backend not importable)")
+        logger.debug(
+            "code_graph_tools.inline_service",
+            msg="Using inline CGCIndexService (backend not importable)",
+        )
         # Inline minimal service for standalone CLI usage
         import time
 
@@ -3157,6 +3012,7 @@ def _get_cgc_service():
                 if self._server is not None:
                     return self._server
                 from codegraphcontext.server import MCPServer
+
                 server = MCPServer()
                 result = server.add_code_to_graph_tool(path=clone_dir)
                 if result.get("error"):
@@ -3164,11 +3020,17 @@ def _get_cgc_service():
                 self._server = server
                 return server
 
-            def find_code(self, clone_dir, company_id, repo_name, query, fuzzy=False, edit_distance=2):
+            def find_code(
+                self, clone_dir, company_id, repo_name, query, fuzzy=False, edit_distance=2
+            ):
                 server = self._ensure_index(clone_dir)
-                return server.find_code_tool(query=query, fuzzy_search=fuzzy, edit_distance=edit_distance)
+                return server.find_code_tool(
+                    query=query, fuzzy_search=fuzzy, edit_distance=edit_distance
+                )
 
-            def analyze_relationships(self, clone_dir, company_id, repo_name, query_type, target, context=None):
+            def analyze_relationships(
+                self, clone_dir, company_id, repo_name, query_type, target, context=None
+            ):
                 server = self._ensure_index(clone_dir)
                 args = {"query_type": query_type, "target": target}
                 if context:
@@ -3177,7 +3039,9 @@ def _get_cgc_service():
 
             def find_dead_code(self, clone_dir, company_id, repo_name, exclude_decorated_with=None):
                 server = self._ensure_index(clone_dir)
-                return server.find_dead_code_tool(exclude_decorated_with=exclude_decorated_with or [])
+                return server.find_dead_code_tool(
+                    exclude_decorated_with=exclude_decorated_with or []
+                )
 
             def find_most_complex(self, clone_dir, company_id, repo_name, limit=10):
                 server = self._ensure_index(clone_dir)
@@ -3245,8 +3109,11 @@ def create_code_graph_find_tool(
                 return ToolResult(success=False, output=None, error=result["error"])
 
             import json
+
             output = json.dumps(result, indent=2, default=str)
-            logger.info("code_graph_tools.find.success", result_count=len(result.get("results", [])))
+            logger.info(
+                "code_graph_tools.find.success", result_count=len(result.get("results", []))
+            )
             return ToolResult(success=True, output=output)
         except Exception as e:
             logger.error("code_graph_tools.find.exception", error=str(e), exc_info=True)
@@ -3345,12 +3212,15 @@ def create_code_graph_relationships_tool(
                 return ToolResult(success=False, output=None, error=result["error"])
 
             import json
+
             output = json.dumps(result, indent=2, default=str)
             logger.info("code_graph_tools.relationships.success", query_type=query_type)
             return ToolResult(success=True, output=output)
         except Exception as e:
             logger.error("code_graph_tools.relationships.exception", error=str(e), exc_info=True)
-            return ToolResult(success=False, output=None, error=f"Code graph relationships failed: {e}")
+            return ToolResult(
+                success=False, output=None, error=f"Code graph relationships failed: {e}"
+            )
 
     return ToolDefinition(
         name="code_graph_relationships",
@@ -3434,6 +3304,7 @@ def create_code_graph_dead_code_tool(
                 return ToolResult(success=False, output=None, error=result["error"])
 
             import json
+
             output = json.dumps(result, indent=2, default=str)
             logger.info(
                 "code_graph_tools.dead_code.success",
@@ -3442,7 +3313,9 @@ def create_code_graph_dead_code_tool(
             return ToolResult(success=True, output=output)
         except Exception as e:
             logger.error("code_graph_tools.dead_code.exception", error=str(e), exc_info=True)
-            return ToolResult(success=False, output=None, error=f"Code graph dead code detection failed: {e}")
+            return ToolResult(
+                success=False, output=None, error=f"Code graph dead code detection failed: {e}"
+            )
 
     return ToolDefinition(
         name="code_graph_dead_code",
@@ -3516,6 +3389,7 @@ def create_code_graph_complexity_tool(
                 return ToolResult(success=False, output=None, error=result["error"])
 
             import json
+
             output = json.dumps(result, indent=2, default=str)
             logger.info(
                 "code_graph_tools.complexity.success",
@@ -3524,7 +3398,9 @@ def create_code_graph_complexity_tool(
             return ToolResult(success=True, output=output)
         except Exception as e:
             logger.error("code_graph_tools.complexity.exception", error=str(e), exc_info=True)
-            return ToolResult(success=False, output=None, error=f"Code graph complexity analysis failed: {e}")
+            return ToolResult(
+                success=False, output=None, error=f"Code graph complexity analysis failed: {e}"
+            )
 
     return ToolDefinition(
         name="code_graph_complexity",
@@ -3558,7 +3434,7 @@ CODE_GRAPH_TOOLS = {
 def resolve_builtin_tool(
     tool_name: str,
     base_dir: str = ".",
-    sandbox: Optional['Sandbox'] = None,
+    sandbox: Optional["Sandbox"] = None,
     perplexity_config: Optional[dict] = None,
 ) -> Optional[ToolDefinition]:
     """Resolve a built-in tool by name.
@@ -3627,13 +3503,13 @@ def get_all_tool_names() -> List[str]:
     """
     _register_task_tools()
     return (
-        list(BUILTIN_TOOLS.keys()) +
-        list(SANDBOX_TOOLS.keys()) +
-        list(STANDALONE_TOOLS.keys()) +
-        list(CONTEXT_TOOLS.keys()) +
-        list(CODE_TOOLS.keys()) +
-        list(CODE_GRAPH_TOOLS.keys()) +
-        list(TASK_TOOLS.keys())
+        list(BUILTIN_TOOLS.keys())
+        + list(SANDBOX_TOOLS.keys())
+        + list(STANDALONE_TOOLS.keys())
+        + list(CONTEXT_TOOLS.keys())
+        + list(CODE_TOOLS.keys())
+        + list(CODE_GRAPH_TOOLS.keys())
+        + list(TASK_TOOLS.keys())
     )
 
 
@@ -3659,18 +3535,14 @@ def create_create_test_tool(base_dir: str = ".") -> ToolDefinition:
         test_type = params.get("type", "standard")
 
         if not goal:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: goal"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: goal")
 
         # Validate test_type
         if test_type not in ("standard", "browser"):
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Invalid type: '{test_type}'. Must be 'standard' or 'browser'"
+                error=f"Invalid type: '{test_type}'. Must be 'standard' or 'browser'",
             )
 
         try:
@@ -3708,22 +3580,18 @@ def create_create_test_tool(base_dir: str = ".") -> ToolDefinition:
                         "scaffold_yaml": result.scaffold_yaml,
                         "discovered_files": result.discovered_files,
                         "suggested_path": f"tests/{result.name}.test.yaml",
-                    }
+                    },
                 )
             else:
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=result.error or "Failed to generate test scaffold"
+                    error=result.error or "Failed to generate test scaffold",
                 )
 
         except Exception as e:
             logger.error(f"create_test failed: {e}", exc_info=True)
-            return ToolResult(
-                success=False,
-                output=None,
-                error=str(e)
-            )
+            return ToolResult(success=False, output=None, error=str(e))
 
     return ToolDefinition(
         name="create_test",
@@ -3741,20 +3609,20 @@ def create_create_test_tool(base_dir: str = ".") -> ToolDefinition:
                     "description": (
                         "What the test should validate "
                         "(e.g., 'Verify refund policy handles 30-day returns')"
-                    )
+                    ),
                 },
                 "name": {
                     "type": "string",
                     "description": (
                         "Test name in kebab-case (optional, auto-generated from goal if not provided)"
-                    )
+                    ),
                 },
                 "files": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
                         "Documentation files to test (optional, auto-discovered if not provided)"
-                    )
+                    ),
                 },
                 "type": {
                     "type": "string",
@@ -3762,12 +3630,12 @@ def create_create_test_tool(base_dir: str = ".") -> ToolDefinition:
                     "description": (
                         "Test type: 'standard' for documentation validation (default), "
                         "'browser' for browser automation tests"
-                    )
-                }
+                    ),
+                },
             },
-            "required": ["goal"]
+            "required": ["goal"],
         },
-        handler=create_test_handler
+        handler=create_test_handler,
     )
 
 
@@ -3795,25 +3663,17 @@ def create_chat_write_file_tool(base_dir: str = ".") -> ToolDefinition:
         content = params.get("content")
 
         if not path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: path"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: path")
 
         if content is None:
             return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: content"
+                success=False, output=None, error="Missing required parameter: content"
             )
 
         # Validate path: no traversal
         if ".." in path:
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Path traversal not allowed: {path}"
+                success=False, output=None, error=f"Path traversal not allowed: {path}"
             )
 
         # Validate path: must start with allowed prefix
@@ -3822,7 +3682,7 @@ def create_chat_write_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Write not allowed outside docs/ and tests/: {path}"
+                error=f"Write not allowed outside docs/ and tests/: {path}",
             )
 
         # Write to local filesystem
@@ -3840,14 +3700,10 @@ def create_chat_write_file_tool(base_dir: str = ".") -> ToolDefinition:
                     "path": normalized,
                     "bytes": len(content.encode("utf-8")),
                     "message": f"File {action}: {normalized}",
-                }
+                },
             )
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to write file: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Failed to write file: {str(e)}")
 
     return ToolDefinition(
         name="write_file",
@@ -3865,16 +3721,13 @@ def create_chat_write_file_tool(base_dir: str = ".") -> ToolDefinition:
                     "description": (
                         "File path relative to project root "
                         "(e.g., 'tests/my-test.test.yaml' or 'docs/policy.md')"
-                    )
+                    ),
                 },
-                "content": {
-                    "type": "string",
-                    "description": "The file content to write"
-                }
+                "content": {"type": "string", "description": "The file content to write"},
             },
-            "required": ["path", "content"]
+            "required": ["path", "content"],
         },
-        handler=write_file_handler
+        handler=write_file_handler,
     )
 
 
@@ -3900,18 +3753,12 @@ def create_chat_delete_file_tool(base_dir: str = ".") -> ToolDefinition:
         path = params.get("path")
 
         if not path:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: path"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: path")
 
         # Validate path: no traversal
         if ".." in path:
             return ToolResult(
-                success=False,
-                output=None,
-                error=f"Path traversal not allowed: {path}"
+                success=False, output=None, error=f"Path traversal not allowed: {path}"
             )
 
         # Validate path: must start with allowed prefix
@@ -3920,17 +3767,13 @@ def create_chat_delete_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Delete not allowed outside docs/ and tests/: {path}"
+                error=f"Delete not allowed outside docs/ and tests/: {path}",
             )
 
         # Check file exists
         full_path = Path(base_dir) / normalized
         if not full_path.exists():
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"File not found: {normalized}"
-            )
+            return ToolResult(success=False, output=None, error=f"File not found: {normalized}")
 
         # Delete the file
         try:
@@ -3946,14 +3789,10 @@ def create_chat_delete_file_tool(base_dir: str = ".") -> ToolDefinition:
                     "action": "deleted",
                     "path": normalized,
                     "message": f"File deleted: {normalized}",
-                }
+                },
             )
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Failed to delete file: {str(e)}"
-            )
+            return ToolResult(success=False, output=None, error=f"Failed to delete file: {str(e)}")
 
     return ToolDefinition(
         name="delete_file",
@@ -3970,12 +3809,12 @@ def create_chat_delete_file_tool(base_dir: str = ".") -> ToolDefinition:
                     "description": (
                         "File path relative to project root "
                         "(e.g., 'tests/old-test.test.yaml' or 'docs/outdated.md')"
-                    )
+                    ),
                 }
             },
-            "required": ["path"]
+            "required": ["path"],
         },
-        handler=delete_file_handler
+        handler=delete_file_handler,
     )
 
 
@@ -3997,11 +3836,7 @@ def create_re_explore_tool() -> ToolDefinition:
         topic = params.get("topic", "")
 
         if not topic:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing required parameter: topic"
-            )
+            return ToolResult(success=False, output=None, error="Missing required parameter: topic")
 
         # The actual re-explore is handled by AskAgent when it sees this tool
         # This handler just validates the params
@@ -4011,7 +3846,7 @@ def create_re_explore_tool() -> ToolDefinition:
                 "action": "re_explore_requested",
                 "topic": topic,
                 "message": f"Re-exploring codebase for: {topic}",
-            }
+            },
         )
 
     return ToolDefinition(
@@ -4032,12 +3867,12 @@ def create_re_explore_tool() -> ToolDefinition:
                     "description": (
                         "What to search for in the re-exploration "
                         "(e.g., 'authentication API endpoints' or 'refund policy documentation')"
-                    )
+                    ),
                 }
             },
-            "required": ["topic"]
+            "required": ["topic"],
         },
-        handler=re_explore_handler
+        handler=re_explore_handler,
     )
 
 
@@ -4138,9 +3973,7 @@ def create_explore_tool(config, project_root: str) -> ToolDefinition:
                 )
 
             # Build output summary
-            file_list = "\n".join(
-                f"- {f.path}: {f.summary}" for f in result.files
-            )
+            file_list = "\n".join(f"- {f.path}: {f.summary}" for f in result.files)
             output = (
                 f"Exploration complete. Found {len(result.files)} relevant files "
                 f"in {result.duration:.1f}s.\n\n"
@@ -4257,15 +4090,9 @@ def create_ask_tool(config, project_root: str) -> ToolDefinition:
             sources_str = ""
             if result.sources:
                 sources_list = [str(s) for s in result.sources]
-                sources_str = "\n\nSources:\n" + "\n".join(
-                    f"- {s}" for s in sources_list
-                )
+                sources_str = "\n\nSources:\n" + "\n".join(f"- {s}" for s in sources_list)
 
-            output = (
-                f"{result.answer}"
-                f"{sources_str}\n\n"
-                f"Confidence: {result.confidence}"
-            )
+            output = f"{result.answer}" f"{sources_str}\n\n" f"Confidence: {result.confidence}"
 
             logger.info(
                 "agent_tools.ask.complete",

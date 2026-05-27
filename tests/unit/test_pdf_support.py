@@ -1,8 +1,7 @@
-"""Test PDF file handling in read_file tool (v2 — tree-index-aware).
+"""Test PDF file handling in read_file tool.
 
-After Phase 2 (PageIndex integration), read_file no longer sends raw PDF bytes.
-Instead, it checks for _tree_index.json in PDF folders and returns structured
-tree overviews. Raw PDFs without tree indexes return guidance to import first.
+read_file checks for _tree_index.json in PDF folders and returns structured tree
+overviews. Raw PDFs without tree indexes return guidance to import first.
 """
 import json
 import pytest

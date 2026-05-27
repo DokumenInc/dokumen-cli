@@ -9,6 +9,7 @@ Thin orchestrator that delegates to focused sub-modules:
 
 All public symbols are re-exported here for backward compatibility.
 """
+
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
@@ -161,6 +162,7 @@ collect_skills = _collect_skills
 
 # ── Orchestrator: load_scaffold ───────────────────────────────────────────────
 
+
 def load_scaffold(
     yaml_path: str,
     provider=None,
@@ -223,7 +225,7 @@ def load_scaffold(
     if not validation.valid:
         raise ValueError(f"Invalid scaffold: {', '.join(validation.errors)}")
 
-    name = data['name']
+    name = data["name"]
     base_dir = project_root or find_project_root(yaml_path)
     prompt_variables = {"working_dir": base_dir}
 
@@ -240,38 +242,47 @@ def load_scaffold(
             logger.warning("loader.overrides_errors", scaffold=yaml_path, errors=overrides.errors)
 
     # ── Step 3: Resolve per-test model providers ──────────────────────────
-    scaffold_executor_model = normalize_raw_model(data.get('executor_model'))
-    scaffold_judge_model = normalize_raw_model(data.get('judge_model'))
+    scaffold_executor_model = normalize_raw_model(data.get("executor_model"))
+    scaffold_judge_model = normalize_raw_model(data.get("judge_model"))
 
     actual_executor_provider = _resolve_per_test_provider(
-        scaffold_executor_model, provider_name, api_key,
-        executor_provider or provider, name, "executor"
+        scaffold_executor_model,
+        provider_name,
+        api_key,
+        executor_provider or provider,
+        name,
+        "executor",
     )
     actual_judge_provider = _resolve_per_test_provider(
-        scaffold_judge_model, provider_name, api_key,
-        judge_provider or provider, name, "judge"
+        scaffold_judge_model, provider_name, api_key, judge_provider or provider, name, "judge"
     )
 
-    browser_config = parse_browser_config(data.get('browser'))
+    browser_config = parse_browser_config(data.get("browser"))
 
     # ── Step 4: Resolve agent definitions ─────────────────────────────────
-    executor_data = data['executor']
+    executor_data = data["executor"]
+    if data.get("type") == "browser" and not data.get("agent") and not executor_data.get("agent"):
+        executor_data["agent"] = "browser-tester"
+    elif data.get("agent") and not executor_data.get("agent"):
+        executor_data["agent"] = data["agent"]
     user_dirs = compute_user_dirs(base_dir, agents_config)
 
-    agent_def = resolve_executor_agent(
-        executor_data, data, name, user_dirs=user_dirs
-    )
+    agent_def = resolve_executor_agent(executor_data, data, name, user_dirs=user_dirs)
 
     # Re-parse browser config if agent injected one
-    if agent_def and data.get('browser') and browser_config is None:
-        browser_config = parse_browser_config(data['browser'])
+    if agent_def and data.get("browser") and browser_config is None:
+        browser_config = parse_browser_config(data["browser"])
 
-    scaffold_agent = executor_data.get('agent')
-    scaffold_outputs = data.get('outputs')
+    scaffold_agent = executor_data.get("agent")
+    scaffold_outputs = data.get("outputs")
 
     # ── Step 5: Derive capability flags ───────────────────────────────────
     agent_capabilities = get_agent_capabilities(agent_def)
-    is_browser_agent = "browser" in agent_capabilities
+    is_browser_agent = (
+        "browser" in agent_capabilities
+        or data.get("type") == "browser"
+        or bool(data.get("browser") and scaffold_agent == "browser-tester")
+    )
     is_research_agent = "research" in agent_capabilities
     is_code_agent = "code" in agent_capabilities
 
@@ -279,48 +290,61 @@ def load_scaffold(
     provenance = ToolProvenance(overrides_active=overrides is not None)
 
     executor_tool_names = determine_executor_tool_names(
-        executor_data.get('tools', None), tools_config, name, provenance
+        executor_data.get("tools", None), tools_config, name, provenance
     )
 
     enforce_allowed_list(executor_tool_names, tools_config, name)
 
     executor_tool_names, auto_injected_tools = auto_inject_tools(
         executor_tool_names,
-        is_browser_agent, is_research_agent, is_code_agent,
-        tools_config, name, provenance,
+        is_browser_agent,
+        is_research_agent,
+        is_code_agent,
+        tools_config,
+        name,
+        provenance,
     )
 
     executor_tool_names = filter_tools_with_overrides(
-        executor_tool_names, auto_injected_tools,
-        overrides, tools_config, name, scaffold_agent, provenance,
+        executor_tool_names,
+        auto_injected_tools,
+        overrides,
+        tools_config,
+        name,
+        scaffold_agent,
+        provenance,
     )
 
     executor_max_iterations = parse_max_iterations(
-        executor_data.get('max_iterations'),
-        default=default_executor_iterations(executor_tool_names)
+        executor_data.get("max_iterations"),
+        default=default_executor_iterations(executor_tool_names),
     )
     executor_tools = resolve_tools(
-        executor_tool_names, base_dir=base_dir,
-        tools_config=tools_config, code_repos_config=code_repos_config,
+        executor_tool_names,
+        base_dir=base_dir,
+        tools_config=tools_config,
+        code_repos_config=code_repos_config,
     )
 
     # ── Step 7: Build executor system prompt with skills ──────────────────
-    raw_system_prompt = executor_data.get('system_prompt', '')
+    raw_system_prompt = executor_data.get("system_prompt", "")
     executor_system_prompt = substitute_prompt_variables(raw_system_prompt, prompt_variables)
 
     if agent_def:
         logger.info(
             "loader.agent_inline_prompt",
-            scaffold=name, agent=scaffold_agent,
+            scaffold=name,
+            agent=scaffold_agent,
             prompt_length=len(executor_system_prompt),
         )
 
-    executor_skill_names = executor_data.get('skills', None)
+    executor_skill_names = executor_data.get("skills", None)
     executor_skills = collect_skills(scaffold_skill_names=executor_skill_names, base_dir=base_dir)
     if executor_skills:
         executor_system_prompt += format_skills_for_prompt(executor_skills)
         logger.info(
-            "loader.executor_skills_injected", scaffold=name,
+            "loader.executor_skills_injected",
+            scaffold=name,
             skill_count=len(executor_skills),
             skill_names=[s[0] for s in executor_skills],
         )
@@ -341,7 +365,7 @@ def load_scaffold(
 
     # ── Step 9: Build judges ──────────────────────────────────────────────
     judges = []
-    for judge_data in data['judges']:
+    for judge_data in data["judges"]:
         judge = _build_single_judge(
             judge_data=judge_data,
             data=data,
@@ -363,16 +387,15 @@ def load_scaffold(
 
     # ── Step 10: Auto-inject research judges ──────────────────────────────
     if is_research_agent:
-        _inject_research_judges(
-            judges, actual_judge_provider, tools_config, provenance, name
-        )
+        _inject_research_judges(judges, actual_judge_provider, tools_config, provenance, name)
 
     # ── Step 11: Extract file paths ───────────────────────────────────────
-    file_paths = extract_file_paths(data.get('files', []))
+    file_paths = extract_file_paths(data.get("files", []))
 
     # ── Step 12: Build TestObject ─────────────────────────────────────────
     logger.info(
-        "tool_provenance.built", scaffold=name,
+        "tool_provenance.built",
+        scaffold=name,
         executor_tools=len(provenance.executor_tools),
         judge_count=len(provenance.judge_tools),
         overrides_active=provenance.overrides_active,
@@ -380,9 +403,10 @@ def load_scaffold(
     )
 
     setup_steps = None
-    raw_setup = data.get('setup')
+    raw_setup = data.get("setup")
     if raw_setup:
         from dokumen_schema.models import SetupStep
+
         setup_steps = [SetupStep(**s) for s in raw_setup]
         logger.info("loader.setup_steps.parsed", scaffold=name, step_count=len(setup_steps))
 
@@ -390,40 +414,46 @@ def load_scaffold(
     all_skills = _collect_all_skills(executor_skills, data, base_dir)
 
     # per-scaffold overrides for coordinator/compaction (optional in yaml)
-    scaffold_coordinator = data.get('coordinator')
+    scaffold_coordinator = data.get("coordinator")
     if scaffold_coordinator and isinstance(scaffold_coordinator, dict):
         from .config import CoordinatorConfig
+
         try:
-            coordinator_config = CoordinatorConfig(**{
-                **(coordinator_config.model_dump() if coordinator_config else {}),
-                **scaffold_coordinator,
-            })
+            coordinator_config = CoordinatorConfig(
+                **{
+                    **(coordinator_config.model_dump() if coordinator_config else {}),
+                    **scaffold_coordinator,
+                }
+            )
         except Exception as e:
             logger.warning("loader.coordinator_config.error", scaffold=name, error=str(e))
 
-    scaffold_compaction = data.get('compaction')
+    scaffold_compaction = data.get("compaction")
     if scaffold_compaction and isinstance(scaffold_compaction, dict):
         from .config import CompactionConfig
+
         try:
-            compaction_config = CompactionConfig(**{
-                **(compaction_config.model_dump() if compaction_config else {}),
-                **scaffold_compaction,
-            })
+            compaction_config = CompactionConfig(
+                **{
+                    **(compaction_config.model_dump() if compaction_config else {}),
+                    **scaffold_compaction,
+                }
+            )
         except Exception as e:
             logger.warning("loader.compaction_config.error", scaffold=name, error=str(e))
 
     return TestObject(
-        id=data['name'],
-        reason=data.get('reason', ''),
+        id=data["name"],
+        reason=data.get("reason", ""),
         executor=executor,
         judges=judges,
-        timeout=float(data.get('timeout', 60.0)),
-        retries=int(data.get('retries', 0)),
+        timeout=float(data.get("timeout", 60.0)),
+        retries=int(data.get("retries", 0)),
         source_path=yaml_path,
         files=file_paths,
         explore_config=explore_config,
         browser_config=browser_config,
-        test_type=data.get('type'),
+        test_type=data.get("type"),
         tool_overrides=overrides,
         tool_provenance=provenance,
         setup_steps=setup_steps,
@@ -442,6 +472,7 @@ load_test_from_yaml = load_scaffold
 
 
 # ── Orchestrator: load_all_scaffolds ──────────────────────────────────────────
+
 
 def load_all_scaffolds(
     tests_dir: str = "tests",
@@ -478,15 +509,16 @@ def load_all_scaffolds(
     config = None
     try:
         from .config import load_config
+
         config = load_config(config_path)
         explore_config = config.explore
         execution_config = config.execution
         if tools_config is None:
             tools_config = config.tools
-        compaction_config = getattr(config, 'compaction', None)
-        coordinator_config = getattr(config, 'coordinator', None)
-        tasks_config = getattr(config, 'tasks', None)
-        skills_config = getattr(config, 'skills', None)
+        compaction_config = getattr(config, "compaction", None)
+        coordinator_config = getattr(config, "coordinator", None)
+        tasks_config = getattr(config, "tasks", None)
+        skills_config = getattr(config, "skills", None)
     except Exception:
         explore_config = None
         execution_config = None
@@ -496,10 +528,12 @@ def load_all_scaffolds(
     if config is not None and getattr(config, "code_repos", None):
         try:
             from .secrets import get_gitlab_token
+
             token = get_gitlab_token()
             gitlab_url_fallback = os.environ.get("GITLAB_URL") or os.environ.get("CI_SERVER_URL")
             cloned = clone_code_repos(
-                config.code_repos, token=token,
+                config.code_repos,
+                token=token,
                 gitlab_url_fallback=gitlab_url_fallback,
             )
             if cloned:
@@ -515,12 +549,10 @@ def load_all_scaffolds(
     # Extract provider info for per-test model overrides
     provider_name_for_overrides = None
     api_key_for_overrides = None
-    if config and hasattr(config, 'provider') and config.provider:
+    if config and hasattr(config, "provider") and config.provider:
         provider_name_for_overrides = config.provider.name
     if provider_name_for_overrides:
-        api_key_for_overrides = os.environ.get(
-            f"{provider_name_for_overrides.upper()}_API_KEY"
-        )
+        api_key_for_overrides = os.environ.get(f"{provider_name_for_overrides.upper()}_API_KEY")
     logger.debug(
         "Per-test model override provider info",
         extra={
@@ -534,7 +566,8 @@ def load_all_scaffolds(
     for scaffold_path in discover_scaffolds(tests_dir):
         try:
             test = load_scaffold(
-                scaffold_path, provider,
+                scaffold_path,
+                provider,
                 executor_provider=executor_provider,
                 judge_provider=judge_provider,
                 explore_config=explore_config,
@@ -566,6 +599,7 @@ def load_all_scaffolds(
 
 
 # ── clone_code_repos (kept in loader for backward compat) ─────────────────────
+
 
 def clone_code_repos(
     code_repos: list,
@@ -613,7 +647,9 @@ def clone_code_repos(
         except Exception as e:
             logger.warning(
                 "code_repos.clone.api_failed",
-                repo_name=repo_name, api_url=api_url, error=str(e),
+                repo_name=repo_name,
+                api_url=api_url,
+                error=str(e),
             )
             continue
 
@@ -621,7 +657,8 @@ def clone_code_repos(
         if not http_url:
             logger.warning(
                 "code_repos.clone.no_clone_url",
-                repo_name=repo_name, project_id=repo.gitlab_project_id,
+                repo_name=repo_name,
+                project_id=repo.gitlab_project_id,
             )
             continue
 
@@ -642,29 +679,36 @@ def clone_code_repos(
             logger.info("code_repos.clone.updating", repo_name=repo_name, dest=str(dest))
             subprocess.run(
                 ["git", "-C", str(dest), "fetch", "origin", "--depth=1"],
-                capture_output=True, timeout=120,
+                capture_output=True,
+                timeout=120,
             )
             subprocess.run(
                 ["git", "-C", str(dest), "checkout", branch],
-                capture_output=True, timeout=30,
+                capture_output=True,
+                timeout=30,
             )
             subprocess.run(
                 ["git", "-C", str(dest), "reset", "--hard", f"origin/{branch}"],
-                capture_output=True, timeout=30,
+                capture_output=True,
+                timeout=30,
             )
         else:
             logger.info(
                 "code_repos.clone.cloning",
-                repo_name=repo_name, branch=branch, dest=str(dest),
+                repo_name=repo_name,
+                branch=branch,
+                dest=str(dest),
             )
             proc = subprocess.run(
                 ["git", "clone", "--depth=1", "-b", branch, authenticated_url, str(dest)],
-                capture_output=True, timeout=300,
+                capture_output=True,
+                timeout=300,
             )
             if proc.returncode != 0:
                 logger.warning(
                     "code_repos.clone.clone_failed",
-                    repo_name=repo_name, returncode=proc.returncode,
+                    repo_name=repo_name,
+                    returncode=proc.returncode,
                     stderr=(proc.stderr.decode(errors="replace")[:500] if proc.stderr else ""),
                 )
                 continue
@@ -673,18 +717,21 @@ def clone_code_repos(
             logger.warning("code_repos.clone.dest_missing", repo_name=repo_name, dest=str(dest))
             continue
 
-        result.append({
-            "name": repo_name,
-            "base_dir": str(dest),
-            "include_patterns": list(getattr(repo, "paths_include", [])),
-            "exclude_patterns": list(getattr(repo, "paths_exclude", [])),
-        })
+        result.append(
+            {
+                "name": repo_name,
+                "base_dir": str(dest),
+                "include_patterns": list(getattr(repo, "paths_include", [])),
+                "exclude_patterns": list(getattr(repo, "paths_exclude", [])),
+            }
+        )
         logger.info("code_repos.clone.ready", repo_name=repo_name, base_dir=str(dest))
 
     return result
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
+
 
 def _resolve_per_test_provider(
     scaffold_model: Optional[str],
@@ -749,51 +796,64 @@ def _build_single_judge(
     Handles agent resolution, tool filtering, skill injection, and
     per-judge model overrides.
     """
-    judge_name = judge_data.get('name', 'unknown')
+    judge_name = judge_data.get("name", "unknown")
 
     # Judge agent resolution
     resolve_judge_agent(judge_data, name, judge_name, user_dirs=user_dirs)
 
     # Judge tool names + provenance
-    judge_tool_names = judge_data.get('tools', [])
+    judge_tool_names = judge_data.get("tools", [])
     judge_prov: Dict[str, str] = {}
     for t in judge_tool_names:
         judge_prov[t] = "scaffold"
 
     auto_added_judge_tools: set = set()
-    if not is_browser_agent and not is_research_agent and 'run_shell_command' not in judge_tool_names:
-        judge_tool_names = ['run_shell_command'] + list(judge_tool_names)
-        auto_added_judge_tools.add('run_shell_command')
-        judge_prov['run_shell_command'] = "auto:standard"
+    if (
+        not is_browser_agent
+        and not is_research_agent
+        and "run_shell_command" not in judge_tool_names
+    ):
+        judge_tool_names = ["run_shell_command"] + list(judge_tool_names)
+        auto_added_judge_tools.add("run_shell_command")
+        judge_prov["run_shell_command"] = "auto:standard"
 
     # Apply tool filtering
     judge_tool_names = filter_judge_tools(
-        judge_tool_names, auto_added_judge_tools,
-        overrides, tools_config, name, judge_name,
-        scaffold_agent, judge_prov,
+        judge_tool_names,
+        auto_added_judge_tools,
+        overrides,
+        tools_config,
+        name,
+        judge_name,
+        scaffold_agent,
+        judge_prov,
     )
 
     judge_tools = resolve_tools(
-        judge_tool_names, base_dir=base_dir, tools_config=tools_config,
+        judge_tool_names,
+        base_dir=base_dir,
+        tools_config=tools_config,
     )
 
     judge_system_prompt = substitute_prompt_variables(
-        judge_data.get('system_prompt', ''), prompt_variables
+        judge_data.get("system_prompt", ""), prompt_variables
     )
 
     # Inject skills
-    judge_skill_names = judge_data.get('skills', None)
+    judge_skill_names = judge_data.get("skills", None)
     judge_skills = collect_skills(scaffold_skill_names=judge_skill_names, base_dir=base_dir)
     if judge_skills:
         judge_system_prompt += format_skills_for_prompt(judge_skills)
         logger.info(
-            "loader.judge_skills_injected", scaffold=name,
-            judge=judge_name, skill_count=len(judge_skills),
+            "loader.judge_skills_injected",
+            scaffold=name,
+            judge=judge_name,
+            skill_count=len(judge_skills),
             skill_names=[s[0] for s in judge_skills],
         )
 
     # Per-judge model override
-    raw_judge_model = normalize_raw_model(judge_data.get('model'))
+    raw_judge_model = normalize_raw_model(judge_data.get("model"))
     if raw_judge_model and provider_name and api_key:
         logger.info(
             "Using per-judge model",
@@ -808,8 +868,8 @@ def _build_single_judge(
             )
         judge_provider_for_this = actual_judge_provider
 
-    judge_max_iterations = parse_max_iterations(judge_data.get('max_iterations'))
-    judge_timeout_override = judge_data.get('timeout')
+    judge_max_iterations = parse_max_iterations(judge_data.get("max_iterations"))
+    judge_timeout_override = judge_data.get("timeout")
 
     judge = build_sdk_judge(
         judge_data=judge_data,
@@ -835,26 +895,26 @@ def _inject_research_judges(
     """Auto-inject sources + verdict judges for research agents."""
     existing_judge_names = {j.id for j in judges}
 
-    if 'sources' not in existing_judge_names:
+    if "sources" not in existing_judge_names:
         sources_judge = build_research_judge(
-            judge_id='sources',
+            judge_id="sources",
             prompt=RESEARCH_SOURCES_JUDGE_PROMPT,
             judge_provider=actual_judge_provider,
             tools_config=tools_config,
         )
         judges.append(sources_judge)
-        provenance.judge_tools['sources'] = {}
+        provenance.judge_tools["sources"] = {}
         logger.info("sources judge auto-injected for research agent", scaffold=scaffold_name)
 
-    if 'verdict' not in existing_judge_names:
+    if "verdict" not in existing_judge_names:
         verdict_judge = build_research_judge(
-            judge_id='verdict',
+            judge_id="verdict",
             prompt=RESEARCH_VERDICT_JUDGE_PROMPT,
             judge_provider=actual_judge_provider,
             tools_config=tools_config,
         )
         judges.append(verdict_judge)
-        provenance.judge_tools['verdict'] = {}
+        provenance.judge_tools["verdict"] = {}
         logger.info("verdict judge auto-injected for research agent", scaffold=scaffold_name)
 
 
@@ -872,8 +932,8 @@ def _collect_all_skills(
                 "source": skill_source,
                 "used_by": "executor",
             }
-    for judge_data_item in data['judges']:
-        judge_skill_names_item = judge_data_item.get('skills', None)
+    for judge_data_item in data["judges"]:
+        judge_skill_names_item = judge_data_item.get("skills", None)
         if judge_skill_names_item:
             try:
                 judge_skills_item = collect_skills(

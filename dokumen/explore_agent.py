@@ -7,10 +7,10 @@ relevant documentation files and provide context.
 Uses the Claude Agent SDK (via ``SDKQueryRunner``) for LLM interaction,
 with read-only SDK tools (Read, Glob, Grep).
 
-Shared types and utilities live in the ``dokumen_explore`` package
-(``shared/dokumen-explore``). This module keeps the CLI-specific SDK
-integration, system prompts, and debug logging.
+This module keeps the CLI-specific SDK integration, system prompts, local
+result types, and debug logging.
 """
+
 from typing import Any, Callable, Dict, List, Optional
 import asyncio
 import os
@@ -23,7 +23,7 @@ from claude_agent_sdk import (
     ResultMessage,
 )
 
-from dokumen_explore import (
+from .explore_types import (
     ExploreResult,
     ExploreToolRecord,
     FileDiscovery,
@@ -114,9 +114,9 @@ Respond with a natural language description of relevant files:
 Keep your response concise (under 500 words).
 """
 
-# Re-export shared types for backward compatibility.
+# Re-export explore types for backward compatibility.
 # Existing code does ``from dokumen.explore_agent import FileDiscovery, ExploreResult``.
-# The names are already imported at the top from ``dokumen_explore``.
+# The names are already imported at the top from ``dokumen.explore_types``.
 __all__ = [
     "FileDiscovery",
     "ExploreResult",
@@ -195,9 +195,7 @@ class ExploreAgent:
             return EXPLORE_SYSTEM_PROMPT
 
     async def explore(
-        self,
-        goal: str,
-        on_progress: Optional[Callable[[str, Dict], None]] = None
+        self, goal: str, on_progress: Optional[Callable[[str, Dict], None]] = None
     ) -> ExploreResult:
         """Run exploration to discover relevant files.
 
@@ -212,12 +210,6 @@ class ExploreAgent:
         """
         start_time = time.time()
         self._last_assistant_text = ""  # Reset for this run
-
-        # --- Tree Search Fast Path (PageIndex #544) ---
-        tree_result = await self._try_tree_search(goal, on_progress)
-        if tree_result is not None:
-            return tree_result
-        # --- End Tree Search Fast Path ---
 
         # Fail fast with a clear error if no query runner is configured
         if self._runner is None:
@@ -283,7 +275,7 @@ class ExploreAgent:
                 partial_files, partial_summary = self._parse_explore_response(
                     result.get("final_text", "")
                 )
-                partial_files = partial_files[:self.max_files]
+                partial_files = partial_files[: self.max_files]
 
                 return ExploreResult(
                     files=partial_files,
@@ -291,7 +283,7 @@ class ExploreAgent:
                     tool_calls_count=result.get("num_turns", 0),
                     success=False,
                     error=f"SDK query error: {error_msg[:200]}",
-                    summary=partial_summary or f"Exploration encountered an SDK error",
+                    summary=partial_summary or "Exploration encountered an SDK error",
                     tool_history=[],
                     model=self.model,
                 )
@@ -301,17 +293,14 @@ class ExploreAgent:
             files, summary = self._parse_explore_response(final_text)
 
             # Limit files to max_files
-            files = files[:self.max_files]
+            files = files[: self.max_files]
 
             duration = time.time() - start_time
             num_turns = result.get("num_turns", 0)
 
             # Emit complete event
             if on_progress:
-                on_progress("complete", {
-                    "files_found": len(files),
-                    "duration": duration
-                })
+                on_progress("complete", {"files_found": len(files), "duration": duration})
 
             logger.info(
                 "explore.complete",
@@ -320,7 +309,9 @@ class ExploreAgent:
                 num_turns=num_turns,
             )
             if is_debug():
-                debug(f"[EXPLORE] Completed: {len(files)} files found in {duration:.2f}s ({num_turns} turns)")
+                debug(
+                    f"[EXPLORE] Completed: {len(files)} files found in {duration:.2f}s ({num_turns} turns)"
+                )
                 for f in files:
                     debug(f"[EXPLORE]   - {f.path}: {f.summary[:50]}...")
 
@@ -350,7 +341,7 @@ class ExploreAgent:
                 partial_files, partial_summary = self._parse_explore_response(
                     self._last_assistant_text
                 )
-                partial_files = partial_files[:self.max_files]
+                partial_files = partial_files[: self.max_files]
 
             logger.warning(
                 "explore.timeout",
@@ -358,9 +349,7 @@ class ExploreAgent:
                 partial_files_recovered=len(partial_files),
             )
 
-            error_msg = (
-                f"Explore timed out after {duration:.1f}s"
-            )
+            error_msg = f"Explore timed out after {duration:.1f}s"
 
             return ExploreResult(
                 files=partial_files,
@@ -382,7 +371,7 @@ class ExploreAgent:
                 partial_files, partial_summary = self._parse_explore_response(
                     self._last_assistant_text
                 )
-                partial_files = partial_files[:self.max_files]
+                partial_files = partial_files[: self.max_files]
 
             logger.error(
                 "explore.error",
@@ -436,8 +425,7 @@ class ExploreAgent:
                 if hasattr(msg, "content") and msg.content:
                     # Extract text from ContentBlock list and store for timeout handler
                     self._last_assistant_text = "\n".join(
-                        block.text for block in msg.content
-                        if hasattr(block, "text")
+                        block.text for block in msg.content if hasattr(block, "text")
                     )
                     final_text = self._last_assistant_text
             elif isinstance(msg, ResultMessage):
@@ -466,7 +454,7 @@ class ExploreAgent:
     def _parse_explore_response(self, content: str) -> tuple[List[FileDiscovery], str]:
         """Parse the explore response - natural language with file paths.
 
-        Delegates to ``dokumen_explore.extraction`` for the actual parsing.
+        Delegates to the local natural-language path extractor.
 
         Args:
             content: Response content (natural language)
@@ -503,98 +491,3 @@ class ExploreAgent:
                 debug(f"[EXPLORE]   extracted: {f.path}")
 
         return files, summary
-
-    async def _try_tree_search(
-        self,
-        goal: str,
-        on_progress: Optional[Callable] = None,
-    ) -> Optional[ExploreResult]:
-        """Attempt tree-based search using cached tree indexes.
-
-        Returns ExploreResult if tree search produced results, None to fall back
-        to agentic explore.
-        """
-        try:
-            from .config import load_config
-
-            config = load_config()
-            if not config.pageindex.enabled:
-                logger.debug("tree_search.disabled", reason="pageindex.enabled=false")
-                return None
-        except Exception:
-            logger.debug("tree_search.config_load_failed")
-            return None
-
-        try:
-            from .tree_search import CacheTreeDataSource
-
-            data_source = CacheTreeDataSource()
-            # Quick check: any cached trees?
-            documents = await data_source.get_indexed_documents()
-            if not documents:
-                logger.info("tree_search.no_cached_trees")
-                return None
-
-            logger.info(
-                "tree_search.attempting",
-                goal=goal[:100],
-                cached_documents=len(documents),
-            )
-
-            if on_progress:
-                on_progress("start", {"goal": goal, "method": "tree_search"})
-
-            from dokumen_pageindex import TreeSearchService, to_explore_result
-
-            # Need an Anthropic client for the tree search LLM calls
-            import anthropic
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-            if not api_key:
-                logger.debug("tree_search.no_api_key")
-                return None
-
-            client = anthropic.AsyncAnthropic(api_key=api_key)
-
-            service = TreeSearchService(
-                data_source=data_source,
-                anthropic_client=client,
-                model=config.pageindex.model,
-            )
-
-            response = await service.search(
-                query=goal,
-                company_id="",  # CLI is single-tenant
-                max_documents=5,
-                max_results=10,
-            )
-
-            if not response.results:
-                logger.info("tree_search.no_results", documents_searched=response.documents_searched)
-                return None
-
-            # Convert to ExploreResult
-            result = to_explore_result(response)
-
-            logger.info(
-                "tree_search.complete",
-                results_count=len(response.results),
-                documents_searched=response.documents_searched,
-                input_tokens=response.input_tokens,
-                output_tokens=response.output_tokens,
-            )
-
-            if on_progress:
-                on_progress("complete", {
-                    "files_count": len(result.files),
-                    "method": "tree_search",
-                })
-
-            return result
-
-        except Exception as e:
-            logger.warning(
-                "tree_search.error",
-                error=str(e),
-                error_type=type(e).__name__,
-            )
-            return None

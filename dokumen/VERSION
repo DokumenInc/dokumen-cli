@@ -1,7 +1,5 @@
 {
-  "version": "4.0.0",
-  "commit": "2ca0c5e",
-  "build_date": "2026-01-26T00:22:15Z",
+  "version": "4.0.1",
   "component": "cli",
-  "note": "manual deployment from master"
+  "note": "standalone repository import"
 }

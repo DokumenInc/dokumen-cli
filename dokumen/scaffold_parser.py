@@ -4,6 +4,7 @@ Scaffold parsing utilities for the Documentation Unit Test Framework.
 Handles YAML scaffold parsing, prompt variable substitution, browser/viewport
 config parsing, model normalization, and file path extraction.
 """
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
@@ -30,14 +31,36 @@ def substitute_prompt_variables(prompt: str, variables: Dict[str, str]) -> str:
     Returns:
         Prompt with variables substituted
     """
-    if not prompt or not variables:
-        return prompt or ""
+    if not prompt:
+        return ""
 
-    result = prompt
+    result = _resolve_prompt_reference(prompt, variables)
+    if not variables:
+        return result
+
     for key, value in variables.items():
         result = result.replace(f"{{{key}}}", str(value))
 
     return result
+
+
+def _resolve_prompt_reference(prompt: str, variables: Dict[str, str]) -> str:
+    """Load bundled prompt files referenced as @prompts/..."""
+    stripped = prompt.strip()
+    if not stripped.startswith("@prompts/"):
+        return prompt
+
+    prompt_root = Path(__file__).parent / "prompts"
+    relative = stripped.removeprefix("@prompts/")
+    candidate = (prompt_root / relative).resolve()
+    try:
+        candidate.relative_to(prompt_root.resolve())
+    except ValueError:
+        return prompt
+
+    if not candidate.exists() or not candidate.is_file():
+        return prompt
+    return candidate.read_text(encoding="utf-8")
 
 
 def find_project_root(start_path: str) -> str:
@@ -74,7 +97,7 @@ def normalize_raw_model(raw: Any) -> Optional[str]:
     v = raw.strip()
     if not v:
         return None
-    if len(v) > 200 or not re.match(r'^[a-zA-Z0-9._-]+$', v):
+    if len(v) > 200 or not re.match(r"^[a-zA-Z0-9._-]+$", v):
         return None
     return KNOWN_MODEL_ALIASES.get(v, v)
 
@@ -123,9 +146,7 @@ def parse_browser_config(raw: Any) -> Optional[BrowserConfig]:
 
     viewport_size = parse_viewport_size(raw.get("viewport") or raw.get("viewport_size"))
     return BrowserConfig(
-        headless=raw.get("headless"),
-        save_video=raw.get("save_video"),
-        viewport_size=viewport_size
+        headless=raw.get("headless"), save_video=raw.get("save_video"), viewport_size=viewport_size
     )
 
 
@@ -168,9 +189,9 @@ def extract_test_name(scaffold_path: str) -> str:
 
     # Try to extract name from YAML content
     try:
-        with open(scaffold_path, 'r') as f:
+        with open(scaffold_path, "r") as f:
             data = yaml.safe_load(f)
-        name_val = data.get('name') if isinstance(data, dict) else None
+        name_val = data.get("name") if isinstance(data, dict) else None
         if isinstance(name_val, str) and name_val:
             return name_val
     except (OSError, yaml.YAMLError):
@@ -180,9 +201,9 @@ def extract_test_name(scaffold_path: str) -> str:
     path = Path(scaffold_path)
     name = path.name
     # Strip .test.yaml or .test.yml suffix
-    for suffix in ['.test.yaml', '.test.yml']:
+    for suffix in [".test.yaml", ".test.yml"]:
         if name.endswith(suffix):
-            name = name[:-len(suffix)]
+            name = name[: -len(suffix)]
             break
     return name
 
@@ -201,7 +222,7 @@ def extract_file_paths(files_data: list) -> List[str]:
     file_paths = []
     for f in files_data:
         if isinstance(f, dict):
-            file_paths.append(f.get('path', ''))
+            file_paths.append(f.get("path", ""))
         elif isinstance(f, str):
             file_paths.append(f)
     return file_paths

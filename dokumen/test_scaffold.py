@@ -1,7 +1,7 @@
 """
 Test scaffold models for dokumen-cli.
 
-Thin wrapper around dokumen_schema (shared validation package).
+Thin wrapper around the local dokumen_schema validation package.
 Adds filesystem I/O operations on top of the pure validation.
 """
 
@@ -10,7 +10,7 @@ from typing import List
 
 import yaml
 
-# Re-export all models and constants from the shared package
+# Re-export schema models and constants for backward-compatible imports.
 from dokumen_schema import (
     VALID_EXECUTOR_TOOLS,
     BrowserScaffoldConfig,
@@ -104,6 +104,7 @@ def validate_scaffold_file(path: str) -> tuple[bool, List[str], List[str]]:
     result = validate_test_data(raw_data)
     if not result.valid:
         return False, result.errors, result.warnings
+    validation_warnings.extend(result.warnings)
 
     # Additional I/O checks (not in shared package)
     # Check that referenced doc files exist on disk
