@@ -16,12 +16,12 @@ executor:
 
     Use explore_type "docs".
 
-    Then use read_file on tests/fixtures/tool-smoke/source-one.txt.
+    Then use read_file on the first file listed in this scaffold.
 
     Finish with a short report that includes:
     - the explore tool result summary
-    - tests/fixtures/tool-smoke/source-one.txt
-    - tests/fixtures/tool-smoke/source-two.txt
+    - the exact path of the first referenced file
+    - the exact path of the second referenced file
     - dokumen-tool-smoke
     - read-file-marker: core-read
 
