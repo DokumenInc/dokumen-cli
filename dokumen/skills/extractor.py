@@ -11,9 +11,8 @@ this uses an LLM call to extract skills from failures, similar to
 how mem0 extracts facts from conversations.
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .types import SkillEntry, SkillCategory
 
@@ -72,7 +71,6 @@ class SkillExtractor:
             judge_id = verdict.get("judge_id", "unknown")
             sub_assertions = verdict.get("sub_assertions", [])
             failure_reason = verdict.get("failure_reason", "")
-            confidence = verdict.get("confidence", 0.0)
 
             # pattern: decomposed sub-assertions with specific failures
             if sub_assertions:
@@ -91,8 +89,8 @@ class SkillExtractor:
                         )
                         skills.append(skill)
 
-            # pattern: low confidence suggests ambiguity
-            elif confidence and confidence < 0.3:
+            # pattern: non-structured failure reason
+            elif failure_reason:
                 if failure_reason:
                     skill = SkillEntry(
                         content=f"common failure in '{test_id}': {failure_reason}",

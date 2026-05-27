@@ -25,7 +25,6 @@ Return a JSON object:
 ```json
 {
   "verdict": "PASS",
-  "confidence": 0.85,
   "reason": "Brief explanation of source quality assessment",
   "scores": {
     "relevance": 4,

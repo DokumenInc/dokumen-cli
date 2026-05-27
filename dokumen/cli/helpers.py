@@ -688,7 +688,7 @@ def get_failure_analysis_from_cache(cache_path: str = ".dokumen-cache") -> Dict[
                 "test_id": {
                     "referenced_lines": [1, 2, 3],
                     "incorrect_lines": [
-                        {"line_number": 5, "reason": "...", "confidence": 0.8}
+                        {"line_number": 5, "reason": "..."}
                     ],
                     "analysis": "Overall analysis..."
                 }
@@ -739,7 +739,7 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
                     "total_lines": int,
                     "covered_lines": [list of ints],
                     "failed_lines": [list of ints],
-                    "incorrect_lines": [{"line_number": int, "reason": str, "confidence": float}],
+                    "incorrect_lines": [{"line_number": int, "reason": str}],
                     "covered_count": int,
                     "failed_count": int,
                     "percentage": float,

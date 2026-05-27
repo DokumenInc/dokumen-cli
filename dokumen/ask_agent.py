@@ -5,11 +5,10 @@ Provides a documentation assistant that can answer questions about
 documentation using explore-based test discovery.
 """
 import logging
-import os
 import re
 import time
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
 
@@ -57,7 +56,6 @@ class AskResult:
     success: bool
     answer: str
     sources: List[str]
-    confidence: str  # "High", "Medium", "Low"
     matched_tests: List[MatchedTest]
     explore_summary: Optional[str]
     duration: float
@@ -70,7 +68,6 @@ class AskResult:
             "success": self.success,
             "answer": self.answer,
             "sources": self.sources,
-            "confidence": self.confidence,
             "matched_tests": [
                 {
                     "test_id": m.test_id,
@@ -381,7 +378,7 @@ class AskAgent:
                 else:
                     self._conversation_history.append({"role": "assistant", "content": "[Tool operations completed]"})
 
-            logger.info(f"[ASK] Complete in {duration:.2f}s, confidence={result.confidence}")
+            logger.info(f"[ASK] Complete in {duration:.2f}s")
             return result
 
         except Exception as e:
@@ -398,7 +395,6 @@ class AskAgent:
                 success=False,
                 answer="",
                 sources=[],
-                confidence="Low",
                 matched_tests=[],
                 explore_summary=None,
                 duration=time.time() - start_time,
@@ -615,7 +611,7 @@ class AskAgent:
         context = self._build_context(question, explore_result, matched_tests)
 
         # Run agent loop
-        response, sources, confidence = await self._run_agent_loop(
+        response, sources = await self._run_agent_loop(
             system_prompt=UNIFIED_SYSTEM_PROMPT,
             user_prompt=context,
             on_progress=on_progress,
@@ -626,7 +622,6 @@ class AskAgent:
             success=True,
             answer=response,
             sources=sources,
-            confidence=confidence,
             matched_tests=matched_tests,
             explore_summary=explore_result.summary if explore_result else None,
             duration=0.0,  # Will be set by caller
@@ -668,7 +663,7 @@ class AskAgent:
                 if test.success_criteria:
                     parts.append(f"\n**Success criteria for this topic:**\n{test.success_criteria}")
                 if test.files_covered:
-                    parts.append(f"\n**Files to reference:**")
+                    parts.append("\n**Files to reference:**")
                     for f in test.files_covered:
                         parts.append(f"- {f}")
 
@@ -694,7 +689,7 @@ class AskAgent:
             conversation_history: Optional list of previous messages.
 
         Returns:
-            Tuple of (answer, sources, confidence).
+            Tuple of (answer, sources).
         """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -768,10 +763,6 @@ class AskAgent:
                         topic=topic,
                         on_progress=on_progress,
                     )
-
-                    # Update local explore_result reference for this ask() call
-                    explore_result = new_explore_result
-                    matched_tests = self._matched_tests or []
 
                     # Build result message for the tool
                     result = (
@@ -871,14 +862,11 @@ class AskAgent:
         elif answer:
             logger.debug("[ASK] Answer present, skipping follow-up")
 
-        # Extract confidence from answer
-        confidence = self._extract_confidence(answer)
-
         # Extract additional sources from answer
         answer_sources = self._extract_sources(answer)
         sources.extend(s for s in answer_sources if s not in sources)
 
-        return answer, sources, confidence
+        return answer, sources
 
     async def _execute_tool(self, tool_name: str, arguments: Dict) -> str:
         """Execute a tool by name.
@@ -923,24 +911,6 @@ class AskAgent:
             }
             for tool in self.tools
         ]
-
-    def _extract_confidence(self, text: str) -> str:
-        """Extract confidence level from text.
-
-        Args:
-            text: Text containing confidence level.
-
-        Returns:
-            "High", "Medium", or "Low".
-        """
-        text_lower = text.lower()
-        if "confidence: high" in text_lower or "**confidence:** high" in text_lower:
-            return "High"
-        elif "confidence: medium" in text_lower or "**confidence:** medium" in text_lower:
-            return "Medium"
-        elif "confidence: low" in text_lower or "**confidence:** low" in text_lower:
-            return "Low"
-        return "Medium"  # Default
 
     def _extract_sources(self, text: str) -> List[str]:
         """Extract source paths from text.

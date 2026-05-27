@@ -5,7 +5,6 @@ collects preference pairs from test runs:
 - SDPO: (prompt, good_response, bad_response, structured_reason) — richer signal
 
 the decomposed binary judging (#3) gives us structured reasons for free.
-multi-judge consensus (#5) gives us confidence in the labels.
 """
 
 from .types import PreferencePair, TrainingExample, RewardSignal

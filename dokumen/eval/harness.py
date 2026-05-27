@@ -5,8 +5,8 @@ import logging
 import os
 import time
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Callable, List, Optional
 
 from .types import EvalCase, EvalResult, EvalSummary
 from . import metrics as m
@@ -19,7 +19,7 @@ class EvalHarness:
     """runs a judge function against a dataset and computes metrics.
 
     the judge_fn takes (executor_response, assertion, system_prompt, user_prompt)
-    and returns a dict with at minimum: {"passed": bool, "confidence": float}.
+    and returns a dict with at minimum: {"passed": bool}.
     optionally includes "sub_assertions", "raw_response", token counts, etc.
 
     this keeps the harness decoupled from JudgeAgent — you can pass any callable,
@@ -35,7 +35,6 @@ class EvalHarness:
         start = time.time()
         error = None
         actual_pass = False
-        confidence = 0.0
         sub_assertions = []
         raw_response = ""
         input_tokens = 0
@@ -49,7 +48,6 @@ class EvalHarness:
                 user_prompt=case.user_prompt,
             )
             actual_pass = bool(result.get("passed", False))
-            confidence = float(result.get("confidence", 0.0))
             sub_assertions = result.get("sub_assertions", [])
             raw_response = result.get("raw_response", "")
             input_tokens = result.get("input_tokens", 0)
@@ -64,7 +62,6 @@ class EvalHarness:
             case_id=case.id,
             expected_pass=case.expected_pass,
             actual_pass=actual_pass,
-            confidence=confidence,
             sub_assertions=sub_assertions,
             duration_ms=duration_ms,
             input_tokens=input_tokens,
@@ -105,10 +102,6 @@ class EvalHarness:
         prec = m.precision(tp, fp)
         rec = m.recall(tp, fn)
 
-        # calibration: (confidence, was_correct) pairs
-        calibration_pairs = [(r.confidence, r.correct) for r in results if r.error is None]
-        ece = m.expected_calibration_error(calibration_pairs)
-
         # per-tag breakdown
         tag_results = defaultdict(list)
         for r in results:
@@ -141,7 +134,6 @@ class EvalHarness:
             precision=prec,
             recall=rec,
             f1=m.f1(prec, rec),
-            expected_calibration_error=ece,
             true_positives=tp,
             true_negatives=tn,
             false_positives=fp,
@@ -160,7 +152,6 @@ class EvalHarness:
                 "precision": summary.precision,
                 "recall": summary.recall,
                 "f1": summary.f1,
-                "ece": summary.expected_calibration_error,
             },
         )
 

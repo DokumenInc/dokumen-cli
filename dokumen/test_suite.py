@@ -3,26 +3,31 @@ Test Suite module for the Documentation Unit Test Framework.
 
 Manages collections of tests, caching, and coverage reporting.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Dict, List, Callable, Any, TYPE_CHECKING
 from datetime import datetime
 import json
 import os
 import time
 
+from .debug import debug
+from .file_object import (
+    FileObject,
+    FileMetrics,
+    FileStatus,
+    IncorrectLine,
+    LineCoverage,
+    normalize_path,
+)
 from .logging_config import get_logger
+from .test_object import FailureAnalysis, TestObject, TestResult
 
 logger = get_logger(__name__)
-
-from .test_object import TestObject, TestResult, FailureAnalysis
-from .file_object import FileObject, FileMetrics, LineCoverage, FileStatus, IncorrectLine, normalize_path
-from .debug import debug
 
 if TYPE_CHECKING:
     from .coverage_agent import CoverageAgent
     from .sandbox import SandboxConfig
     from .history import HistoryManager
-    from .debug import DebugSession
 
 # Type alias for progress callbacks
 ProgressCallback = Callable[[str, str, Optional[Any]], None]
@@ -625,7 +630,7 @@ class TestSuite:
 
         # Run coverage agent to get line-level coverage for each accessed file
         if not self.config.coverage_agent:
-            debug(f"[COVERAGE] No coverage agent configured")
+            debug("[COVERAGE] No coverage agent configured")
         elif not accessed_files:
             debug(f"[COVERAGE] No accessed files for test '{test.id}'")
 
@@ -643,7 +648,7 @@ class TestSuite:
                 file_obj = self._file_registry[file_path]
 
                 if result.passed:
-                    debug(f"[COVERAGE] Calling infer_coverage for passed test")
+                    debug("[COVERAGE] Calling infer_coverage for passed test")
                     # Mark that we attempted coverage for this file (even if it fails)
                     self._coverage_attempted.add(file_path)
                     line_cov = await self.config.coverage_agent.infer_coverage(
@@ -654,9 +659,9 @@ class TestSuite:
                         debug(f"[COVERAGE] infer_coverage returned {len(line_cov.covered_lines)} covered lines")
                         result.line_coverage[file_path] = line_cov
                     else:
-                        debug(f"[COVERAGE] infer_coverage returned None (coverage attempted but failed)")
+                        debug("[COVERAGE] infer_coverage returned None (coverage attempted but failed)")
                 else:
-                    debug(f"[COVERAGE] Calling analyze_failure for failed test")
+                    debug("[COVERAGE] Calling analyze_failure for failed test")
                     failure_output = await self.config.coverage_agent.analyze_failure(
                         result.executor_output,
                         file_obj,
@@ -685,8 +690,7 @@ class TestSuite:
                             IncorrectLine(
                                 line_number=il.line_number,
                                 reason=il.reason,
-                                test_id=test.id,
-                                confidence=il.confidence
+                                test_id=test.id
                             )
                             for il in failure_output.incorrect_lines
                         ]
@@ -739,7 +743,6 @@ class TestSuite:
         Returns:
             List of unique file paths that were accessed
         """
-        import re
         accessed = set()
         if result.executor_output and result.executor_output.tool_calls:
             for tc in result.executor_output.tool_calls:
@@ -854,9 +857,6 @@ class TestSuite:
                 if normalized_path not in coverage_by_file:
                     # Need to get total lines - read file or estimate
                     try:
-                        import asyncio
-                        # Read file to get total lines
-                        file_obj = FileObject(path=normalized_path)
                         # Use sync file read since we're in a potentially non-async context
                         import os
                         if os.path.exists(normalized_path):
@@ -1002,8 +1002,7 @@ class TestSuite:
                             IncorrectLine(
                                 line_number=il["line_number"],
                                 reason=il["reason"],
-                                test_id=il["test_id"],
-                                confidence=il.get("confidence", 0.0)
+                                test_id=il["test_id"]
                             )
                             for il in analysis_data.get("incorrect_lines", [])
                         ]
@@ -1061,7 +1060,6 @@ class TestSuite:
                             "judge_id": jr.judge_id,
                             "passed": jr.passed,
                             "failure_reason": jr.failure_reason,
-                            "confidence": jr.confidence,
                             "response": jr.response,
                         }
                         for jr in result.judge_results
@@ -1110,8 +1108,7 @@ class TestSuite:
                         {
                             "line_number": il.line_number,
                             "reason": il.reason,
-                            "test_id": il.test_id,
-                            "confidence": il.confidence
+                            "test_id": il.test_id
                         }
                         for il in analysis.incorrect_lines
                     ],
@@ -1174,7 +1171,6 @@ class TestSuite:
                     "judge_id": jr.judge_id,
                     "passed": jr.passed,
                     "failure_reason": jr.failure_reason,
-                    "confidence": jr.confidence,
                     "response": jr.response,
                 }
                 for jr in result.judge_results
@@ -1212,8 +1208,7 @@ class TestSuite:
                         {
                             "line_number": il.line_number,
                             "reason": il.reason,
-                            "test_id": il.test_id,
-                            "confidence": il.confidence
+                            "test_id": il.test_id
                         }
                         for il in analysis.incorrect_lines
                     ],

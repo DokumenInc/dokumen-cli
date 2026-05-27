@@ -224,7 +224,7 @@ def _print_files_table(stats: dict, line_stats: dict = None):
     files_detail = stats.get('files_detail', {})
     line_files = line_stats.get('files', {}) if line_stats else {}
 
-    click.echo(f"\nPer-File Coverage")
+    click.echo("\nPer-File Coverage")
     click.echo("-" * 70)
     click.echo(f"  {'File':<40} {'Tests':>5}  {'Status':>8}  {'Lines':>8}")
     click.echo("-" * 70)
@@ -359,10 +359,8 @@ def print_line_coverage_text(stats: dict, detailed: bool = False):
                 for item in incorrect:
                     line_num = item.get('line_number', 0)
                     reason = item.get('reason', 'Unknown')
-                    confidence = item.get('confidence', 0.0)
                     line_str = click.style(f"Line {line_num}", fg="red", bold=True)
-                    conf_str = f"({confidence:.0%})" if confidence > 0 else ""
-                    click.echo(f"      {line_str} {conf_str}: {reason}")
+                    click.echo(f"      {line_str}: {reason}")
 
     # Show failure analysis summary if available
     failure_analysis = stats.get('failure_analysis', {})
@@ -463,8 +461,6 @@ def print_file_with_coverage(file_path: str, lines: List[str], coverage_data: di
     failed = set(coverage_data.get('failed_lines', []))
     incorrect = {item['line_number']: item for item in coverage_data.get('incorrect_lines', [])}
 
-    total_lines = coverage_data.get('total_lines', len(lines))
-    covered_count = coverage_data.get('covered_count', len(covered))
     failed_count = coverage_data.get('failed_count', len(failed))
     percentage = coverage_data.get('percentage', 0.0)
 
@@ -487,9 +483,7 @@ def print_file_with_coverage(file_path: str, lines: List[str], coverage_data: di
         if i in incorrect:
             # Incorrect line - show with annotation
             indicator = click.style("[!]", fg="yellow", bold=True)
-            item = incorrect[i]
-            confidence = item.get('confidence', 0)
-            annotation = click.style(f"  ← incorrect ({confidence:.0%})", fg="yellow")
+            annotation = click.style("  <- incorrect", fg="yellow")
             click.echo(f"{line_num_str} {indicator} {line_content.rstrip()}{annotation}")
         elif i in failed:
             # Failed line
@@ -556,7 +550,6 @@ def file_coverage_to_dict(file_path: str, lines: List[str], coverage_data: dict)
 
         if i in incorrect:
             entry["reason"] = incorrect[i].get('reason', '')
-            entry["confidence"] = incorrect[i].get('confidence', 0)
 
         line_data.append(entry)
 
@@ -655,8 +648,7 @@ def results_to_dict(results) -> dict:
                     "incorrect_lines": [
                         {
                             "line_number": il.line_number,
-                            "reason": il.reason,
-                            "confidence": il.confidence
+                            "reason": il.reason
                         }
                         for il in analysis.incorrect_lines
                     ],
@@ -701,7 +693,7 @@ def results_to_junit(results) -> str:
 
 def results_to_tap(results) -> str:
     """Convert TestSuiteResults to TAP format."""
-    lines = [f"TAP version 13", f"1..{results.total_tests}"]
+    lines = ["TAP version 13", f"1..{results.total_tests}"]
 
     for i, r in enumerate(results.test_results, 1):
         status = "ok" if r.passed else "not ok"
@@ -762,8 +754,7 @@ def print_results_text(results, verbose=False):
                         click.echo(f"         {click.style('Potentially Incorrect Lines:', fg='red')}")
                         for il in analysis.incorrect_lines:
                             line_str = click.style(f"Line {il.line_number}", fg="red", bold=True)
-                            conf_str = f" ({il.confidence:.0%})" if il.confidence > 0 else ""
-                            click.echo(f"           {line_str}{conf_str}: {il.reason}")
+                            click.echo(f"           {line_str}: {il.reason}")
 
             # Show verbose details
             if verbose and hasattr(r, 'executor_output') and r.executor_output:
@@ -785,8 +776,6 @@ def print_results_text(results, verbose=False):
                 for jr in r.judge_results:
                     judge_status = click.style("PASS", fg="green") if jr.passed else click.style("FAIL", fg="red")
                     click.echo(f"         Judge [{jr.judge_id}]: {judge_status}")
-                    if jr.confidence is not None:
-                        click.echo(f"         Confidence: {jr.confidence:.0%}")
                     if jr.response:
                         click.echo()
                         click.echo(click.style("         --- Judge Response ---", fg="magenta", bold=True))
@@ -1045,9 +1034,6 @@ def make_judge_complete_callback(quiet: bool = False, verbose: bool = False):
         header = click.style(f"--- Judge [{judge_result.judge_id}] ---", fg="magenta", bold=True)
         click.echo(f"\n{header}")
         click.echo(f"    Verdict: {verdict}")
-
-        if judge_result.confidence is not None:
-            click.echo(f"    Confidence: {judge_result.confidence:.0%}")
 
         if not judge_result.passed and judge_result.failure_reason:
             reason = click.style(judge_result.failure_reason, fg="red")

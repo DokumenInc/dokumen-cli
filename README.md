@@ -88,7 +88,7 @@ judges:
     system_prompt: |
       Pass only if the answer is fully grounded in the referenced docs and
       clearly answers the user's question.
-      Return JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "..."}
+      Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
 ```
 
 Validate and run:

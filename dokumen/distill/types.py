@@ -3,15 +3,13 @@
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class RewardSignal(Enum):
     """how the reward was derived."""
     BINARY = "binary"              # simple pass/fail
     DECOMPOSED = "decomposed"      # from sub-assertion pass rate
-    CONSENSUS = "consensus"        # from multi-judge agreement
-    CALIBRATED = "calibrated"      # post-calibration confidence
 
 
 @dataclass
@@ -20,8 +18,7 @@ class TrainingExample:
 
     grpo uses scalar rewards — we get these from:
     - judge verdict: 1.0 if pass, 0.0 if fail
-    - decomposed confidence: fraction of sub-assertions passed
-    - consensus confidence: agreement ratio across runs
+    - decomposed reward: fraction of sub-assertions passed
     """
 
     id: str

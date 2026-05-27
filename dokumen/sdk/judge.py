@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Optional
 
 from claude_agent_sdk import ClaudeAgentOptions, ResultMessage
 
@@ -20,7 +20,6 @@ from .messages import (
     extract_tool_calls,
     extract_usage,
 )
-from .query_runner import QueryRunner
 from .types import ExecutorResult, JudgeVerdict, SubAssertion, Verdict
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 JUDGE_RETRY_PROMPT = (
     "Your previous response could not be parsed as a valid verdict. "
     'Return ONLY a JSON object: {"verdict": "PASS" or "FAIL", '
-    '"confidence": 0.0 to 1.0, "reason": "explanation"}'
+    '"reason": "explanation"}'
 )
 
 
@@ -86,7 +85,7 @@ def _extract_verdict(data: dict) -> Verdict:
     """Extract a Verdict from a parsed JSON dict.
 
     Args:
-        data: Parsed JSON dict with verdict, confidence, reason.
+        data: Parsed JSON dict with verdict and reason.
 
     Returns:
         Verdict dataclass.
@@ -98,14 +97,10 @@ def _extract_verdict(data: dict) -> Verdict:
     if verdict_str not in ("PASS", "FAIL"):
         raise ValueError(f"Invalid verdict value: {data.get('verdict')}")
 
-    confidence = float(data.get("confidence", 0.0))
-    confidence = max(0.0, min(1.0, confidence))  # Clamp to [0, 1]
-
     reason = str(data.get("reason", ""))
 
     return Verdict(
         passed=verdict_str == "PASS",
-        confidence=confidence,
         reason=reason,
     )
 
@@ -120,7 +115,7 @@ def parse_decomposed_verdict(text: Optional[str]):
         text: The judge's response text.
 
     Returns:
-        Tuple of (list of SubAssertion, confidence float) or None if parsing fails.
+        Tuple of (list of SubAssertion, pass ratio float) or None if parsing fails.
     """
     if not text:
         return None
@@ -164,8 +159,8 @@ def parse_decomposed_verdict(text: Optional[str]):
         return sub_assertions, 0.0
 
     passed_count = sum(1 for sa in sub_assertions if sa.passed)
-    confidence = passed_count / len(sub_assertions)
-    return sub_assertions, confidence
+    pass_ratio = passed_count / len(sub_assertions)
+    return sub_assertions, pass_ratio
 
 
 class JudgeAgent(DokumenAgent):
@@ -226,7 +221,7 @@ class JudgeAgent(DokumenAgent):
             executor_user_prompt: The executor's user prompt (for context).
 
         Returns:
-            JudgeVerdict with verdict, confidence, and reason.
+            JudgeVerdict with verdict and reason.
         """
         logger.info(
             "Judge starting evaluation",
@@ -270,15 +265,14 @@ class JudgeAgent(DokumenAgent):
             # try decomposed parsing first
             decomposed_result = parse_decomposed_verdict(result_text)
             if decomposed_result is not None:
-                sub_assertions, confidence = decomposed_result
-                passed = confidence >= self.decomposed_threshold
+                sub_assertions, pass_ratio = decomposed_result
+                passed = pass_ratio >= self.decomposed_threshold
                 failed_subs = [sa for sa in sub_assertions if not sa.passed]
                 failure_reasons = "; ".join(
                     f"{sa.question}: {sa.reason}" for sa in failed_subs
                 )
                 verdict = Verdict(
                     passed=passed,
-                    confidence=confidence,
                     reason=failure_reasons if not passed else "all sub-assertions passed",
                 )
                 logger.info(
@@ -287,7 +281,7 @@ class JudgeAgent(DokumenAgent):
                         "judge_id": self.id,
                         "sub_count": len(sub_assertions),
                         "passed_count": sum(1 for sa in sub_assertions if sa.passed),
-                        "confidence": confidence,
+                        "pass_ratio": pass_ratio,
                         "threshold": self.decomposed_threshold,
                     },
                 )
@@ -332,7 +326,6 @@ class JudgeAgent(DokumenAgent):
             passed=verdict.passed if verdict else False,
             failure_reason=failure_reason,
             reason=verdict.reason if verdict else None,
-            confidence=verdict.confidence if verdict else 0.0,
             response=result_text,
             error=verdict is None,
             input_tokens=usage.get("input_tokens", 0),
@@ -349,7 +342,6 @@ class JudgeAgent(DokumenAgent):
             extra={
                 "judge_id": self.id,
                 "passed": result.passed,
-                "confidence": result.confidence,
                 "error": result.error,
             },
         )
@@ -362,7 +354,6 @@ class JudgeAgent(DokumenAgent):
             judge_id=self.id,
             passed=False,
             failure_reason=f"Judge timed out after {self.timeout}s",
-            confidence=0.0,
             error=True,
         )
 

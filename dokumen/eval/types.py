@@ -55,7 +55,6 @@ class EvalResult:
     case_id: str
     expected_pass: bool
     actual_pass: bool
-    confidence: float = 0.0
     # decomposed sub-assertion details
     sub_assertions: List[Dict[str, Any]] = field(default_factory=list)
     # timing and cost
@@ -91,7 +90,6 @@ class EvalResult:
             "case_id": self.case_id,
             "expected_pass": self.expected_pass,
             "actual_pass": self.actual_pass,
-            "confidence": self.confidence,
             "correct": self.correct,
             "sub_assertions": self.sub_assertions,
             "duration_ms": self.duration_ms,
@@ -114,7 +112,6 @@ class EvalSummary:
     precision: float
     recall: float
     f1: float
-    expected_calibration_error: float
     # confusion matrix
     true_positives: int = 0
     true_negatives: int = 0
@@ -141,7 +138,6 @@ class EvalSummary:
             "precision": self.precision,
             "recall": self.recall,
             "f1": self.f1,
-            "expected_calibration_error": self.expected_calibration_error,
             "true_positives": self.true_positives,
             "true_negatives": self.true_negatives,
             "false_positives": self.false_positives,

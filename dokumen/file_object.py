@@ -46,7 +46,6 @@ class IncorrectLine:
     line_number: int
     reason: str
     test_id: str
-    confidence: float = 0.0
 
 
 @dataclass
@@ -166,8 +165,7 @@ class LineCoverage:
                 {
                     "line_number": il.line_number,
                     "reason": il.reason,
-                    "test_id": il.test_id,
-                    "confidence": il.confidence
+                    "test_id": il.test_id
                 }
                 for il in self.incorrect_lines
             ],
@@ -193,8 +191,7 @@ class LineCoverage:
             IncorrectLine(
                 line_number=il["line_number"],
                 reason=il["reason"],
-                test_id=il["test_id"],
-                confidence=il.get("confidence", 0.0)
+                test_id=il["test_id"]
             )
             for il in data.get("incorrect_lines", [])
         ]

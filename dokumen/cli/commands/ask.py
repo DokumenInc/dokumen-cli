@@ -12,7 +12,7 @@ Streaming mode (--stream) outputs NDJSON events:
   {"event": "tool_start", "tool": "read_file", "params": {...}}
   {"event": "tool_end", "tool": "read_file", "result": "..."}
   {"event": "chunk", "content": "..."}
-  {"event": "done", "success": true, "sources": [...], "confidence": "High"}
+  {"event": "done", "success": true, "sources": [...]}
 """
 import json
 import logging
@@ -59,7 +59,7 @@ def _load_context_file(context_file: str) -> List[Dict[str, str]]:
             context = json.load(f)
 
         if not isinstance(context, list):
-            logger.warning(f"[ASK_CLI] Context file must contain a JSON array")
+            logger.warning("[ASK_CLI] Context file must contain a JSON array")
             return []
 
         logger.info(f"[ASK_CLI] Loaded {len(context)} messages from context file")
@@ -205,7 +205,7 @@ async def _run_ask(
     config: Optional[dict] = None,
     stream: bool = False,
     context_file: Optional[str] = None,
-) -> "AskResult":
+) -> Any:
     """Run the ask agent to answer a question.
 
     Args:
@@ -236,7 +236,7 @@ async def _run_ask(
     on_progress = _create_progress_callback(stream)
 
     # Run ask with progress callback
-    logger.info(f"[ASK_CLI] Running ask agent...")
+    logger.info("[ASK_CLI] Running ask agent...")
     result = await agent.ask(
         question,
         on_progress=on_progress,
@@ -245,7 +245,7 @@ async def _run_ask(
 
     elapsed = time.time() - start_time
     logger.info(f"[ASK_CLI] Ask completed in {elapsed:.2f}s")
-    logger.info(f"[ASK_CLI] Result: success={result.success}, confidence={result.confidence}")
+    logger.info(f"[ASK_CLI] Result: success={result.success}")
 
     return result
 
@@ -355,7 +355,6 @@ async def _run_interactive_session(
                     "success": result.success,
                     "answer": result.answer,
                     "sources": result.sources,
-                    "confidence": result.confidence,
                     "matched_tests": [t.to_dict() for t in result.matched_tests] if result.matched_tests else [],
                     "duration": result.duration,
                     "tool_calls_count": result.tool_calls_count,
@@ -458,7 +457,6 @@ def _format_text_output(result) -> str:
 
     # Stats
     lines.append(click.style("Stats:", bold=True))
-    lines.append(f"  Confidence: {result.confidence}")
     lines.append(f"  Duration: {result.duration:.2f}s")
     lines.append(f"  Tool calls: {result.tool_calls_count}")
 
@@ -607,7 +605,6 @@ def ask(ctx, question: Optional[str], output: str, timeout: float, skip_tests: b
                 "success": False,
                 "error": str(e),
                 "sources": [],
-                "confidence": "Low",
             })
         elif output == "json":
             error_output = {
@@ -615,7 +612,6 @@ def ask(ctx, question: Optional[str], output: str, timeout: float, skip_tests: b
                 "error": str(e),
                 "answer": "",
                 "sources": [],
-                "confidence": "Low",
                 "matched_tests": [],
                 "explore_summary": None,
                 "duration": 0,
@@ -633,7 +629,6 @@ def ask(ctx, question: Optional[str], output: str, timeout: float, skip_tests: b
             "success": result.success,
             "answer": result.answer,
             "sources": result.sources,
-            "confidence": result.confidence,
             "matched_tests": [t.to_dict() for t in result.matched_tests] if result.matched_tests else [],
             "duration": result.duration,
             "tool_calls_count": result.tool_calls_count,

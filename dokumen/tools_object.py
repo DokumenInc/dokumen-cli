@@ -51,7 +51,6 @@ class SubagentResult:
     response: str
     tool_calls: List[Dict[str, Any]]
     covered_lines: List[int] = field(default_factory=list)  # Lines identified as important
-    coverage_confidence: float = 0.0  # Confidence in coverage inference
     error: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -64,7 +63,6 @@ class SubagentResult:
             "response": self.response,
             "tool_calls": self.tool_calls,
             "covered_lines": self.covered_lines,
-            "coverage_confidence": self.coverage_confidence,
             "error": self.error,
         }
 
@@ -3267,11 +3265,10 @@ def create_ask_tool(config, project_root: str) -> ToolDefinition:
                 sources_list = [str(s) for s in result.sources]
                 sources_str = "\n\nSources:\n" + "\n".join(f"- {s}" for s in sources_list)
 
-            output = f"{result.answer}" f"{sources_str}\n\n" f"Confidence: {result.confidence}"
+            output = f"{result.answer}{sources_str}"
 
             logger.info(
                 "agent_tools.ask.complete",
-                confidence=result.confidence,
                 sources_count=len(result.sources),
                 duration_ms=int(result.duration * 1000),
             )
@@ -3294,7 +3291,7 @@ def create_ask_tool(config, project_root: str) -> ToolDefinition:
         description=(
             "Ask a question about the documentation and get an AI-generated "
             "answer grounded in the actual docs. Returns the answer with "
-            "source references and confidence level."
+            "source references."
         ),
         parameters={
             "type": "object",

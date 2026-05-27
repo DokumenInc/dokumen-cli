@@ -5,7 +5,7 @@ Handles loading agent definitions from YAML files, merging agent defaults
 with scaffold overrides, skills collection and formatting, and
 auto-injection of research judges.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from pathlib import Path
 import hashlib
 
@@ -37,8 +37,6 @@ Score each criterion from 1 (poor) to 5 (excellent):
 
 - PASS if the average score across all criteria is >= 3.0 AND no single criterion scores below 2
 - FAIL otherwise
-- Confidence should reflect how clearly the sources support the research
-
 ## Output Format
 
 Return a JSON object:
@@ -46,7 +44,6 @@ Return a JSON object:
 ```json
 {
   "verdict": "PASS",
-  "confidence": 0.85,
   "reason": "Brief explanation of source quality assessment",
   "scores": {
     "relevance": 4,
@@ -100,7 +97,6 @@ After the report, output a JSON verdict block:
 ```json
 {
   "verdict": "PASS",
-  "confidence": 0.9,
   "reason": "Brief one-line justification for the verdict"
 }
 ```
@@ -109,7 +105,6 @@ After the report, output a JSON verdict block:
 
 - PASS if the research provides a substantive, well-structured answer to the question with credible sources
 - FAIL if the research is incomplete, inaccurate, unsourced, or does not address the question
-- Confidence should reflect how certain you are about the verdict (0.0 to 1.0)
 
 ## Important
 

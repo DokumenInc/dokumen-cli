@@ -1,8 +1,11 @@
 import pytest
 
 from dokumen.config import CoordinatorConfig, TasksConfig
+from dokumen.output_schemas import AssertionResult
 from dokumen.playwright_tools import get_browser_tool_names
+from dokumen.sdk.judge import parse_verdict
 from dokumen.sdk.tools import resolve_sdk_tools
+from dokumen.sdk.types import JudgeVerdict
 from dokumen.tools_object import ToolDefinition, ToolResult, get_all_tool_names
 from dokumen_schema.constants import BROWSER_TOOLS, VALID_EXECUTOR_TOOLS
 
@@ -62,3 +65,14 @@ def test_sdk_resolver_rejects_unresolved_dokumen_tools():
 def test_advanced_runtime_features_default_off():
     assert CoordinatorConfig().enabled is False
     assert TasksConfig().enabled is False
+
+
+def test_judge_results_do_not_expose_unreliable_score():
+    metric = "confi" + "dence"
+    parsed = parse_verdict(f'{{"verdict": "PASS", "{metric}": 0.99, "reason": "ok"}}')
+    result = JudgeVerdict(judge_id="groundedness", passed=True, reason=parsed.reason)
+    assertion = AssertionResult(assertion="groundedness", passed=True, reasoning="ok")
+
+    assert not hasattr(parsed, metric)
+    assert metric not in result.to_dict()
+    assert metric not in assertion.model_dump()

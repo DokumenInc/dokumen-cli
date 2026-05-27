@@ -23,4 +23,4 @@ For each criterion, score 1-5 and explain.
 
 **Feedback:** If FAIL, what specifically should be fixed on retry.
 
-Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with scores"}
+Respond with JSON: {"verdict": "PASS" or "FAIL", "reason": "explanation with scores"}

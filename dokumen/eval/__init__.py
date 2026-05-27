@@ -1,11 +1,9 @@
 """benchmark eval harness for measuring judge quality."""
 
 from .types import EvalCase, EvalResult, EvalSummary
-from .metrics import accuracy, precision, recall, f1, expected_calibration_error
+from .metrics import accuracy, precision, recall, f1
 from .harness import EvalHarness
 from .datasets import load_dataset, save_dataset
-from .consensus import ConsensusResult, run_consensus
-from .calibration import CalibrationReport, compute_calibration
 
 __all__ = [
     "EvalCase",
@@ -16,11 +14,6 @@ __all__ = [
     "precision",
     "recall",
     "f1",
-    "expected_calibration_error",
     "load_dataset",
     "save_dataset",
-    "ConsensusResult",
-    "run_consensus",
-    "CalibrationReport",
-    "compute_calibration",
 ]

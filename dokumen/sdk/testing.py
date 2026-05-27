@@ -84,21 +84,15 @@ def make_result(
     )
 
 
-def make_judge_pass(confidence: float = 0.95, reason: str = "Correct") -> List[Any]:
+def make_judge_pass(reason: str = "Correct") -> List[Any]:
     """Create a complete judge PASS message sequence."""
-    verdict = json.dumps(
-        {"verdict": "PASS", "confidence": confidence, "reason": reason}
-    )
+    verdict = json.dumps({"verdict": "PASS", "reason": reason})
     return [make_init(), make_assistant(verdict), make_result(verdict)]
 
 
-def make_judge_fail(
-    reason: str = "Incorrect", confidence: float = 0.8
-) -> List[Any]:
+def make_judge_fail(reason: str = "Incorrect") -> List[Any]:
     """Create a complete judge FAIL message sequence."""
-    verdict = json.dumps(
-        {"verdict": "FAIL", "confidence": confidence, "reason": reason}
-    )
+    verdict = json.dumps({"verdict": "FAIL", "reason": reason})
     return [make_init(), make_assistant(verdict), make_result(verdict)]
 
 

@@ -62,7 +62,7 @@ class MemoryExtractor:
         expected keys in run_data:
             test_id: str
             passed: bool
-            judges: list of {judge_id, passed, reason, confidence, sub_assertions}
+            judges: list of {judge_id, passed, reason, sub_assertions}
             tool_calls: list of {tool, args, result}
             executor_response: str (optional)
         """
@@ -139,7 +139,6 @@ class MemoryExtractor:
                 "type": "failure_pattern",
                 "test_id": test_id,
                 "judge_id": judge_id,
-                "confidence": judge.get("confidence", 0.0),
             },
         )
 

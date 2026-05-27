@@ -32,7 +32,6 @@ After the report, output a JSON verdict block:
 ```json
 {
   "verdict": "PASS",
-  "confidence": 0.9,
   "reason": "Brief one-line justification for the verdict"
 }
 ```
@@ -41,7 +40,6 @@ After the report, output a JSON verdict block:
 
 - PASS if the research provides a substantive, well-structured answer to the question with credible sources
 - FAIL if the research is incomplete, inaccurate, unsourced, or does not address the question
-- Confidence should reflect how certain you are about the verdict (0.0 to 1.0)
 
 ## Important
 

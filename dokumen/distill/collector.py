@@ -11,11 +11,10 @@ data flow:
   → PreferencePair(s) for SDPO (when we have pass+fail for same prompt)
 """
 
-import json
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .types import TrainingExample, PreferencePair, RewardSignal
 
@@ -68,7 +67,6 @@ class TrainingDataCollector:
 
         for verdict in judge_verdicts:
             passed = verdict.get("passed", False)
-            confidence = verdict.get("confidence", 0.0)
             sub_assertions = verdict.get("sub_assertions", [])
             judge_id = verdict.get("judge_id", "unknown")
 

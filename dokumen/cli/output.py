@@ -10,7 +10,6 @@ Writes spec-compliant output files after each test run:
 """
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
@@ -137,12 +136,10 @@ class OutputWriter:
                     has_judge_error = True
                 jr_reason = getattr(jr, 'reason', None)
                 jr_reason = jr_reason if isinstance(jr_reason, str) else None
-                jr_confidence = getattr(jr, 'confidence', None)
                 assertions.append(AssertionResult(
                     assertion=assertion_text,
                     passed=jr.passed,
                     reasoning=jr_reason or jr.failure_reason or jr.response or "",
-                    confidence=float(jr_confidence) if jr_confidence is not None else 1.0,
                     error=jr_error,
                 ))
 

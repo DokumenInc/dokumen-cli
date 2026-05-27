@@ -53,4 +53,4 @@ Only if outcome correctness cannot be determined:
 - PASS: Outcome achieves stated goal AND procedure is adequate AND steps followed (or minor deviations)
 - FAIL: Outcome fails to achieve goal, OR procedure has critical gaps, OR steps not followed
 
-Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation"}
+Respond with JSON: {"verdict": "PASS" or "FAIL", "reason": "explanation"}

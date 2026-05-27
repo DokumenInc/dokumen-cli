@@ -35,4 +35,4 @@ You MUST validate EACH claim in the summary against the source documentation:
 
 **Feedback:** If FAIL, which specific claims failed validation and why.
 
-Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with claim validation details"}
+Respond with JSON: {"verdict": "PASS" or "FAIL", "reason": "explanation with claim validation details"}

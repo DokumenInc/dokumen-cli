@@ -26,4 +26,4 @@ Return ONLY a JSON object:
 - aim for 3-7 sub-assertions covering distinct evaluation criteria
 - the "passed" field must be a boolean (true/false)
 - the "reason" field should be a brief explanation (1-2 sentences)
-- do not include an overall verdict — confidence is computed from the fraction of passing sub-assertions
+- do not include an overall verdict — the pass/fail threshold is computed from the fraction of passing sub-assertions

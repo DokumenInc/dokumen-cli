@@ -10,7 +10,7 @@ Generates valid test scaffolds by:
 import logging
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 import yaml
@@ -72,7 +72,7 @@ judges:
     system_prompt: |
       Evaluation criteria for this test.
 
-      Return: {"verdict": "PASS|FAIL", "confidence": 0.0-1.0, "reason": "..."}
+      Return: {"verdict": "PASS|FAIL", "reason": "..."}
 
 timeout: 120
 ```
@@ -132,7 +132,7 @@ judges:
   - name: ui-check
     system_prompt: |
       Evaluate the browser test results.
-      Return: {"verdict": "PASS|FAIL", "confidence": 0.0-1.0, "reason": "..."}
+      Return: {"verdict": "PASS|FAIL", "reason": "..."}
     tools:
       - browser_snapshot
       - browser_take_screenshot

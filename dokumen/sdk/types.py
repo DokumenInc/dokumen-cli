@@ -28,7 +28,6 @@ class Verdict:
     """Parsed judge verdict."""
 
     passed: bool
-    confidence: float
     reason: str
 
 
@@ -115,7 +114,6 @@ class JudgeVerdict:
         passed: Whether the judge verdict is PASS.
         failure_reason: Reason for failure (None if passed).
         reason: Parsed verdict reason (always set when verdict is parsed).
-        confidence: Verdict confidence (0.0 to 1.0).
         response: Full judge response text.
         tool_calls: List of tool call dicts made by the judge.
         assertion_text: The assertion/question text for this judge.
@@ -131,7 +129,6 @@ class JudgeVerdict:
     passed: bool
     failure_reason: Optional[str] = None
     reason: Optional[str] = None
-    confidence: Optional[float] = None
     response: Optional[str] = None
     tool_calls: List[Dict[str, Any]] = field(default_factory=list)
     assertion_text: Optional[str] = None
@@ -150,7 +147,6 @@ class JudgeVerdict:
             "passed": self.passed,
             "failure_reason": self.failure_reason,
             "reason": self.reason,
-            "confidence": self.confidence,
             "response": self.response,
             "tool_calls": self.tool_calls,
             "assertion_text": self.assertion_text,

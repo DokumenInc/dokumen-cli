@@ -7,7 +7,6 @@ These models define the structure of output files written to .dokumen-cache/:
 - debug traces - Per-test conversation logs
 """
 import os
-from datetime import datetime
 from typing import List, Literal, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
@@ -30,7 +29,6 @@ class AssertionResult(BaseModel):
     assertion: str
     passed: bool
     reasoning: str
-    confidence: float = 1.0
     error: Optional[bool] = None  # True when judge errored (vs legitimate FAIL)
 
 

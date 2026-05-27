@@ -322,8 +322,7 @@ class FailureAnalysis:
                 {
                     "line_number": il.line_number,
                     "reason": il.reason,
-                    "test_id": il.test_id,
-                    "confidence": il.confidence
+                    "test_id": il.test_id
                 }
                 for il in self.incorrect_lines
             ],
