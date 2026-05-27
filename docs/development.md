@@ -44,6 +44,8 @@ when a cleanup needs a durable guardrail.
 - Tools should validate inputs, limit side effects, and report useful errors.
 - Coverage and status commands are experimental; do not let coverage concerns
   complicate the core executor-plus-judge path.
+- Coordinator mode should remain disabled by default. The standard behavior is
+  one executor prompted to use a skill, followed by LLM judge evaluation.
 
 ## Adding A Command
 

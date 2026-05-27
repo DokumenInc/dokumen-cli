@@ -1,6 +1,8 @@
 import pytest
+import yaml
 
-from dokumen.config import CoordinatorConfig, TasksConfig
+from dokumen.config import CoordinatorConfig, TasksConfig, load_config
+from dokumen.loader import load_scaffold
 from dokumen.output_schemas import AssertionResult
 from dokumen.playwright_tools import get_browser_tool_names
 from dokumen.sdk.judge import parse_verdict
@@ -71,6 +73,75 @@ def test_sdk_resolver_rejects_unresolved_dokumen_tools():
 def test_advanced_runtime_features_default_off():
     assert CoordinatorConfig().enabled is False
     assert TasksConfig().enabled is False
+
+
+def test_checked_in_config_keeps_coordinator_off_by_default():
+    config = load_config("dokumen.yaml")
+
+    assert config.coordinator.enabled is False
+    assert config.tasks.enabled is False
+
+
+def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):
+    skill_dir = tmp_path / "skills"
+    skill_dir.mkdir()
+    (skill_dir / "release-note-review.md").write_text(
+        "# Release Note Review\n\n"
+        "When reviewing release notes, check that the audience, changed behavior, "
+        "and required user action are all explicit.\n",
+        encoding="utf-8",
+    )
+
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "release-notes.md").write_text(
+        "Feature flags now require an owner field before rollout.\n",
+        encoding="utf-8",
+    )
+
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    scaffold_path = tests_dir / "release-note-skill.test.yaml"
+    scaffold_path.write_text(
+        yaml.safe_dump(
+            {
+                "name": "release-note-skill",
+                "reason": "Verify the executor applies a named skill before the judge evaluates it.",
+                "files": [{"path": "docs/release-notes.md"}],
+                "executor": {
+                    "skills": ["release-note-review"],
+                    "tools": ["read_file"],
+                    "user_prompt": (
+                        "Use the release-note-review skill to inspect the referenced "
+                        "release notes file. Report the audience, changed behavior, "
+                        "and required user action."
+                    ),
+                },
+                "judges": [
+                    {
+                        "name": "skill-success-criteria",
+                        "include_executor_output": True,
+                        "system_prompt": (
+                            "Pass only if the executor explicitly applied the "
+                            "release-note-review skill and reported audience, "
+                            "changed behavior, and required user action. Return JSON: "
+                            '{"verdict": "PASS" or "FAIL", "reason": "..."}'
+                        ),
+                    }
+                ],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    test = load_scaffold(str(scaffold_path), project_root=str(tmp_path))
+
+    assert "Use the release-note-review skill" in test.executor.user_prompt
+    assert "## Available Skills" in test.executor.system_prompt
+    assert "Release Note Review" in test.executor.system_prompt
+    assert "release-note-review" in test.resolved_skills
+    assert test.coordinator_config is None or test.coordinator_config.enabled is False
 
 
 def test_judge_results_do_not_expose_unreliable_score():

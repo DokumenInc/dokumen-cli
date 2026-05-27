@@ -21,6 +21,10 @@ The executor and judge roles stay separate by design. Executors perform work
 using project knowledge and tools. Judges evaluate whether the work satisfies
 the explicit success criteria in the scaffold.
 
+The default test shape is intentionally simple: one executor is prompted to use
+a named skill, then one or more LLM judges evaluate the outcome. Coordinator
+mode is an advanced opt-in path and should stay disabled by default.
+
 ## Runtime Flow
 
 1. The CLI loads project configuration and discovers test scaffolds.

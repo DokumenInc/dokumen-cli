@@ -101,6 +101,52 @@ judges:
 The judge prompt is the success criteria. Keep it specific enough that a fresh
 LLM judge can decide pass or fail from the executor output and tool log.
 
+## Skill-Use Pattern
+
+The normal Dokumen test shape is a single executor prompted to use a named skill,
+followed by an LLM judge that checks whether the skill was applied correctly.
+Coordinator mode is off by default and is not part of this path.
+
+Place skills in `skills/`:
+
+```markdown
+# Release Note Review
+
+When reviewing release notes, identify the audience, changed behavior, required
+user action, and any vague migration language.
+```
+
+Reference and prompt the skill from a scaffold:
+
+```yaml
+name: release-note-skill
+
+files:
+  - path: docs/release-notes.md
+
+executor:
+  skills:
+    - release-note-review
+  tools:
+    - read_file
+  user_prompt: |
+    Use the release-note-review skill to inspect the referenced release notes
+    file. Report the audience, changed behavior, required user action, and any
+    vague migration language.
+
+judges:
+  - name: release-note-success-criteria
+    include_executor_output: true
+    system_prompt: |
+      Pass only if the executor output proves it used the release-note-review
+      skill and clearly reports the audience, changed behavior, required user
+      action, and whether vague migration language exists.
+      Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
+```
+
+A complete copyable example lives in
+[`examples/skill-use`](examples/skill-use/README.md).
+
 Validate and run:
 
 ```bash
