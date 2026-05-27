@@ -1,8 +1,8 @@
 # Development
 
-This guide is for engineers changing Dokumen itself. After reading it, you
-should be able to set up the project, run focused checks, and know where a
-change belongs.
+This guide is for engineers changing Dokumen itself. The main product path is a
+CLI command that runs a Claude Code-style skill attempt and then asks LLM judges
+whether the attempt met the scaffold's success criteria.
 
 ## Setup
 
@@ -42,6 +42,8 @@ when a cleanup needs a durable guardrail.
 - Stages should do one job and communicate through the shared pipeline context.
 - SDK wrappers keep external agent behavior behind stable Dokumen result types.
 - Tools should validate inputs, limit side effects, and report useful errors.
+- Coverage and status commands are experimental; do not let coverage concerns
+  complicate the core executor-plus-judge path.
 
 ## Adding A Command
 

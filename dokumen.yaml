@@ -5,6 +5,7 @@ provider:
 executor_model: claude-haiku-4-5-20251001
 judge_model: claude-haiku-4-5-20251001
 coverage:
+  # Experimental file-level source coverage.
   include:
   - docs/**/*.md
   min_threshold: 80
@@ -23,7 +24,7 @@ skills:
   max_skills_per_prompt: 5
 coordinator:
   max_workers: 2
-  enabled: true
+  enabled: false
   decompose_model: claude-sonnet-4-6
   synthesis_strategy: merge
   worker_model: claude-haiku-4-5-20251001

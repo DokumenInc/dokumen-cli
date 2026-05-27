@@ -8,18 +8,18 @@ trace a scaffold from YAML into agent execution and result output.
 
 Dokumen is organized around four concepts:
 
-- A project configuration defines provider/model settings, coverage, tools,
-  memory, optional coordinator behavior, and execution defaults.
+- A project configuration defines provider/model settings, tools, optional
+  experimental coverage settings, and execution defaults.
 - A test scaffold describes an agent skill, the files it covers, the tools
-  the executor can use, and the judges that evaluate the result.
+  the executor can use, and the judge success criteria that evaluate the result.
 - A loader resolves scaffolds into executable test objects by applying
   configuration, skills, agents, tools, and model overrides.
 - A pipeline runs each test through independent stages and emits a structured
   result.
 
 The executor and judge roles stay separate by design. Executors perform work
-using project knowledge and tools. Judges evaluate whether the work meets the
-assertion.
+using project knowledge and tools. Judges evaluate whether the work satisfies
+the explicit success criteria in the scaffold.
 
 ## Runtime Flow
 
@@ -86,8 +86,9 @@ browser handling.
 
 The presentation-ready path is local and SDK-backed:
 
-- `dokumen validate`, `dokumen list`, `dokumen coverage`, and `dokumen status`
-  operate on local config, scaffolds, and cache artifacts.
+- `dokumen validate` and `dokumen list` operate on local config and scaffolds.
+- `dokumen coverage` and `dokumen status` are experimental helpers that inspect
+  cache artifacts after runs.
 - `dokumen run` uses the Claude Agent SDK for executor and judge agents.
 - Browser tools are passed to the SDK-managed Playwright MCP server.
 - Dokumen-specific helpers, such as `read_many_files` and `explore`, are
@@ -124,7 +125,7 @@ The output layer writes a consistent set of artifacts:
 
 - run results for dashboards and API consumers,
 - JUnit for CI systems,
-- coverage summaries,
+- experimental coverage summaries,
 - explore traces,
 - optional debug traces,
 - executor and judge output files.

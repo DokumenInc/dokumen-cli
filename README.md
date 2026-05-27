@@ -1,39 +1,45 @@
 # Dokumen CLI
 
-Dokumen is an AI-powered skill testing framework. It checks whether an AI agent
-can use project knowledge, documentation, tools, and browser flows to complete a
-real task.
+Dokumen is a CLI for testing Claude Code-style skills with LLM judges. You
+define a task, the tools the agent may use, and the success criteria. Dokumen
+runs the skill attempt and then asks judge agents whether the result passed.
 
 This README is for engineers evaluating, presenting, or running the CLI. After
-reading it, you should be able to install Dokumen, write a skill test scaffold,
-run the suite, and understand the main execution model.
+reading it, you should be able to install Dokumen, write a skill test scaffold
+with success criteria, run it from the command line, and understand the main
+executor-judge model.
 
 ## What It Does
 
-Dokumen uses an executor-judge workflow:
+Dokumen turns skill quality into a repeatable command:
 
-1. An executor agent uses the available project knowledge and tools to perform a
-   task.
-2. One or more judge agents evaluate the executor output against explicit
-   assertions.
-3. Dokumen writes machine-readable results, coverage data, debug traces, and any
+1. A scaffold describes the skill task, source files, tools, and judge criteria.
+2. An executor agent attempts the task with the allowed tools.
+3. One or more LLM judges evaluate the final output and tool log against the
+   success criteria.
+4. Dokumen writes machine-readable results, CI output, debug traces, and any
    generated artifacts.
 
-This makes agent-facing skills testable in CI. Instead of asking whether a guide
-or workflow looks complete, Dokumen asks whether an agent can execute it
-successfully.
+This makes agent-facing skills testable in CI. Instead of asking whether a skill
+or workflow looks complete, Dokumen asks whether an agent can execute it and
+whether an independent judge agrees that it met the stated bar.
 
 ## Core Capabilities
 
 - Run skill tests from YAML scaffolds.
+- Define pass/fail success criteria as judge prompts.
 - Validate scaffolds and project configuration before CI execution.
-- Track which source files are covered by tests.
 - Run exploration before execution so agents can discover relevant files.
 - Support browser-oriented tests through Playwright MCP tools.
+- Emit JSON, JUnit, TAP, and text output for CI and dashboards.
+
+Useful supporting commands:
+
 - Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
 - Generate new test scaffolds from a natural-language goal.
-- Emit JSON, JUnit, TAP, and text output for CI and dashboards.
+- Track file-level source coverage with `dokumen coverage` and `dokumen status`
+  as experimental commands.
 
 ## Installation
 
@@ -92,6 +98,9 @@ judges:
       Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
 ```
 
+The judge prompt is the success criteria. Keep it specific enough that a fresh
+LLM judge can decide pass or fail from the executor output and tool log.
+
 Validate and run:
 
 ```bash
@@ -113,8 +122,8 @@ dokumen run --output junit
 | `dokumen run` | Execute skill tests. |
 | `dokumen validate` | Validate configuration and test scaffolds. |
 | `dokumen list` | List tests, files, or tools. |
-| `dokumen coverage` | Show source coverage. |
-| `dokumen status` | Emit a compact CI status summary. |
+| `dokumen coverage` | Show experimental file-level source coverage. |
+| `dokumen status` | Emit an experimental compact coverage status summary. |
 | `dokumen explore` | Discover files relevant to a topic. |
 | `dokumen create` | Generate a scaffold from a natural-language goal. |
 | `dokumen summarize` | Build summary indexes for large source sets. |
@@ -130,7 +139,7 @@ Each test runs through a stage pipeline:
 4. Compact context when enabled.
 5. Run judges concurrently.
 6. Extract memory and collect output artifacts.
-7. Write results and coverage files.
+7. Write results and optional experimental coverage files.
 
 The important design choice is that execution and evaluation are separate. The
 executor attempts the skill. The judges prove the result satisfies the test's
@@ -147,7 +156,7 @@ Dokumen writes run artifacts under `.dokumen-cache/`:
 
 - `results.json` for dashboards and API ingestion.
 - `junit.xml` for CI test reports.
-- `coverage.json` for source coverage.
+- `coverage.json` for experimental source coverage.
 - `debug-traces/` when `--debug` is enabled.
 - `output/` for files produced by executors or judges.
 

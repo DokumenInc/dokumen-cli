@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dokumen"
 version = "4.0.1"
-description = "AI-powered skill testing framework"
+description = "CLI for testing Claude Code-style skills with LLM judges"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}

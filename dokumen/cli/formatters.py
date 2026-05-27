@@ -170,14 +170,14 @@ def print_coverage_text(
         line_covered = line_stats.get("covered_lines", 0) if line_stats else 0
         if line_stats and line_total > 0:
             click.echo(
-                f"Coverage: {pct:.0f}% files ({passed}/{total}), {line_pct:.1f}% lines ({line_covered}/{line_total})"
+                f"Experimental coverage: {pct:.0f}% files ({passed}/{total}), {line_pct:.1f}% lines ({line_covered}/{line_total})"
             )
         else:
-            click.echo(f"Coverage: {pct:.0f}% ({passed}/{total} files)")
+            click.echo(f"Experimental coverage: {pct:.0f}% ({passed}/{total} files)")
         return
 
-    click.echo("\nDocumentation Coverage")
-    click.echo("=" * 22)
+    click.echo("\nExperimental Source Coverage")
+    click.echo("=" * 28)
 
     # Files section with bar per state
     click.echo(f"\nFiles: {total} total, {total_tests} tests")

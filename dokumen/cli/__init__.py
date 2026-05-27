@@ -1,12 +1,12 @@
 """
-CLI for the Dokumen skill testing framework.
+CLI for testing Claude Code-style skills with LLM judges.
 
 Phase 0 Commands:
     dokumen run               Run skill tests
     dokumen validate          Validate config and test scaffolds
     dokumen list tests|files  List resources
-    dokumen coverage          View source coverage (file-level)
-    dokumen status            Quick coverage status for CI/CD
+    dokumen coverage          View experimental source coverage
+    dokumen status            Quick experimental coverage status for CI/CD
 """
 
 from pathlib import Path
@@ -68,7 +68,7 @@ BANNER = r"""
  / /_/ / /_/ / ,< / /_/ / / / / / /  __/ / / /
 /_____/\____/_/|_|\__,_/_/ /_/ /_/\___/_/ /_/
 
-       Agent Skill Test Framework
+       Claude Code Skill Test CLI
 """
 
 
@@ -178,10 +178,10 @@ class DokumenGroup(click.Group):
 @click.option("--log-file", type=click.Path(), help="Log file path for persistent logging")
 @click.pass_context
 def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optional[str]):
-    """Test AI skills with executable agent tasks.
+    """Test Claude Code-style skills with LLM judges.
 
-    Dokumen verifies that a task can be completed from the available project
-    knowledge, tools, and documentation, then judge agents evaluate the result.
+    Dokumen runs a skill attempt with allowed tools, then judge agents evaluate
+    the result against explicit success criteria.
     """
     ctx.ensure_object(dict)
     ctx.obj["config_path"] = config

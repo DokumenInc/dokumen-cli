@@ -1,5 +1,5 @@
 """
-Coverage and status commands for dokumen CLI - Phase 0 (file-level only).
+Experimental coverage and status commands for the Dokumen CLI.
 """
 
 import json
@@ -47,9 +47,11 @@ def coverage(
     quiet: bool,
     path: Optional[str],
 ):
-    """View source coverage (file-level).
+    """View experimental source coverage (file-level).
 
-    The primary command for understanding your test coverage.
+    This helper reports which configured source files have passing, failing, or
+    missing skill tests. It is useful for local triage, but the core Dokumen
+    contract is pass/fail judging from `dokumen run`.
 
     Examples:
 
@@ -95,7 +97,7 @@ def coverage(
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON")
 @click.pass_context
 def status(ctx, min_threshold: Optional[int], as_json: bool):
-    """Quick coverage status for CI/CD.
+    """Quick experimental coverage status for CI/CD.
 
     Returns exit code 1 if coverage is below threshold.
 
@@ -145,9 +147,12 @@ def status(ctx, min_threshold: Optional[int], as_json: bool):
         pct_str = click.style(f"{pct:.0f}%", fg=pct_color, bold=True)
 
         if min_threshold and pct < min_threshold:
-            click.echo(f"{status_icon} Coverage: {pct_str} (below {min_threshold}% threshold)")
+            click.echo(
+                f"{status_icon} Experimental coverage: {pct_str} "
+                f"(below {min_threshold}% threshold)"
+            )
         else:
-            click.echo(f"{status_icon} Coverage: {pct_str} ({passed}/{total} files)")
+            click.echo(f"{status_icon} Experimental coverage: {pct_str} ({passed}/{total} files)")
 
         if uncovered_count > 0:
             uncovered_str = click.style(f"{uncovered_count}", fg="yellow")
