@@ -1,5 +1,5 @@
 """
-Summary index module for the Documentation Unit Test Framework.
+Summary index module for the Skill Testing Framework.
 
 Generates, parses, and manages DOKUMEN_SUMMARIES_INDEX.md files that
 contain pre-computed summaries of documentation files. The explore agent

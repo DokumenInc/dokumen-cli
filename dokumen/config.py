@@ -345,23 +345,6 @@ class TasksConfig(BaseModel):
     max_tasks: int = Field(200, ge=1, le=1000, description="Maximum number of tasks per run")
 
 
-class MimickConfig(BaseModel):
-    """Configuration for the mimick architecture analysis command."""
-
-    max_turns: int = Field(
-        50, ge=10, le=200, description="Maximum conversation turns for mimick agent"
-    )
-    timeout: float = Field(
-        3600.0, ge=60.0, le=14400.0, description="Timeout for mimick run in seconds"
-    )
-    model: Optional[str] = Field(
-        None, description="Model override for mimick (defaults to provider model)"
-    )
-    build_max_turns: int = Field(
-        80, ge=10, le=200, description="Maximum turns for the build (code gen) phase"
-    )
-
-
 class SkillsConfig(BaseModel):
     """Configuration for the skill system."""
 
@@ -370,7 +353,7 @@ class SkillsConfig(BaseModel):
         "skills/", description="Directory for project-specific skill files (yaml/md)"
     )
     include_system: bool = Field(
-        True, description="Include system skills (mimick, qa-check, link-check)"
+        True, description="Include system skills (qa-check, link-check)"
     )
     max_skills_per_prompt: int = Field(
         10, ge=1, le=20, description="Maximum skills to inject into a single prompt"
@@ -447,9 +430,6 @@ class DokumenConfig(BaseModel):
     )
     tasks: TasksConfig = Field(default_factory=TasksConfig, description="Task tracking settings")
     skills: SkillsConfig = Field(default_factory=SkillsConfig, description="Skill system settings")
-    mimick: MimickConfig = Field(
-        default_factory=MimickConfig, description="Mimick architecture analysis settings"
-    )
     # Model overrides (optional - defaults to provider.model if not specified)
     executor_model: Optional[str] = Field(
         None, description="Model to use for test executors (overrides provider.model)"

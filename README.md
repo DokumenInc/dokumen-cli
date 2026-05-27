@@ -1,37 +1,39 @@
 # Dokumen CLI
 
-Dokumen is an AI-powered documentation testing framework. It checks whether
-documentation can actually support the tasks it claims to support.
+Dokumen is an AI-powered skill testing framework. It checks whether an AI agent
+can use project knowledge, documentation, tools, and browser flows to complete a
+real task.
 
 This README is for engineers evaluating, presenting, or running the CLI. After
-reading it, you should be able to install Dokumen, write a test scaffold, run the
-test suite, and understand the main execution model.
+reading it, you should be able to install Dokumen, write a skill test scaffold,
+run the suite, and understand the main execution model.
 
 ## What It Does
 
 Dokumen uses an executor-judge workflow:
 
-1. An executor agent reads documentation and performs a task.
+1. An executor agent uses the available project knowledge and tools to perform a
+   task.
 2. One or more judge agents evaluate the executor output against explicit
    assertions.
 3. Dokumen writes machine-readable results, coverage data, debug traces, and any
    generated artifacts.
 
-This makes documentation testable in CI. Instead of asking whether docs look
-complete, Dokumen asks whether an agent can use them successfully.
+This makes agent-facing skills testable in CI. Instead of asking whether a guide
+or workflow looks complete, Dokumen asks whether an agent can execute it
+successfully.
 
 ## Core Capabilities
 
-- Run documentation tests from YAML scaffolds.
+- Run skill tests from YAML scaffolds.
 - Validate scaffolds and project configuration before CI execution.
-- Track which documentation files are covered by tests.
+- Track which source files are covered by tests.
 - Run exploration before execution so agents can discover relevant files.
 - Support browser-oriented tests through Playwright MCP tools.
-- Generate summaries for text, image, and PDF documentation with
+- Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
 - Generate new test scaffolds from a natural-language goal.
-- Ask documentation-grounded questions against an existing test corpus.
-- Analyze codebases with `mimick` and produce architecture blueprints.
+- Ask grounded questions against an existing test corpus.
 - Emit JSON, JUnit, TAP, and text output for CI and dashboards.
 
 ## Installation
@@ -69,8 +71,8 @@ execution:
 Create a test scaffold under `tests/`:
 
 ```yaml
-name: api-authentication-docs
-reason: Verify that the authentication docs explain supported auth methods.
+name: api-authentication-skill
+reason: Verify that an agent can explain supported authentication methods.
 
 files:
   - path: docs/authentication.md
@@ -109,16 +111,15 @@ dokumen run --output junit
 
 | Command | Purpose |
 | --- | --- |
-| `dokumen run` | Execute documentation tests. |
+| `dokumen run` | Execute skill tests. |
 | `dokumen validate` | Validate configuration and test scaffolds. |
 | `dokumen list` | List tests, files, or tools. |
-| `dokumen coverage` | Show documentation coverage. |
+| `dokumen coverage` | Show source coverage. |
 | `dokumen status` | Emit a compact CI status summary. |
 | `dokumen explore` | Discover files relevant to a topic. |
-| `dokumen ask` | Answer questions using documentation and test context. |
+| `dokumen ask` | Answer questions using project knowledge and test context. |
 | `dokumen create` | Generate a scaffold from a natural-language goal. |
-| `dokumen summarize` | Build summary indexes for large documentation sets. |
-| `dokumen mimick` | Analyze a codebase and produce an architecture blueprint. |
+| `dokumen summarize` | Build summary indexes for large source sets. |
 | `dokumen config` | View or edit project configuration. |
 
 ## Test Lifecycle
@@ -134,8 +135,8 @@ Each test runs through a stage pipeline:
 7. Write results and coverage files.
 
 The important design choice is that execution and evaluation are separate. The
-executor proves the docs are usable. The judges prove the result satisfies the
-test's criteria.
+executor attempts the skill. The judges prove the result satisfies the test's
+criteria.
 
 The default test path is intentionally narrow: scaffolds are loaded locally,
 executor and judge agents run through the Claude Agent SDK, browser actions go
@@ -148,7 +149,7 @@ Dokumen writes run artifacts under `.dokumen-cache/`:
 
 - `results.json` for dashboards and API ingestion.
 - `junit.xml` for CI test reports.
-- `coverage.json` for documentation coverage.
+- `coverage.json` for source coverage.
 - `debug-traces/` when `--debug` is enabled.
 - `output/` for files produced by executors or judges.
 

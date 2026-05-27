@@ -1,5 +1,5 @@
 """
-Scaffold module for the Documentation Unit Test Framework.
+Scaffold module for the Skill Testing Framework.
 
 Provides scaffold generation, validation, and discovery.
 """

@@ -2,8 +2,8 @@
 Create Agent module for generating test scaffolds from natural language goals.
 
 Generates valid test scaffolds by:
-1. Exploring documentation to discover relevant files
-2. Analyzing documentation content
+1. Exploring project knowledge to discover relevant files
+2. Analyzing source material
 3. Generating executor prompts and judge criteria
 4. Outputting valid YAML scaffold format
 """
@@ -29,24 +29,24 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 
-CREATE_ANALYSIS_PROMPT = """You are a documentation analyzer. Given a goal and documentation files, provide a brief analysis of what the documentation covers.
+CREATE_ANALYSIS_PROMPT = """You are a skill-test analyzer. Given a goal and source files, provide a brief analysis of what the source material covers.
 
 ## Instructions
-1. Summarize what the documentation describes
+1. Summarize what the source material describes
 2. Identify key concepts, rules, or procedures
 3. Note any specific values, thresholds, or requirements
 
 Keep your analysis under 300 words."""
 
 
-CREATE_SCAFFOLD_PROMPT = """You are a test scaffold generator for the Dokumen documentation testing framework.
+CREATE_SCAFFOLD_PROMPT = """You are a test scaffold generator for the Dokumen skill testing framework.
 
 ## Task
-Generate a valid test scaffold YAML that validates documentation based on the user's goal.
+Generate a valid test scaffold YAML that validates whether an agent can perform the user's goal from grounded project knowledge.
 
 ## CRITICAL: Single Judge Rule
 **Generate exactly ONE judge per test.** Keep tests focused and simple.
-- Each test should validate ONE specific aspect of the documentation
+- Each test should validate ONE specific agent skill or user workflow
 - Users can request additional judges in follow-up conversations
 - Do NOT create multiple judges even if the documentation has many sections
 
@@ -92,7 +92,7 @@ timeout: 120
 Output ONLY the YAML scaffold in a ```yaml code block."""
 
 
-CREATE_BROWSER_SCAFFOLD_PROMPT = """You are a test scaffold generator for the Dokumen documentation testing framework.
+CREATE_BROWSER_SCAFFOLD_PROMPT = """You are a test scaffold generator for the Dokumen skill testing framework.
 
 ## Task
 Generate a valid **browser test** scaffold YAML that validates web UI behavior.

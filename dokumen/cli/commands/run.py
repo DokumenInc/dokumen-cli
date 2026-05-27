@@ -42,7 +42,7 @@ def run(ctx, tests: Tuple[str], grep: Optional[str], for_file: Optional[str],
         folder: Optional[str], timeout: Optional[int], bail: bool, force: bool,
         dry_run: bool, output: str, verbose: bool, quiet: bool, parallel: Optional[int],
         debug: bool):
-    """Run documentation tests.
+    """Run skill tests.
 
     Executes tests and reports results.
 

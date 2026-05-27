@@ -1,7 +1,7 @@
 """
-Dokumen - Documentation Unit Test Framework
+Dokumen - Skill Testing Framework
 
-A framework for testing documentation accuracy using AI agents.
+A framework for testing agent skills against project knowledge and tools.
 """
 
 from pathlib import Path

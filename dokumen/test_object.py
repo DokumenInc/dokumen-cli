@@ -1,5 +1,5 @@
 """
-Test Object module for the Documentation Unit Test Framework.
+Test Object module for the Skill Testing Framework.
 
 Represents a single test case that orchestrates executor and judge agents.
 """

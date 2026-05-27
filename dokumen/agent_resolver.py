@@ -1,5 +1,5 @@
 """
-Agent resolution for the Documentation Unit Test Framework.
+Agent resolution for the Skill Testing Framework.
 
 Handles loading agent definitions from YAML files, merging agent defaults
 with scaffold overrides, skills collection and formatting, and

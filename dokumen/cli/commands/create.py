@@ -16,7 +16,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import click
 import yaml
@@ -24,6 +24,9 @@ import yaml
 from ..helpers import load_config, run_async
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from dokumen.create_agent import CreateResult
 
 
 def _emit_event(event_type: str, data: Dict[str, Any]) -> None:
@@ -300,8 +303,8 @@ def create(
 ):
     """Generate a test scaffold from a natural language goal.
 
-    Creates a new documentation test by:
-    1. Exploring documentation to find relevant files
+    Creates a new skill test by:
+    1. Exploring project knowledge to find relevant files
     2. Generating executor prompts and judge criteria
     3. Outputting a valid test scaffold YAML
 

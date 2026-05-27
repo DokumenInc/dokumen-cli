@@ -8,7 +8,7 @@ import curses
 import logging
 import os
 from importlib.metadata import version as get_version
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 import click
 import yaml
@@ -54,12 +54,6 @@ SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
         ("dir", "choice:skills/,./skills,", "skills/", "custom skills folder"),
         ("include_system", "bool", True, "include system skills (qa-check, etc.)"),
         ("max_skills_per_prompt", "choice:5,10,15,20", 10, "skills injected per agent turn"),
-    ]),
-    ("mimick", [
-        ("max_turns", "choice:10,20,30,50,80,100", 50, "max agent turns"),
-        ("timeout", "choice:900.0,1800.0,3600.0,7200.0", 3600.0, "timeout (sec)"),
-        ("model", "choice:,claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001", "", "model override"),
-        ("build_max_turns", "choice:10,30,50,80,120", 80, "build phase max turns"),
     ]),
     ("execution", [
         ("timeout", "choice:900,1800,3600,7200", 3600, "executor timeout (sec)"),
@@ -179,7 +173,11 @@ def _format_value(item: dict, data: dict = None) -> str:
     if item["ftype"] == "bool":
         return "on" if v else "off"
     # for model overrides, show the main model when blank
-    if item.get("key") in ("worker_model", "model", "decompose_model") and item.get("section") in ("coordinator", "mimick") and (v == "" or v is None):
+    if (
+        item.get("key") in ("worker_model", "decompose_model")
+        and item.get("section") == "coordinator"
+        and (v == "" or v is None)
+    ):
         if data:
             main_model = _get(data, "provider", "model", "claude-opus-4-6")
             return main_model
@@ -247,12 +245,6 @@ def _get_status_lines(data: dict, config_path: str) -> List[Tuple[str, str, int]
         strategy = coord_data.get("synthesis_strategy", "merge")
         lines.append(("  workers", str(workers), 5))
         lines.append(("  strategy", strategy, 5))
-
-    mimick_data = data.get("mimick", {})
-    if mimick_data:
-        turns = mimick_data.get("max_turns", 50)
-        m_model = mimick_data.get("model", "") or _get(data, "provider", "model", "claude-opus-4-6")
-        lines.append(("Mimick", f"{turns} turns, {m_model}", 7))
 
     return lines
 
@@ -592,7 +584,7 @@ def config(ctx):
     if ctx.invoked_subcommand is None:
         config_path = _find_config()
         if not os.path.exists(config_path):
-            click.echo(f"no dokumen.yaml found — run 'dokumen config init' first")
+            click.echo("no dokumen.yaml found — run 'dokumen config init' first")
             return
 
         try:

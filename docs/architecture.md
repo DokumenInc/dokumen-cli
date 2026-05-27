@@ -1,8 +1,8 @@
 # Architecture
 
 This document is for engineers who need to understand how Dokumen executes a
-documentation test or safely extend the runtime. After reading it, you should be
-able to trace a scaffold from YAML into agent execution and result output.
+skill test or safely extend the runtime. After reading it, you should be able to
+trace a scaffold from YAML into agent execution and result output.
 
 ## System Model
 
@@ -10,7 +10,7 @@ Dokumen is organized around four concepts:
 
 - A project configuration defines provider/model settings, coverage, tools,
   memory, optional coordinator behavior, and execution defaults.
-- A test scaffold describes a documentation task, the files it covers, the tools
+- A test scaffold describes an agent skill, the files it covers, the tools
   the executor can use, and the judges that evaluate the result.
 - A loader resolves scaffolds into executable test objects by applying
   configuration, skills, agents, tools, and model overrides.
@@ -18,7 +18,8 @@ Dokumen is organized around four concepts:
   result.
 
 The executor and judge roles stay separate by design. Executors perform work
-using documentation. Judges evaluate whether the work meets the assertion.
+using project knowledge and tools. Judges evaluate whether the work meets the
+assertion.
 
 ## Runtime Flow
 
@@ -77,7 +78,7 @@ also tracks tool provenance so CI logs show whether a tool came from a scaffold,
 global defaults, auto-injection, or an agent definition.
 
 Core scaffold execution does not expose the removed code graph tools or the old
-PDF tree-section reader. PDF and image documentation are supported through the
+PDF tree-section reader. PDF and image source material is supported through the
 summary index workflow, while agent execution relies on SDK-native file and
 browser handling.
 
@@ -95,7 +96,7 @@ The presentation-ready path is local and SDK-backed:
 Some integration code remains intentionally optional:
 
 - `DokuRouter` and direct provider classes still support non-test commands such
-  as `ask`, `create`, `summarize`, and `mimick`.
+  as `ask`, `create`, and `summarize`.
 - Backend-oriented stdin modes and workspace resolution are adapters for the
   hosted product, not required for local scaffold execution.
 - Coordinator, task tracking, and memory are advanced paths and are disabled by

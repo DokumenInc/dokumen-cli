@@ -30,7 +30,7 @@ def _get_coverage_stats(config):
 def coverage(ctx, files: bool, uncovered: bool, tree: bool,
              min_threshold: Optional[int], output: str, verbose: bool,
              quiet: bool, path: Optional[str]):
-    """View documentation coverage (file-level).
+    """View source coverage (file-level).
 
     The primary command for understanding your test coverage.
 

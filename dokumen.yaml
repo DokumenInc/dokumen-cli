@@ -30,11 +30,6 @@ coordinator:
   worker_timeout: 1800.0
   decompose_timeout: 300.0
   executor_mode: api
-mimick:
-  timeout: 1800.0
-  max_turns: 30
-  build_max_turns: 30
-  model: claude-sonnet-4-6
 tasks:
   persist_to_disk: false
   enabled: false

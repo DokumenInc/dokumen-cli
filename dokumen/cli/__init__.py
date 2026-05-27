@@ -1,11 +1,11 @@
 """
-CLI for the Dokumen Documentation Unit Test Framework.
+CLI for the Dokumen skill testing framework.
 
 Phase 0 Commands:
-    dokumen run               Run documentation tests
+    dokumen run               Run skill tests
     dokumen validate          Validate config and test scaffolds
     dokumen list tests|files  List resources
-    dokumen coverage          View documentation coverage (file-level)
+    dokumen coverage          View source coverage (file-level)
     dokumen status            Quick coverage status for CI/CD
 """
 from pathlib import Path
@@ -33,7 +33,6 @@ from .commands.explore import explore
 from .commands.ask import ask
 from .commands.create import create
 from .commands.summarize import summarize
-from .commands.mimick import mimick
 from .commands.config_cmd import config
 
 # Import _run_tests for backward compatibility (tests patch this)
@@ -75,7 +74,7 @@ BANNER = r"""
  / /_/ / /_/ / ,< / /_/ / / / / / /  __/ / / /
 /_____/\____/_/|_|\__,_/_/ /_/ /_/\___/_/ /_/
 
-       Documentation Unit Test Framework
+       Agent Skill Test Framework
 """
 
 
@@ -83,7 +82,18 @@ class DokumenGroup(click.Group):
     """Custom group that preserves command insertion order and groups commands."""
 
     # Define which commands are "main" vs "other"
-    MAIN_COMMANDS = {'run', 'validate', 'list', 'coverage', 'status', 'explore', 'ask', 'create', 'summarize', 'mimick', 'config'}
+    MAIN_COMMANDS = {
+        'run',
+        'validate',
+        'list',
+        'coverage',
+        'status',
+        'explore',
+        'ask',
+        'create',
+        'summarize',
+        'config',
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -167,10 +177,10 @@ class DokumenGroup(click.Group):
 @click.option('--log-file', type=click.Path(), help='Log file path for persistent logging')
 @click.pass_context
 def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optional[str]):
-    """Test your documentation with AI agents.
+    """Test AI skills with executable agent tasks.
 
-    Dokumen verifies that your docs are accurate by having an executor
-    agent read them and perform tasks, then judge agents evaluate the results.
+    Dokumen verifies that a task can be completed from the available project
+    knowledge, tools, and documentation, then judge agents evaluate the result.
     """
     ctx.ensure_object(dict)
     ctx.obj['config_path'] = config
@@ -200,7 +210,6 @@ cli.add_command(explore)
 cli.add_command(ask)
 cli.add_command(create)
 cli.add_command(summarize)
-cli.add_command(mimick)
 cli.add_command(config)
 
 

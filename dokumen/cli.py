@@ -1,5 +1,5 @@
 """
-CLI for the Dokumen Documentation Unit Test Framework.
+CLI for the Dokumen skill testing framework.
 
 This module re-exports from dokumen.cli for backward compatibility.
 The implementation has been modularized into dokumen/cli/ directory.

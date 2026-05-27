@@ -1,7 +1,7 @@
 """
 Ask command for dokumen CLI.
 
-Asks questions about documentation.
+Asks grounded questions about project knowledge.
 
 Supports three modes:
 1. Single question: dokumen ask "What is X?"
@@ -258,7 +258,7 @@ async def _run_interactive_session(
 ) -> None:
     """Run an interactive ask session.
 
-    Explores documentation once at the start (using the first question as topic),
+    Explores project knowledge once at the start (using the first question as topic),
     then accepts follow-up questions in a REPL loop until the user exits.
 
     Args:
@@ -275,7 +275,7 @@ async def _run_interactive_session(
     session_initialized = False
 
     if not stream:
-        click.echo(click.style("Ready to explore documentation based on your first question.", fg="cyan"))
+        click.echo(click.style("Ready to explore project knowledge based on your first question.", fg="cyan"))
         click.echo(click.style("Type 'exit' or 'quit' to end the session.\n", dim=True))
 
     # Interactive loop
@@ -340,7 +340,7 @@ async def _run_interactive_session(
             # Initialize session with first question's topic (runs explore once)
             if not session_initialized:
                 if not stream:
-                    click.echo(click.style(f"Exploring documentation for: {question[:50]}...", fg="cyan"))
+                    click.echo(click.style(f"Exploring project knowledge for: {question[:50]}...", fg="cyan"))
                 explore_result = await agent.initialize_session(topic=question, on_progress=on_progress)
                 session_initialized = True
                 if not stream:
@@ -398,7 +398,7 @@ async def _run_stdin_session(
     """Run a stdin-based ask session for backend integration.
 
     Reads NDJSON messages from stdin, outputs NDJSON events to stdout.
-    Explores documentation once at the start.
+    Explores project knowledge once at the start.
 
     Protocol:
         Input: {"type": "question", "content": "..."} or {"type": "quit"}
@@ -502,7 +502,7 @@ def _format_text_output(result) -> str:
 )
 @click.pass_context
 def ask(ctx, question: Optional[str], output: str, timeout: float, skip_tests: bool, stream: bool, stdin_mode: bool, context_file: str):
-    """Ask questions about documentation.
+    """Ask grounded questions about project knowledge.
 
     Supports three modes:
 
@@ -523,7 +523,7 @@ def ask(ctx, question: Optional[str], output: str, timeout: float, skip_tests: b
        {"type": "question", "content": "What is X?"}
        {"type": "quit"}
 
-    In interactive and stdin modes, documentation is explored ONCE at the
+    In interactive and stdin modes, project knowledge is explored ONCE at the
     start and reused for all follow-up questions. Conversation context is
     maintained throughout the session.
 

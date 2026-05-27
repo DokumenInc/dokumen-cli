@@ -1,5 +1,5 @@
 """
-Test Suite module for the Documentation Unit Test Framework.
+Test Suite module for the Skill Testing Framework.
 
 Manages collections of tests, caching, and coverage reporting.
 """

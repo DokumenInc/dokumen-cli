@@ -1,5 +1,5 @@
 """
-Anthropic Provider for the Documentation Unit Test Framework.
+Anthropic Provider for the Skill Testing Framework.
 """
 from typing import Any, Dict, List, Optional
 import os

@@ -1,14 +1,14 @@
 """
 Explore command for dokumen CLI.
 
-Discovers relevant documentation files using an AI agent via the Claude Agent SDK.
+Discovers relevant source files using an AI agent via the Claude Agent SDK.
 """
 import json
 import logging
 import os
 import sys
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -16,6 +16,9 @@ from ..helpers import load_config, run_async
 
 # Configure logger for explore command
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from dokumen.explore_types import ExploreResult
 
 
 async def _run_explore(
@@ -39,8 +42,6 @@ async def _run_explore(
         ExploreResult with discovered files
     """
     from dokumen.explore_agent import ExploreAgent
-    from dokumen.config import DEFAULT_EXPLORE_TOOL_NAMES
-
     logger.info(f"[EXPLORE_CLI] Starting exploration for topic: {topic!r}")
     logger.info(f"[EXPLORE_CLI] Parameters: max_files={max_files}, timeout={timeout}")
     logger.debug(f"[EXPLORE_CLI] Working directory: {os.getcwd()}")
@@ -173,7 +174,7 @@ def _format_text_output(result) -> str:
 )
 @click.pass_context
 def explore(ctx, topic: str, output: str, max_files: int, timeout: int):
-    """Discover relevant documentation files.
+    """Discover relevant source files.
 
     Uses an AI agent to explore the codebase and find files relevant to TOPIC.
 
@@ -193,13 +194,13 @@ def explore(ctx, topic: str, output: str, max_files: int, timeout: int):
         config_path = ctx.obj.get("config_path") if ctx.obj else None
         logger.debug(f"[EXPLORE_CMD] Loading config from: {config_path}")
         config = load_config(config_path)
-        logger.info(f"[EXPLORE_CMD] Config loaded successfully")
+        logger.info("[EXPLORE_CMD] Config loaded successfully")
     except Exception as e:
         logger.warning(f"[EXPLORE_CMD] Failed to load config: {e}, continuing with defaults")
 
     # Run exploration
     try:
-        logger.info(f"[EXPLORE_CMD] Starting async exploration...")
+        logger.info("[EXPLORE_CMD] Starting async exploration...")
         result = run_async(
             _run_explore(
                 topic=topic,
@@ -208,7 +209,7 @@ def explore(ctx, topic: str, output: str, max_files: int, timeout: int):
                 config=config,
             )
         )
-        logger.info(f"[EXPLORE_CMD] Exploration completed successfully")
+        logger.info("[EXPLORE_CMD] Exploration completed successfully")
     except Exception as e:
         logger.error(f"[EXPLORE_CMD] Exploration failed with error: {e}", exc_info=True)
         # Handle errors gracefully
@@ -229,10 +230,10 @@ def explore(ctx, topic: str, output: str, max_files: int, timeout: int):
 
     # Output result
     if output == "json":
-        logger.debug(f"[EXPLORE_CMD] Outputting JSON result")
+        logger.debug("[EXPLORE_CMD] Outputting JSON result")
         click.echo(json.dumps(result.to_dict(), indent=2))
     else:
-        logger.debug(f"[EXPLORE_CMD] Outputting text result")
+        logger.debug("[EXPLORE_CMD] Outputting text result")
         click.echo(_format_text_output(result))
 
-    logger.info(f"[EXPLORE_CMD] Command completed")
+    logger.info("[EXPLORE_CMD] Command completed")

@@ -25,7 +25,7 @@ def list_cmd(ctx):
 
         dokumen list tests    Show all test scaffolds
 
-        dokumen list files    Show tracked documentation files
+        dokumen list files    Show tracked source files
     """
     pass
 
@@ -92,7 +92,7 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
     # Text output mode
     if not scaffolds:
         click.echo("No test scaffolds found in tests/")
-        click.echo("Run 'dokumen add --all-uncovered' to create tests.")
+        click.echo("Run 'dokumen create --goal \"...\"' to create a test.")
         return
 
     if tree_output:
@@ -161,7 +161,7 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
 @click.option('--metrics', '-m', is_flag=True, help='Show coverage metrics')
 @click.pass_context
 def list_files(ctx, metrics: bool):
-    """List tracked documentation files."""
+    """List tracked source files."""
     from ..formatters import print_coverage_tree
 
     config = load_config(ctx.obj.get('config_path'))
@@ -174,7 +174,7 @@ def list_files(ctx, metrics: bool):
     )
 
     if not all_files:
-        click.echo("No documentation files found.")
+        click.echo("No source files found.")
         click.echo("Update 'coverage.include' in dokumen.yaml.")
         return
 
@@ -215,7 +215,7 @@ def list_tools(ctx):
     }
     agent_tools = {
         "explore": "Run a focused workspace exploration sub-agent.",
-        "ask": "Ask a documentation-grounded follow-up question.",
+        "ask": "Ask a grounded follow-up question.",
     }
 
     click.echo("\nAvailable Tools")

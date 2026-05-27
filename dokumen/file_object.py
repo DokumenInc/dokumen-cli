@@ -1,5 +1,5 @@
 """
-File Object module for the Documentation Unit Test Framework.
+File Object module for the Skill Testing Framework.
 
 Provides abstraction layer for files being tested (documentation, specs, etc.)
 and tracks usage metrics for test coverage reporting.

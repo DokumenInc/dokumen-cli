@@ -1,5 +1,5 @@
 """
-Tools Object module for the Documentation Unit Test Framework.
+Tools Object module for the Skill Testing Framework.
 
 Provides tool definitions for agents, with support for multiple LLM provider formats.
 """

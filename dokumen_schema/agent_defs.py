@@ -47,7 +47,7 @@ _BUILTINS: dict[str, AgentDefinition] = {
     ),
     "browser-tester": AgentDefinition(
         name="browser-tester",
-        description="Browser-oriented documentation test executor.",
+        description="Browser-oriented skill test executor.",
         system_prompt=(
             "You are a Dokumen browser test executor. Follow the documentation, "
             "interact with the browser, and report observable results."

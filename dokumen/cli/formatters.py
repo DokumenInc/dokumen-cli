@@ -705,8 +705,8 @@ def results_to_tap(results) -> str:
 def print_results_text(results, verbose=False):
     """Print test results in text format."""
     click.echo()
-    click.echo(click.style("Documentation Unit Tests", bold=True))
-    click.echo("=" * 24)
+    click.echo(click.style("Skill Tests", bold=True))
+    click.echo("=" * 11)
 
     # Summary
     total = results.total_tests

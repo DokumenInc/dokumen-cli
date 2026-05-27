@@ -1,5 +1,5 @@
 """
-Loader module for the Documentation Unit Test Framework.
+Loader module for the Skill Testing Framework.
 
 Thin orchestrator that delegates to focused sub-modules:
 - scaffold_parser: YAML parsing, prompt substitution, browser/viewport config

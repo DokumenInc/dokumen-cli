@@ -107,8 +107,8 @@ class DokumenAgent:
         if mcp_servers:
             all_mcp_servers.update(mcp_servers)
 
-        # Build hooks — skip if no tools_config and no on_tool_call
-        # (mimick/explore only need read access, hooks cause SDK CLI issues)
+        # Build hooks only when tool policy or callbacks are active.
+        # Explore needs broad read access, and hooks can cause SDK CLI issues.
         hooks = None
         if tools_config is not None or on_tool_call is not None:
             from .hooks import build_validation_hooks

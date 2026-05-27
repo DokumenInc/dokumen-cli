@@ -110,7 +110,7 @@ def build_validation_hooks(
         tool_input = input_data["tool_input"]
 
         # Path validation for write tools only — read tools can access anywhere
-        # (mimick needs to read external repos, explore reads the whole codebase)
+        # because explore needs to inspect the workspace broadly.
         if tool_name in ("Write", "Edit"):
             file_path = tool_input.get("file_path", "")
             if not is_path_allowed(file_path, tools_config):

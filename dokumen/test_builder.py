@@ -1,5 +1,5 @@
 """
-Test builder for the Documentation Unit Test Framework.
+Test builder for the Skill Testing Framework.
 
 Handles creating LLM providers, constructing SDK executor/judge agents,
 building TestObject instances, and provider configuration from environment/config.

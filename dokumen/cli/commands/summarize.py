@@ -1,7 +1,7 @@
 """
 Summarize command for dokumen CLI.
 
-Generates DOKUMEN_SUMMARIES_INDEX.md with AI-powered summaries of documentation files.
+Generates DOKUMEN_SUMMARIES_INDEX.md with AI-powered summaries of source files.
 The explore agent reads this index first to quickly identify relevant files.
 """
 
@@ -9,8 +9,6 @@ import base64
 import logging
 import time
 from pathlib import Path
-from typing import Optional
-
 import click
 
 from ..helpers import load_config, discover_doc_files, run_async
@@ -19,7 +17,6 @@ from dokumen.loader import get_configured_provider
 from dokumen.summary_index import (
     IMAGE_TYPES,
     INDEX_FILENAME,
-    SummaryIndex,
     compute_content_hash,
     compute_staleness,
     generate_summary_index,
@@ -191,10 +188,10 @@ async def _run_summarize(
 @click.option("--dry-run", is_flag=True, help="Show what would change without writing")
 @click.pass_context
 def summarize(ctx, force, dry_run):
-    """Generate documentation summaries index.
+    """Generate source summaries index.
 
     Creates DOKUMEN_SUMMARIES_INDEX.md with AI-generated summaries of all
-    documentation files. The explore agent reads this index to quickly
+    configured source files. The explore agent reads this index to quickly
     identify relevant files.
 
     Examples:
@@ -238,7 +235,7 @@ def summarize(ctx, force, dry_run):
             for f in stats["removed_files"]:
                 click.echo(f"    - {f}")
     elif stats["total_files"] == 0:
-        click.echo(click.style("No documentation files found.", fg="yellow"))
+        click.echo(click.style("No source files found.", fg="yellow"))
     else:
         click.echo(click.style("Summary index generated", fg="green", bold=True))
         click.echo(f"  Processed:  {stats['files_processed']} files")
