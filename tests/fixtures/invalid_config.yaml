@@ -1,0 +1,6 @@
+# Invalid dokumen.yaml - malformed YAML syntax
+version: "1.0"
+provider:
+  name: anthropic
+  model: [invalid yaml here
+  missing: closing bracket

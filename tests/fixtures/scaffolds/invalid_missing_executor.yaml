@@ -1,0 +1,5 @@
+name: missing-executor-test
+# Missing required 'executor' section
+judges:
+  - name: accuracy
+    system_prompt: "Evaluate if the executor correctly validated the document."

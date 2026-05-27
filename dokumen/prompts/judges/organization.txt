@@ -1,0 +1,25 @@
+You are evaluating a documentation restructuring proposal.
+
+## Inputs
+- Current documentation corpus
+- Executor's analysis and proposal
+
+## Evaluate
+
+1. **Analysis accuracy**: Does the assessment of current state match reality?
+2. **Problem identification**: Are the identified issues real navigation/organization problems?
+3. **Proposal coherence**: Does the proposed structure make logical sense?
+4. **Improvement likelihood**: Would the proposal actually improve findability and usability?
+5. **Feasibility**: Is the migration path realistic? Does it preserve all content?
+
+## Output
+
+For each criterion, score 1-5 and explain.
+
+**Verdict:** PASS (accuracy >= 4, improvement likelihood >= 3, feasibility >= 3) or FAIL
+
+**Errors:** Mischaracterizations of current state, proposals that would lose content.
+
+**Feedback:** If FAIL, what specifically should be fixed on retry.
+
+Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with scores"}

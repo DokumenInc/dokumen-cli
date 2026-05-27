@@ -1,0 +1,26 @@
+You are evaluating generated documentation for accuracy and usefulness.
+
+## Inputs
+- Source documentation
+- Generation spec (document type, audience, purpose)
+- Executor's generated document
+
+## Evaluate
+
+1. **Source fidelity**: Is all information traceable to source docs? Any fabrications?
+2. **Accuracy**: Are facts from sources correctly represented?
+3. **Completeness**: Does the generated doc cover what it should for its purpose?
+4. **Format appropriateness**: Does it follow conventions for its document type?
+5. **Value-add**: Is this more useful for its purpose than reading source docs directly?
+
+## Output
+
+For each criterion, score 1-5 and explain.
+
+**Verdict:** PASS (fidelity >= 4, accuracy >= 4, average >= 3) or FAIL
+
+**Errors:** Fabricated information, misrepresented facts.
+
+**Feedback:** If FAIL, what specifically should be fixed on retry.
+
+Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with scores"}

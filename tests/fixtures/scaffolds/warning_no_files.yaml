@@ -1,0 +1,10 @@
+name: no-files-test
+executor:
+  agent: doc-validator
+  user_prompt: "Read and validate the refund policy."
+  tools:
+    - read_file
+judges:
+  - name: accuracy
+    system_prompt: "Evaluate if the executor correctly validated the document."
+# Missing 'files' section - should generate warning about coverage

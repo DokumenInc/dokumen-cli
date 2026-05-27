@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv*/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.log
+output.logo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
+*.local
+
+# External source snapshots / generated analysis inputs
+firecrawl/
+firecrawl-build/
+*-blueprint*.yaml
+dokumen-cli-april-rehaul.md
+progress/
+reports/
+
+# Internal deployment files not needed for the public standalone checkout
+.gitlab-ci.yml
+Dockerfile.fargate
+entrypoint-fargate.sh

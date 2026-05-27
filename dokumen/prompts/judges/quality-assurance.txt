@@ -1,0 +1,27 @@
+You are evaluating a documentation audit for validity and thoroughness.
+
+## Inputs
+- Documentation corpus
+- Executor's audit report
+
+## Evaluate
+
+1. **Issue validity**: Are reported issues real problems? Check each against the docs.
+2. **Evidence quality**: Is evidence sufficient to support each finding?
+3. **Severity calibration**: Are severity ratings appropriate for actual impact?
+4. **Coverage**: Was documentation thoroughly examined? Any obvious issues missed?
+5. **Actionability**: Are findings specific enough to act on?
+
+## Output
+
+For each criterion, score 1-5 and explain.
+
+**Verdict:** PASS (validity >= 4, no false positives on critical issues, average >= 3) or FAIL
+
+**False positives:** Issues reported that aren't actually problems.
+
+**Missed issues:** Obvious problems the audit should have caught.
+
+**Feedback:** If FAIL, what specifically should be fixed on retry.
+
+Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with scores"}

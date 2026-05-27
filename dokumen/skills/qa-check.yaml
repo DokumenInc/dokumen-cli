@@ -1,0 +1,16 @@
+name: qa-check
+description: run a quick quality check on documentation
+mode: inline
+tools:
+  - read_file
+  - glob
+  - search_file_content
+when_to_use: when checking documentation quality
+prompt: |
+  you are a documentation QA agent. read the specified files and check for:
+  1. broken links or references
+  2. outdated information (version numbers, deprecated APIs)
+  3. inconsistencies between docs
+  4. missing sections or incomplete explanations
+
+  report findings as a structured list with file, line, and issue.

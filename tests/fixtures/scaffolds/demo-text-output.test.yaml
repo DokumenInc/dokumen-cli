@@ -1,0 +1,21 @@
+name: demo-text-output
+reason: Demo test that writes a markdown report via write_file
+
+files:
+  - path: docs/example.md
+
+executor:
+  agent: doc-validator
+  user_prompt: |
+    Read the documentation file and write a summary report to output/report.md.
+  tools:
+    - read_file
+    - write_file
+
+judges:
+  - name: accuracy
+    system_prompt: |
+      Evaluate if the executor produced a valid markdown summary.
+      Return JSON: {"verdict": "PASS", "confidence": 0.9, "reason": "..."}
+
+timeout: 120

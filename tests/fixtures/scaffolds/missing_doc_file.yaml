@@ -1,0 +1,11 @@
+name: missing-doc-test
+files:
+  - path: docs/nonexistent.md
+executor:
+  agent: doc-validator
+  user_prompt: "Read and validate the refund policy."
+  tools:
+    - read_file
+judges:
+  - name: accuracy
+    system_prompt: "Evaluate if the executor correctly validated the document."

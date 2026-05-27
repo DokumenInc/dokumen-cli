@@ -1,0 +1,11 @@
+name: missing-judge-prompt-test
+files:
+  - path: docs/policies/refund.md
+executor:
+  agent: doc-validator
+  user_prompt: "Validate the refund policy document."
+  tools:
+    - read_file
+judges:
+  - name: accuracy
+    # Missing system_prompt - should generate warning

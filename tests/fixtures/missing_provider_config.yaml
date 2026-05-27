@@ -1,0 +1,11 @@
+# Invalid config - missing required provider section
+version: "1.0"
+
+# provider section is missing!
+
+execution:
+  timeout: 60
+
+coverage:
+  include:
+    - "docs/**/*.md"

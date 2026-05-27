@@ -1,0 +1,24 @@
+name: demo-multi-output
+reason: Demo test producing multiple output types in one test
+
+files:
+  - path: docs/architecture.md
+
+executor:
+  agent: doc-validator
+  user_prompt: |
+    Read the architecture documentation and produce:
+    1. A summary report at output/summary.md
+    2. A dependency analysis at output/dependencies.csv
+    3. A validation script at output/validate.py
+  tools:
+    - read_file
+    - write_file
+
+judges:
+  - name: completeness
+    system_prompt: |
+      Evaluate if the executor produced all three output files with appropriate content.
+      Return JSON: {"verdict": "PASS", "confidence": 0.9, "reason": "..."}
+
+timeout: 180

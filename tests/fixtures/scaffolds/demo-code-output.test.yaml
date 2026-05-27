@@ -1,0 +1,23 @@
+name: demo-code-output
+reason: Demo test that writes a Python script as output
+
+files:
+  - path: docs/api-reference.md
+
+executor:
+  agent: doc-validator
+  user_prompt: |
+    Read the API reference and generate a Python script that demonstrates
+    the documented API endpoints. Write it to output/api_demo.py.
+  tools:
+    - read_file
+    - write_file
+
+judges:
+  - name: code-quality
+    system_prompt: |
+      Evaluate if the generated Python script is syntactically correct
+      and demonstrates the documented APIs.
+      Return JSON: {"verdict": "PASS", "confidence": 0.9, "reason": "..."}
+
+timeout: 120

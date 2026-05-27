@@ -1,0 +1,45 @@
+# Git
+.git/
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
+*.local
+
+# Generated/local material
+.venv/
+.dokumen-cache/
+firecrawl/
+firecrawl-build/
+*-blueprint*.yaml
+dokumen-cli-april-rehaul.md
+progress/
+reports/
+*.log
+output.logo
+
+# Test data (not needed in image)
+tests/

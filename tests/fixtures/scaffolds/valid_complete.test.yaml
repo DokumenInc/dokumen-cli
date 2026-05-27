@@ -1,0 +1,68 @@
+name: verify-api-authentication-methods
+reason: |
+  Ensures the API authentication documentation accurately describes
+  all supported authentication methods and their configuration.
+
+files:
+  - path: docs/api/authentication.md
+  - path: docs/api/security.md
+
+executor:
+  agent: doc-validator
+  user_prompt: |
+    Find and validate the API authentication documentation. Answer:
+    1. What authentication methods are supported?
+    2. What headers are required for each method?
+    3. Are there any rate limits mentioned?
+  tools:
+    - read_file
+    - glob
+
+judges:
+  - name: accuracy-judge
+    system_prompt: |
+      You are evaluating a Q&A response for accuracy and groundedness.
+
+      ## Inputs
+      - Documentation corpus
+      - User question
+      - Executor's answer
+
+      ## Evaluate
+
+      1. **Groundedness**: Is every claim supported by the documentation? Check each citation.
+      2. **Accuracy**: Are cited passages interpreted correctly? No misreadings or distortions?
+      3. **Completeness**: Does the answer fully address the question asked?
+      4. **Honesty**: Are gaps, uncertainty, and limitations acknowledged appropriately?
+
+      ## Output
+
+      For each criterion, score 1-5 and explain.
+
+      **Verdict:** PASS (all scores >= 3, no hallucinations) or FAIL
+
+      **Errors:** List any unsupported claims, misinterpretations, or hallucinations.
+
+      **Feedback:** If FAIL, what specifically should be fixed on retry.
+
+      Respond with JSON: {"verdict": "PASS" or "FAIL", "confidence": 0.0-1.0, "reason": "explanation with scores"}
+
+      EVALUATION CRITERIA:
+      - All answers must be grounded in the documentation
+      - Line citations must be accurate
+    tools:
+      - read_file
+    include_executor_output: true
+
+  - name: completeness-judge
+    system_prompt: |
+      Verify that ALL authentication methods in the docs were found.
+
+sandbox:
+  type: docker
+  docker_image: python:3.11-slim
+  docker_network: none
+  timeout: 60
+
+timeout: 90
+retries: 1

@@ -1,0 +1,5 @@
+# Minimal valid config - only required fields
+version: "1.0"
+
+provider:
+  name: anthropic

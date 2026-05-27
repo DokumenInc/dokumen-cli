@@ -1,0 +1,17 @@
+# Valid dokumen.yaml configuration for testing
+version: "1.0"
+
+provider:
+  name: anthropic
+  model: claude-haiku-4-5-20251001
+
+execution:
+  timeout: 60
+
+coverage:
+  include:
+    - "docs/**/*.md"
+    - "README.md"
+  exclude:
+    - "docs/archive/**"
+  min_threshold: 80
