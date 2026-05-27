@@ -156,14 +156,15 @@ The cache directory is local run output and should not be committed.
 
 ## Development
 
-Run focused tests while iterating:
+Run the repository smoke checks while iterating:
 
 ```bash
-pytest tests/unit -q
-pytest tests/unit/test_config.py -q
+python -m compileall -q dokumen dokumen_schema
+dokumen --help
+dokumen validate --config-only
 ```
 
-Run formatting and linting if the tools are installed:
+Run formatting and linting when those tools are installed:
 
 ```bash
 ruff check dokumen tests

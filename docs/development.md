@@ -14,8 +14,9 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Some integration paths require external credentials. Unit tests should not
-require live provider keys.
+Some integration paths require external credentials. Keep local smoke checks
+offline and deterministic unless you are intentionally testing provider-backed
+commands.
 
 ## Useful Commands
 
@@ -23,12 +24,11 @@ require live provider keys.
 dokumen --help
 dokumen validate
 dokumen run --dry-run
-pytest tests/unit -q
-pytest tests/unit/test_config.py -q
+python -m compileall -q dokumen dokumen_schema
 ```
 
 When editing behavior that touches agents or tools, run the smallest relevant
-test first, then broaden to the package or command area.
+smoke check first, then broaden to command-level checks.
 
 ## Code Organization
 
