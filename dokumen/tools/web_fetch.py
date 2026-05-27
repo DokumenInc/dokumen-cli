@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
 from ..logging_config import get_logger
-from ..tools_object import ToolDefinition, ToolResult
+from .types import ToolDefinition, ToolResult
 
 if TYPE_CHECKING:
     from ..sandbox import Sandbox

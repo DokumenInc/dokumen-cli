@@ -6,7 +6,8 @@ from dokumen.playwright_tools import get_browser_tool_names
 from dokumen.sdk.judge import parse_verdict
 from dokumen.sdk.tools import resolve_sdk_tools
 from dokumen.sdk.types import JudgeVerdict
-from dokumen.tools_object import ToolDefinition, ToolResult, get_all_tool_names
+from dokumen.tools.types import ToolDefinition, ToolResult
+from dokumen.tools_object import get_all_tool_names
 from dokumen_schema.constants import BROWSER_TOOLS, VALID_EXECUTOR_TOOLS
 
 

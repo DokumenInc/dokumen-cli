@@ -1,215 +1,30 @@
 """
 Tools Object module for the Skill Testing Framework.
 
-Provides tool definitions for agents, with support for multiple LLM provider formats.
+Provides legacy tool factories and registries.
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Awaitable, TYPE_CHECKING
-from datetime import datetime
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import asyncio
+from datetime import datetime
 import math
 import os
 
 from .logging_config import get_logger
+from .tools.types import (
+    SubagentResult as SubagentResult,
+    ToolCall as ToolCall,
+    ToolDefinition as ToolDefinition,
+    ToolHandler as ToolHandler,
+    ToolResult as ToolResult,
+    ToolsObject as ToolsObject,
+)
 
 if TYPE_CHECKING:
     from .sandbox import Sandbox
 
 # Module-level logger
 logger = get_logger(__name__)
-
-@dataclass
-class ToolResult:
-    """Result from executing a tool."""
-
-    success: bool
-    output: Any
-    error: Optional[str] = None
-
-
-@dataclass
-class ToolCall:
-    """Record of a tool invocation."""
-
-    tool_name: str
-    parameters: Dict[str, Any]
-    result: ToolResult
-    timestamp: datetime
-    duration: float  # seconds
-
-
-@dataclass
-class SubagentResult:
-    """Result from a single subagent execution."""
-
-    file_path: str
-    start_line: int
-    end_line: int
-    goal: str
-    success: bool
-    response: str
-    tool_calls: List[Dict[str, Any]]
-    covered_lines: List[int] = field(default_factory=list)  # Lines identified as important
-    error: Optional[str] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "file_path": self.file_path,
-            "lines": f"{self.start_line}-{self.end_line}",
-            "goal": self.goal,
-            "success": self.success,
-            "response": self.response,
-            "tool_calls": self.tool_calls,
-            "covered_lines": self.covered_lines,
-            "error": self.error,
-        }
-
-
-# Type alias for tool handlers
-ToolHandler = Callable[[Dict[str, Any]], Awaitable[ToolResult]]
-
-
-@dataclass
-class ToolDefinition:
-    """Definition of a tool available to agents."""
-
-    name: str
-    description: str
-    parameters: Dict[str, Any]  # JSON Schema
-    handler: ToolHandler
-
-
-class ToolsObject:
-    """Manages tool definitions and execution."""
-
-    def __init__(self):
-        self._tools: Dict[str, ToolDefinition] = {}
-
-    def register(self, tool: ToolDefinition) -> None:
-        """Register a new tool.
-
-        Args:
-            tool: The tool definition to register
-
-        Raises:
-            ValueError: If a tool with the same name already exists
-        """
-        if tool.name in self._tools:
-            raise ValueError(f"Tool already exists: {tool.name}")
-        self._tools[tool.name] = tool
-
-    def unregister(self, tool_name: str) -> bool:
-        """Remove a tool from the registry.
-
-        Args:
-            tool_name: Name of the tool to remove
-
-        Returns:
-            True if tool was removed, False if not found
-        """
-        if tool_name in self._tools:
-            del self._tools[tool_name]
-            return True
-        return False
-
-    def get(self, tool_name: str) -> Optional[ToolDefinition]:
-        """Get a tool definition by name.
-
-        Args:
-            tool_name: Name of the tool
-
-        Returns:
-            The tool definition or None if not found
-        """
-        return self._tools.get(tool_name)
-
-    async def execute(self, tool_name: str, params: Dict[str, Any]) -> ToolResult:
-        """Execute a tool by name with provided parameters.
-
-        Args:
-            tool_name: Name of the tool to execute
-            params: Parameters to pass to the tool handler
-
-        Returns:
-            ToolResult with success status and output or error
-        """
-        logger.debug("tools.execute.start", tool_name=tool_name, params=params)
-        if tool_name not in self._tools:
-            logger.warning("tools.execute.not_found", tool_name=tool_name)
-            return ToolResult(success=False, output=None, error=f"Tool not found: {tool_name}")
-
-        tool = self._tools[tool_name]
-
-        try:
-            # Validate parameters against schema
-            self._validate_params(tool.parameters, params)
-
-            # Execute the handler
-            import time
-
-            start = time.time()
-            result = await tool.handler(params)
-            duration = time.time() - start
-            logger.info(
-                "tools.execute.complete",
-                tool_name=tool_name,
-                success=result.success,
-                duration_ms=int(duration * 1000),
-            )
-            return result
-        except Exception as e:
-            logger.error("tools.execute.error", tool_name=tool_name, error=str(e))
-            return ToolResult(success=False, output=None, error=str(e))
-
-    def get_definitions(self) -> List[ToolDefinition]:
-        """Return all registered tool definitions."""
-        return list(self._tools.values())
-
-    def to_openai_format(self) -> List[Dict[str, Any]]:
-        """Convert tools to OpenAI function calling format."""
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
-                },
-            }
-            for tool in self._tools.values()
-        ]
-
-    def to_anthropic_format(self) -> List[Dict[str, Any]]:
-        """Convert tools to Anthropic tool use format."""
-        return [
-            {"name": tool.name, "description": tool.description, "input_schema": tool.parameters}
-            for tool in self._tools.values()
-        ]
-
-    def to_fastmcp_format(self) -> List[Dict[str, Any]]:
-        """Convert tools to fastMCP-compatible format."""
-        return [
-            {"name": tool.name, "description": tool.description, "inputSchema": tool.parameters}
-            for tool in self._tools.values()
-        ]
-
-    @staticmethod
-    def _validate_params(schema: Dict[str, Any], params: Dict[str, Any]) -> None:
-        """Validate parameters against JSON schema.
-
-        Args:
-            schema: JSON schema for parameters
-            params: Parameters to validate
-
-        Raises:
-            ValueError: If required parameter is missing
-        """
-        required = schema.get("required", [])
-        for req in required:
-            if req not in params:
-                raise ValueError(f"Missing required parameter: {req}")
 
 
 def create_bash_tool(
@@ -3081,7 +2896,7 @@ def _create_explore_provider(config):
 
 
 def create_explore_tool(config, project_root: str) -> ToolDefinition:
-    """Create an explore tool that runs ExploreAgent as an executor tool.
+    """Create an explore tool that runs ExploreAgent through the Claude SDK.
 
     Args:
         config: DokumenConfig instance
@@ -3122,17 +2937,22 @@ def create_explore_tool(config, project_root: str) -> ToolDefinition:
         try:
             from .explore_agent import ExploreAgent
 
-            provider = _create_explore_provider(config)
-            max_files = getattr(config.explore, "max_files", 20)
+            explore_config = getattr(config, "explore", None)
+            max_files = getattr(explore_config, "max_files", 20)
+            max_turns = getattr(explore_config, "max_iterations", 50)
+            timeout = float(getattr(explore_config, "timeout", 60))
+            model = getattr(explore_config, "model", None)
 
             agent = ExploreAgent(
-                provider=provider,
                 base_dir=project_root,
                 max_files=max_files,
+                max_turns=max_turns,
+                timeout=timeout,
                 explore_type=explore_type,
+                model=model,
             )
 
-            result = await agent.explore(query)
+            result = await agent.explore(goal=query)
 
             if not result.success:
                 logger.warning(

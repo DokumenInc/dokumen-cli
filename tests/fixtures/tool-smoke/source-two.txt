@@ -1,0 +1,3 @@
+beta smoke fixture
+shared-token: dokumen-tool-smoke
+read-many-marker: core-batch

@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from .logging_config import get_logger
 
 if TYPE_CHECKING:
-    from .tools_object import ToolDefinition
+    from .tools.types import ToolDefinition
 
 logger = get_logger(__name__)
 
@@ -65,7 +65,7 @@ class ToolCall:
 
     Deprecated: ExecutorResult uses List[Dict] for tool_calls instead.
     Kept for backward compatibility with test code that imports it.
-    Note: This is NOT the same as tools_object.ToolCall.
+    Note: This is NOT the same as tools.types.ToolCall.
     """
     tool_name: str
     parameters: Dict[str, Any]

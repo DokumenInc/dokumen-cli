@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dokumen.logging_config import get_logger
-from dokumen.tools_object import ToolDefinition, ToolResult
+from dokumen.tools.types import ToolDefinition, ToolResult
 
 logger = get_logger(__name__)
 

@@ -1,7 +1,7 @@
 """Explore stage — discovers relevant files and injects context into executor."""
 
 import os
-from typing import List, Optional
+from typing import List
 
 from ..debug import is_debug, debug
 from ..logging_config import get_logger
@@ -32,13 +32,14 @@ class ExploreStage(PipelineStage):
         Returns:
             Updated context with explore_result and modified executor prompt.
         """
-        should_explore = bool(ctx.files) or (
-            ctx.explore_config and ctx.explore_config.enabled
-        )
+        if ctx.explore_config is not None:
+            should_explore = bool(ctx.explore_config.enabled)
+        else:
+            should_explore = bool(ctx.files)
 
         if not should_explore:
             logger.info("stage.explore.skip", test_id=ctx.test_id,
-                        reason="no files and explore not enabled")
+                        reason="explore disabled")
             return ctx
 
         logger.info("stage.explore.start", test_id=ctx.test_id,

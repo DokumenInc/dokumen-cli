@@ -24,7 +24,7 @@ from .agent_object import AgentType
 from .config import _preprocess_yaml
 from .logging_config import get_logger
 from .test_object import TestObject, BrowserConfig
-from .tools_object import ToolDefinition, ToolResult
+from .tools.types import ToolDefinition, ToolResult
 from .user_tool_overrides import load_overrides_from_dir, is_tool_enabled_for_test
 
 # Re-export from scaffold_parser

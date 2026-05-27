@@ -16,7 +16,7 @@ import yaml
 
 from .agent_object import Provider
 from .explore_agent import ExploreAgent, ExploreResult
-from .tools_object import ToolDefinition
+from .tools.types import ToolDefinition
 
 logger = logging.getLogger(__name__)
 

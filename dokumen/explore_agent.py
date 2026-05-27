@@ -66,7 +66,7 @@ Keep your response concise (under 500 words).
 EXPLORE_CODE_SYSTEM_PROMPT = """You are a code explorer. Your job is to find source code files relevant to the user's request.
 
 ## Process
-1. Use available code tools (prefixed with code_) to search the linked code repositories
+1. Use the available SDK tools (Read, Glob, Grep) to search the local workspace
 2. Look for implementation files, classes, functions, and modules related to the request
 3. Examine source code to understand the implementation approach
 4. Return a natural language summary of what you found
@@ -93,8 +93,8 @@ EXPLORE_BOTH_SYSTEM_PROMPT = """You are a documentation and code explorer. Your 
 1. FIRST: Check if DOKUMEN_SUMMARIES_INDEX.md exists in the project root
    - If it exists, read it to get an overview of all documentation files and their summaries
    - Use the summaries to identify which documentation files are most relevant
-2. Use documentation tools (read_file, glob, etc.) to explore documentation
-3. Use code tools (prefixed with code_) to search the linked code repositories
+2. Use the available SDK tools (Read, Glob, Grep) to explore documentation
+3. Use the available SDK tools (Read, Glob, Grep) to search local source code
 4. Cross-reference documentation with implementation to find discrepancies or related context
 5. Return a natural language summary of what you found
 

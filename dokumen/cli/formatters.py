@@ -762,8 +762,19 @@ def print_results_text(results, verbose=False):
                 tool_count = click.style(f"{len(eo.tool_calls)}", fg="cyan")
                 click.echo(f"         Tool calls: {tool_count}")
                 for tc in eo.tool_calls:
-                    tool_name = click.style(tc.tool_name, fg="blue")
-                    click.echo(f"           - {tool_name}({tc.parameters})")
+                    if isinstance(tc, dict):
+                        raw_name = tc.get("tool_name") or tc.get("name") or "unknown"
+                        raw_params = (
+                            tc.get("parameters")
+                            or tc.get("tool_input")
+                            or tc.get("input")
+                            or {}
+                        )
+                    else:
+                        raw_name = getattr(tc, "tool_name", "unknown")
+                        raw_params = getattr(tc, "parameters", {})
+                    tool_name = click.style(str(raw_name), fg="blue")
+                    click.echo(f"           - {tool_name}({raw_params})")
                 if eo.final_response:
                     click.echo()
                     click.echo(click.style("         --- Executor Response ---", fg="cyan", bold=True))

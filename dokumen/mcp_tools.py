@@ -12,7 +12,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from .logging_config import get_logger
-from .tools_object import ToolDefinition, ToolResult
+from .tools.types import ToolDefinition, ToolResult
 
 logger = get_logger(__name__)
 

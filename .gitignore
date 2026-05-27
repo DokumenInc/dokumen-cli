@@ -10,11 +10,14 @@ build/
 
 # Testing
 .pytest_cache/
+.dokumen-cache/
+.playwright-mcp/
 .coverage
 htmlcov/
 .tox/
 *.log
 output.logo
+tool-smoke-screenshot*.png
 
 # IDE
 .vscode/

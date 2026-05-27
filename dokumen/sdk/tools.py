@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from claude_agent_sdk import SdkMcpTool, create_sdk_mcp_server, tool
 
-from ..tools_object import ToolDefinition
+from ..tools.types import ToolDefinition
 
 logger = logging.getLogger(__name__)
 

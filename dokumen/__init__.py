@@ -14,7 +14,7 @@ def _read_version() -> str:
     return "0.0.0"  # Fallback for development
 
 from .file_object import FileObject, FileMetrics
-from .tools_object import (
+from .tools.types import (
     ToolDefinition,
     ToolResult,
     ToolCall,

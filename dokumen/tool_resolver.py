@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 import os
 
 from .logging_config import get_logger
-from .tools_object import ToolDefinition, ToolResult
+from .tools.types import ToolDefinition, ToolResult
 from .user_tool_overrides import is_tool_enabled_for_test
 
 logger = get_logger(__name__)
@@ -570,6 +570,7 @@ def _get_agent_tool_config(base_dir: str):
     from .config import load_config
 
     logger.info("agent_tools.load_config", base_dir=base_dir)
-    config = load_config(base_dir=base_dir)
     project_root = os.path.abspath(base_dir)
+    config_path = os.path.join(project_root, "dokumen.yaml")
+    config = load_config(config_path if os.path.exists(config_path) else None)
     return config, project_root

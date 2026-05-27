@@ -1,0 +1,41 @@
+name: explore-tool-smoke
+reason: Verify that the Dokumen explore tool runs through the Claude Agent SDK.
+
+files:
+  - path: tests/fixtures/tool-smoke/source-one.txt
+  - path: tests/fixtures/tool-smoke/source-two.txt
+
+executor:
+  max_iterations: 8
+  tools:
+    - explore
+    - read_file
+  user_prompt: |
+    First, call the explore tool with this exact query:
+    "Find fixture files under tests/fixtures/tool-smoke that mention dokumen-tool-smoke"
+
+    Use explore_type "docs".
+
+    Then use read_file on tests/fixtures/tool-smoke/source-one.txt.
+
+    Finish with a short report that includes:
+    - the explore tool result summary
+    - tests/fixtures/tool-smoke/source-one.txt
+    - tests/fixtures/tool-smoke/source-two.txt
+    - dokumen-tool-smoke
+    - read-file-marker: core-read
+
+judges:
+  - name: explore-sdk-contract
+    include_executor_output: true
+    system_prompt: |
+      Pass only if the executor tool call log contains the Dokumen explore tool
+      call. It may appear as explore or mcp__dokumen__explore.
+
+      Also require the executor output to mention:
+      - tests/fixtures/tool-smoke/source-one.txt
+      - tests/fixtures/tool-smoke/source-two.txt
+      - dokumen-tool-smoke
+      - read-file-marker: core-read
+
+      Return only JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}.
