@@ -41,10 +41,6 @@ EXPLORE_SAFE_TOOLS = frozenset({
     "code_glob",
     "code_search",
     "code_list",
-    "code_graph_find",
-    "code_graph_relationships",
-    "code_graph_dead_code",
-    "code_graph_complexity",
     "explore_code",
 })
 
@@ -74,11 +70,6 @@ IMPLEMENTABLE_IN: dict[str, frozenset[str]] = {
     "code_glob": frozenset({"chat", "test", "explore"}),
     "code_search": frozenset({"chat", "test", "explore"}),
     "code_list": frozenset({"chat", "test", "explore"}),
-    # Code Graph tools
-    "code_graph_find": frozenset({"chat", "test", "explore"}),
-    "code_graph_relationships": frozenset({"chat", "test", "explore"}),
-    "code_graph_dead_code": frozenset({"chat", "test", "explore"}),
-    "code_graph_complexity": frozenset({"chat", "test", "explore"}),
     # CLI-only read tools
     "read_many_files": frozenset({"test"}),
     # CLI-only network tools

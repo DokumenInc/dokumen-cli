@@ -29,9 +29,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-codegraph = [
-    "codegraphcontext>=0.2.5",  # Code graph analysis (requires Python 3.12+)
-]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",

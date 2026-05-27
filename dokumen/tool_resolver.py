@@ -26,7 +26,7 @@ class ToolProvenance:
         - "auto:standard": auto-injected run_shell_command for standard tests
         - "auto:research": auto-injected web_search for research tests
         - "auto:browser": auto-injected browser tools for browser tests
-        - "auto:cross-reference": auto-injected code tools for cross-reference tests
+        - "auto:cross-reference": auto-injected code repository tools
         - "explore:config": explore tools from config/defaults
         - "explore:overrides": explore tools from .dokumen/tool-definitions/ overrides
     """
@@ -151,11 +151,7 @@ def auto_inject_tools(
 
     # Auto-add code tools for code-reviewer agents (bypasses allowed list)
     if is_code_agent:
-        code_tools_to_inject = [
-            'code_read_file', 'code_search', 'code_glob',
-            'code_graph_find', 'code_graph_relationships',
-            'code_graph_dead_code', 'code_graph_complexity',
-        ]
+        code_tools_to_inject = ["code_read_file", "code_search", "code_glob"]
         injected = []
         for ct_name in code_tools_to_inject:
             if ct_name not in executor_tool_names:
@@ -348,13 +344,17 @@ def resolve_tools(
         ValueError: If tool cannot be resolved
     """
     from .tools_object import (
-        BUILTIN_TOOLS, SANDBOX_TOOLS, STANDALONE_TOOLS, CONTEXT_TOOLS,
-        CODE_TOOLS, CODE_GRAPH_TOOLS, AGENT_TOOLS, ToolResult
+        BUILTIN_TOOLS,
+        SANDBOX_TOOLS,
+        STANDALONE_TOOLS,
+        CONTEXT_TOOLS,
+        CODE_TOOLS,
+        AGENT_TOOLS,
     )
     from .playwright_tools import BROWSER_TOOLS
     from .debug import debug
 
-    debug(f"[DEBUG LOADER] resolve_tools called:")
+    debug("[DEBUG LOADER] resolve_tools called:")
     debug(f"[DEBUG LOADER]   tool_names: {tool_names}")
     debug(f"[DEBUG LOADER]   base_dir: {base_dir}")
     debug(f"[DEBUG LOADER]   code_repos_config: {code_repos_config is not None}")
@@ -493,27 +493,6 @@ def resolve_tools(
                 base_dir=code_base_dir,
                 include_patterns=include_patterns,
                 exclude_patterns=exclude_patterns,
-            ))
-        elif name in CODE_GRAPH_TOOLS:
-            debug(f"[DEBUG LOADER]     '{name}' is a CODE_GRAPH_TOOLS")
-            if not code_repos_config:
-                raise ValueError(
-                    f"Tool '{name}' requires code_repos_config. "
-                    "Add a code_repos section to dokumen.yaml to use code graph tools."
-                )
-            repo_cfg = code_repos_config[0]
-            code_base_dir = repo_cfg.get("base_dir", ".")
-            code_repo_name = repo_cfg.get("name", "unknown")
-            logger.info(
-                "Resolving code graph tool",
-                tool=name,
-                code_repo=code_repo_name,
-                base_dir=code_base_dir,
-            )
-            tool_factory = CODE_GRAPH_TOOLS[name]
-            resolved.append(tool_factory(
-                clone_dir=code_base_dir,
-                repo_name=code_repo_name,
             ))
         elif name in AGENT_TOOLS:
             debug(f"[DEBUG LOADER]     '{name}' is an AGENT_TOOLS")

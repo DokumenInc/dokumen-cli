@@ -10,7 +10,6 @@ from datetime import datetime
 import asyncio
 import math
 import os
-import subprocess
 
 from .logging_config import get_logger
 
@@ -837,7 +836,7 @@ def create_http_request_tool(sandbox: "Sandbox" = None, timeout: float = 30.0) -
         headers = params.get("headers", {})
         body = params.get("body")
 
-        debug(f"[DEBUG TOOLS] http_request_handler called:")
+        debug("[DEBUG TOOLS] http_request_handler called:")
         debug(f"[DEBUG TOOLS]   url: {url}")
         debug(f"[DEBUG TOOLS]   method: {method}")
         debug(f"[DEBUG TOOLS]   sandbox available: {sandbox is not None}")
@@ -880,10 +879,10 @@ def create_http_request_tool(sandbox: "Sandbox" = None, timeout: float = 30.0) -
 
         # If sandbox is active, use curl inside the container
         if sandbox:
-            debug(f"[DEBUG TOOLS] Using sandbox for HTTP request")
+            debug("[DEBUG TOOLS] Using sandbox for HTTP request")
             return await _http_request_via_sandbox(sandbox, url, method, headers, body, timeout)
 
-        debug(f"[DEBUG TOOLS] NO sandbox - making HTTP request directly from host")
+        debug("[DEBUG TOOLS] NO sandbox - making HTTP request directly from host")
         try:
             # Use aiohttp if available, fall back to urllib
             try:
@@ -910,7 +909,6 @@ def create_http_request_tool(sandbox: "Sandbox" = None, timeout: float = 30.0) -
                 # Fall back to urllib (synchronous)
                 import urllib.request
                 import urllib.error
-                import json
 
                 req = urllib.request.Request(url, method=method)
                 for key, value in headers.items():
@@ -985,7 +983,7 @@ async def _http_request_via_sandbox(
     """
     from .debug import debug
 
-    debug(f"[DEBUG TOOLS] _http_request_via_sandbox called:")
+    debug("[DEBUG TOOLS] _http_request_via_sandbox called:")
     debug(f"[DEBUG TOOLS]   sandbox type: {type(sandbox).__name__}")
     debug(f"[DEBUG TOOLS]   sandbox id: {id(sandbox)}")
     debug(f"[DEBUG TOOLS]   url: {url}")
@@ -995,7 +993,6 @@ async def _http_request_via_sandbox(
 
     # Build Python one-liner for HTTP request
     headers_json = json_module.dumps(headers)
-    body_escaped = body.replace("'", "\\'") if body else ""
 
     python_script = f"""
 import urllib.request
@@ -1042,9 +1039,9 @@ DOKUMEN_HTTP_EOF
 python3 /tmp/_http_request.py"""
 
     try:
-        debug(f"[DEBUG TOOLS] Executing HTTP request in sandbox...")
+        debug("[DEBUG TOOLS] Executing HTTP request in sandbox...")
         result = await sandbox.execute(cmd)
-        debug(f"[DEBUG TOOLS] Sandbox execute result:")
+        debug("[DEBUG TOOLS] Sandbox execute result:")
         debug(f"[DEBUG TOOLS]   success: {result.success}")
         debug(f"[DEBUG TOOLS]   stdout: {result.stdout[:200] if result.stdout else 'None'}...")
         debug(f"[DEBUG TOOLS]   stderr: {result.stderr[:200] if result.stderr else 'None'}...")
@@ -1091,8 +1088,8 @@ python3 /tmp/_http_request.py"""
 
 
 def create_delegate_to_agent_tool(
-    registry: "AgentRegistry",
-    provider: "Provider",
+    registry: Any,
+    provider: Any,
     sandbox: Optional["Sandbox"] = None,
     timeout: float = 60.0,
     parent_tools: Optional[List[ToolDefinition]] = None,
@@ -1298,7 +1295,7 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
+                error="Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         # Check file exists
@@ -1516,7 +1513,6 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
     """
     import os
     import glob as glob_module
-    from pathlib import Path
 
     async def glob_handler(params: Dict[str, Any]) -> ToolResult:
         pattern = params.get("pattern")
@@ -1540,7 +1536,7 @@ def create_glob_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
+                error="Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         if not os.path.exists(search_path):
@@ -1673,7 +1669,7 @@ def create_list_directory_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(
                 success=False,
                 output=None,
-                error=f"Access denied: path traversal not allowed. Path must be within base directory.",
+                error="Access denied: path traversal not allowed. Path must be within base directory.",
             )
 
         if not os.path.exists(full_path):
@@ -2329,9 +2325,6 @@ def create_code_search_tool(
     """
     import shlex
 
-    include = include_patterns or []
-    exclude = exclude_patterns or []
-
     logger.info("code_tools.create_search", base_dir=base_dir)
 
     async def handler(params: Dict[str, Any]) -> ToolResult:
@@ -2434,9 +2427,6 @@ def create_code_list_directory_tool(
     Returns:
         ToolDefinition for the code_list_directory tool
     """
-    include = include_patterns or []
-    exclude = exclude_patterns or []
-
     logger.info("code_tools.create_list_directory", base_dir=base_dir)
 
     async def handler(params: Dict[str, Any]) -> ToolResult:
@@ -2904,7 +2894,7 @@ def _create_new_web_fetch_tool(sandbox=None, **kwargs):
         # wire up haiku as the default summarizer for prompt= queries
         summarizer = None
         try:
-            from .test_builder import get_configured_provider, create_provider
+            from .test_builder import create_provider
 
             provider = create_provider("anthropic", model="claude-haiku-4-5-20251001")
             if provider:
@@ -2965,469 +2955,6 @@ CODE_TOOLS = {
     "code_glob": create_code_glob_tool,
     "code_search": create_code_search_tool,
     "code_list_directory": create_code_list_directory_tool,
-}
-
-
-# ============================================================================
-# Code Graph Tools (CodeGraphContext-powered)
-# ============================================================================
-
-
-def _is_cgc_available() -> bool:
-    """Check if codegraphcontext package is installed."""
-    try:
-        import codegraphcontext  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def _get_cgc_service():
-    """Get or create a CGCIndexService instance.
-
-    Imports from backend/services lazily to avoid hard dependency.
-    Falls back to a minimal inline implementation if backend service
-    is not importable (e.g., running in standalone CLI mode).
-    """
-    try:
-        from backend.services.cgc_index_service import CGCIndexService
-
-        return CGCIndexService()
-    except ImportError:
-        logger.debug(
-            "code_graph_tools.inline_service",
-            msg="Using inline CGCIndexService (backend not importable)",
-        )
-        # Inline minimal service for standalone CLI usage
-        import time
-
-        class _InlineCGCIndexService:
-            """Minimal inline CGC service for CLI-only mode."""
-
-            def __init__(self):
-                self._server = None
-
-            def _ensure_index(self, clone_dir: str):
-                if self._server is not None:
-                    return self._server
-                from codegraphcontext.server import MCPServer
-
-                server = MCPServer()
-                result = server.add_code_to_graph_tool(path=clone_dir)
-                if result.get("error"):
-                    raise RuntimeError(result["error"])
-                self._server = server
-                return server
-
-            def find_code(
-                self, clone_dir, company_id, repo_name, query, fuzzy=False, edit_distance=2
-            ):
-                server = self._ensure_index(clone_dir)
-                return server.find_code_tool(
-                    query=query, fuzzy_search=fuzzy, edit_distance=edit_distance
-                )
-
-            def analyze_relationships(
-                self, clone_dir, company_id, repo_name, query_type, target, context=None
-            ):
-                server = self._ensure_index(clone_dir)
-                args = {"query_type": query_type, "target": target}
-                if context:
-                    args["context"] = context
-                return server.analyze_code_relationships_tool(**args)
-
-            def find_dead_code(self, clone_dir, company_id, repo_name, exclude_decorated_with=None):
-                server = self._ensure_index(clone_dir)
-                return server.find_dead_code_tool(
-                    exclude_decorated_with=exclude_decorated_with or []
-                )
-
-            def find_most_complex(self, clone_dir, company_id, repo_name, limit=10):
-                server = self._ensure_index(clone_dir)
-                return server.find_most_complex_functions_tool(limit=limit)
-
-        return _InlineCGCIndexService()
-
-
-def create_code_graph_find_tool(
-    clone_dir: str,
-    repo_name: str,
-    company_id: str = "cli",
-) -> ToolDefinition:
-    """Create a code graph find tool that searches for functions, classes, etc.
-
-    Args:
-        clone_dir: Path to the cloned code repository.
-        repo_name: Name of the code repository.
-        company_id: Company UUID for tenant isolation (defaults to 'cli').
-
-    Returns:
-        ToolDefinition for code_graph_find.
-    """
-    logger.info(
-        "code_graph_tools.create_find",
-        clone_dir=clone_dir,
-        repo_name=repo_name,
-    )
-
-    async def handler(params: Dict[str, Any]) -> ToolResult:
-        logger.debug("code_graph_tools.find.start", params=params)
-
-        if not _is_cgc_available():
-            logger.warning("code_graph_tools.find.cgc_not_available")
-            return ToolResult(
-                success=False,
-                output=None,
-                error="codegraphcontext is not installed. Install it to use code graph tools.",
-            )
-
-        query = params.get("query", "")
-        if not query or not query.strip():
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing or empty 'query' parameter.",
-            )
-
-        fuzzy = params.get("fuzzy", False)
-        edit_distance = params.get("edit_distance", 2)
-
-        try:
-            service = _get_cgc_service()
-            result = await asyncio.to_thread(
-                service.find_code,
-                clone_dir=clone_dir,
-                company_id=company_id,
-                repo_name=repo_name,
-                query=query,
-                fuzzy=fuzzy,
-                edit_distance=edit_distance,
-            )
-            if "error" in result:
-                logger.error("code_graph_tools.find.error", error=result["error"])
-                return ToolResult(success=False, output=None, error=result["error"])
-
-            import json
-
-            output = json.dumps(result, indent=2, default=str)
-            logger.info(
-                "code_graph_tools.find.success", result_count=len(result.get("results", []))
-            )
-            return ToolResult(success=True, output=output)
-        except Exception as e:
-            logger.error("code_graph_tools.find.exception", error=str(e), exc_info=True)
-            return ToolResult(success=False, output=None, error=f"Code graph find failed: {e}")
-
-    return ToolDefinition(
-        name="code_graph_find",
-        description=(
-            "Search the code graph for functions, classes, and symbols. "
-            "Uses CodeGraphContext to find code elements by name with optional fuzzy matching."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query for function/class/symbol names.",
-                },
-                "fuzzy": {
-                    "type": "boolean",
-                    "description": "Enable fuzzy matching (default: false).",
-                },
-                "edit_distance": {
-                    "type": "integer",
-                    "description": "Edit distance for fuzzy search (default: 2).",
-                },
-            },
-            "required": ["query"],
-        },
-        handler=handler,
-    )
-
-
-def create_code_graph_relationships_tool(
-    clone_dir: str,
-    repo_name: str,
-    company_id: str = "cli",
-) -> ToolDefinition:
-    """Create a code graph relationships tool for analyzing code relationships.
-
-    Args:
-        clone_dir: Path to the cloned code repository.
-        repo_name: Name of the code repository.
-        company_id: Company UUID for tenant isolation.
-
-    Returns:
-        ToolDefinition for code_graph_relationships.
-    """
-    logger.info(
-        "code_graph_tools.create_relationships",
-        clone_dir=clone_dir,
-        repo_name=repo_name,
-    )
-
-    async def handler(params: Dict[str, Any]) -> ToolResult:
-        logger.debug("code_graph_tools.relationships.start", params=params)
-
-        if not _is_cgc_available():
-            logger.warning("code_graph_tools.relationships.cgc_not_available")
-            return ToolResult(
-                success=False,
-                output=None,
-                error="codegraphcontext is not installed. Install it to use code graph tools.",
-            )
-
-        query_type = params.get("query_type", "")
-        target = params.get("target", "")
-        context = params.get("context")
-
-        if not query_type:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'query_type' parameter.",
-            )
-        if not target:
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Missing 'target' parameter.",
-            )
-
-        try:
-            service = _get_cgc_service()
-            result = await asyncio.to_thread(
-                service.analyze_relationships,
-                clone_dir=clone_dir,
-                company_id=company_id,
-                repo_name=repo_name,
-                query_type=query_type,
-                target=target,
-                context=context,
-            )
-            if "error" in result:
-                logger.error("code_graph_tools.relationships.error", error=result["error"])
-                return ToolResult(success=False, output=None, error=result["error"])
-
-            import json
-
-            output = json.dumps(result, indent=2, default=str)
-            logger.info("code_graph_tools.relationships.success", query_type=query_type)
-            return ToolResult(success=True, output=output)
-        except Exception as e:
-            logger.error("code_graph_tools.relationships.exception", error=str(e), exc_info=True)
-            return ToolResult(
-                success=False, output=None, error=f"Code graph relationships failed: {e}"
-            )
-
-    return ToolDefinition(
-        name="code_graph_relationships",
-        description=(
-            "Analyze code relationships such as callers, callees, class hierarchy, "
-            "importers, and more. Uses CodeGraphContext to traverse the code graph."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "query_type": {
-                    "type": "string",
-                    "description": (
-                        "Type of relationship query. Supported: find_callers, find_callees, "
-                        "find_all_callers, find_all_callees, find_importers, who_modifies, "
-                        "class_hierarchy, overrides, dead_code, call_chain, module_deps, "
-                        "variable_scope, find_complexity, find_functions_by_argument, "
-                        "find_functions_by_decorator."
-                    ),
-                },
-                "target": {
-                    "type": "string",
-                    "description": "Target function, class, or symbol name.",
-                },
-                "context": {
-                    "type": "string",
-                    "description": "Optional context (module, class) to narrow the search.",
-                },
-            },
-            "required": ["query_type", "target"],
-        },
-        handler=handler,
-    )
-
-
-def create_code_graph_dead_code_tool(
-    clone_dir: str,
-    repo_name: str,
-    company_id: str = "cli",
-) -> ToolDefinition:
-    """Create a code graph dead code detection tool.
-
-    Args:
-        clone_dir: Path to the cloned code repository.
-        repo_name: Name of the code repository.
-        company_id: Company UUID for tenant isolation.
-
-    Returns:
-        ToolDefinition for code_graph_dead_code.
-    """
-    logger.info(
-        "code_graph_tools.create_dead_code",
-        clone_dir=clone_dir,
-        repo_name=repo_name,
-    )
-
-    async def handler(params: Dict[str, Any]) -> ToolResult:
-        logger.debug("code_graph_tools.dead_code.start", params=params)
-
-        if not _is_cgc_available():
-            logger.warning("code_graph_tools.dead_code.cgc_not_available")
-            return ToolResult(
-                success=False,
-                output=None,
-                error="codegraphcontext is not installed. Install it to use code graph tools.",
-            )
-
-        exclude_decorated_with = params.get("exclude_decorated_with", [])
-
-        try:
-            service = _get_cgc_service()
-            result = await asyncio.to_thread(
-                service.find_dead_code,
-                clone_dir=clone_dir,
-                company_id=company_id,
-                repo_name=repo_name,
-                exclude_decorated_with=exclude_decorated_with,
-            )
-            if "error" in result:
-                logger.error("code_graph_tools.dead_code.error", error=result["error"])
-                return ToolResult(success=False, output=None, error=result["error"])
-
-            import json
-
-            output = json.dumps(result, indent=2, default=str)
-            logger.info(
-                "code_graph_tools.dead_code.success",
-                result_count=len(result.get("results", [])),
-            )
-            return ToolResult(success=True, output=output)
-        except Exception as e:
-            logger.error("code_graph_tools.dead_code.exception", error=str(e), exc_info=True)
-            return ToolResult(
-                success=False, output=None, error=f"Code graph dead code detection failed: {e}"
-            )
-
-    return ToolDefinition(
-        name="code_graph_dead_code",
-        description=(
-            "Find potentially unused (dead) code in the repository. "
-            "Uses CodeGraphContext to detect functions with no callers."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "exclude_decorated_with": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": (
-                        "List of decorator names to exclude from dead code detection "
-                        "(e.g., ['pytest.fixture', 'app.route'])."
-                    ),
-                },
-            },
-            "required": [],
-        },
-        handler=handler,
-    )
-
-
-def create_code_graph_complexity_tool(
-    clone_dir: str,
-    repo_name: str,
-    company_id: str = "cli",
-) -> ToolDefinition:
-    """Create a code graph complexity analysis tool.
-
-    Args:
-        clone_dir: Path to the cloned code repository.
-        repo_name: Name of the code repository.
-        company_id: Company UUID for tenant isolation.
-
-    Returns:
-        ToolDefinition for code_graph_complexity.
-    """
-    logger.info(
-        "code_graph_tools.create_complexity",
-        clone_dir=clone_dir,
-        repo_name=repo_name,
-    )
-
-    async def handler(params: Dict[str, Any]) -> ToolResult:
-        logger.debug("code_graph_tools.complexity.start", params=params)
-
-        if not _is_cgc_available():
-            logger.warning("code_graph_tools.complexity.cgc_not_available")
-            return ToolResult(
-                success=False,
-                output=None,
-                error="codegraphcontext is not installed. Install it to use code graph tools.",
-            )
-
-        limit = params.get("limit", 10)
-
-        try:
-            service = _get_cgc_service()
-            result = await asyncio.to_thread(
-                service.find_most_complex,
-                clone_dir=clone_dir,
-                company_id=company_id,
-                repo_name=repo_name,
-                limit=limit,
-            )
-            if "error" in result:
-                logger.error("code_graph_tools.complexity.error", error=result["error"])
-                return ToolResult(success=False, output=None, error=result["error"])
-
-            import json
-
-            output = json.dumps(result, indent=2, default=str)
-            logger.info(
-                "code_graph_tools.complexity.success",
-                result_count=len(result.get("results", [])),
-            )
-            return ToolResult(success=True, output=output)
-        except Exception as e:
-            logger.error("code_graph_tools.complexity.exception", error=str(e), exc_info=True)
-            return ToolResult(
-                success=False, output=None, error=f"Code graph complexity analysis failed: {e}"
-            )
-
-    return ToolDefinition(
-        name="code_graph_complexity",
-        description=(
-            "Find the most complex functions by cyclomatic complexity. "
-            "Uses CodeGraphContext to analyze code complexity metrics."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer",
-                    "description": "Maximum number of results to return (default: 10).",
-                },
-            },
-            "required": [],
-        },
-        handler=handler,
-    )
-
-
-# Code graph tools registry (CodeGraphContext-powered analysis tools)
-CODE_GRAPH_TOOLS = {
-    "code_graph_find": create_code_graph_find_tool,
-    "code_graph_relationships": create_code_graph_relationships_tool,
-    "code_graph_dead_code": create_code_graph_dead_code_tool,
-    "code_graph_complexity": create_code_graph_complexity_tool,
 }
 
 
@@ -3508,7 +3035,6 @@ def get_all_tool_names() -> List[str]:
         + list(STANDALONE_TOOLS.keys())
         + list(CONTEXT_TOOLS.keys())
         + list(CODE_TOOLS.keys())
-        + list(CODE_GRAPH_TOOLS.keys())
         + list(TASK_TOOLS.keys())
     )
 
@@ -3530,7 +3056,6 @@ def create_create_test_tool(base_dir: str = ".") -> ToolDefinition:
 
     async def create_test_handler(params: Dict[str, Any]) -> ToolResult:
         goal = params.get("goal")
-        name = params.get("name")
         files = params.get("files", [])
         test_type = params.get("type", "standard")
 
@@ -3652,7 +3177,6 @@ def create_chat_write_file_tool(base_dir: str = ".") -> ToolDefinition:
     Returns:
         ToolDefinition for the write_file tool
     """
-    import os
     from pathlib import Path
 
     # Allowed directory prefixes for writes
