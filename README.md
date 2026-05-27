@@ -27,6 +27,8 @@ complete, Dokumen asks whether an agent can use them successfully.
 - Track which documentation files are covered by tests.
 - Run exploration before execution so agents can discover relevant files.
 - Support browser-oriented tests through Playwright MCP tools.
+- Generate summaries for text, image, and PDF documentation with
+  `dokumen summarize`.
 - Generate new test scaffolds from a natural-language goal.
 - Ask documentation-grounded questions against an existing test corpus.
 - Analyze codebases with `mimick` and produce architecture blueprints.
@@ -123,9 +125,9 @@ dokumen run --output junit
 
 Each test runs through a stage pipeline:
 
-1. Prepare browser or setup resources when requested.
+1. Prepare output directories and setup resources when requested.
 2. Explore the workspace and inject discovered context.
-3. Run either a single executor or coordinator-managed workers.
+3. Run the SDK-backed executor.
 4. Compact context when enabled.
 5. Run judges concurrently.
 6. Extract memory and collect output artifacts.
@@ -134,6 +136,11 @@ Each test runs through a stage pipeline:
 The important design choice is that execution and evaluation are separate. The
 executor proves the docs are usable. The judges prove the result satisfies the
 test's criteria.
+
+The default test path is intentionally narrow: scaffolds are loaded locally,
+executor and judge agents run through the Claude Agent SDK, browser actions go
+through SDK-managed Playwright MCP, and Dokumen-specific helpers are exposed as a
+small in-process MCP server only when a scaffold asks for them.
 
 ## Outputs
 
@@ -162,6 +169,7 @@ Run the repository smoke checks while iterating:
 python -m compileall -q dokumen dokumen_schema
 dokumen --help
 dokumen validate --config-only
+pytest tests/contracts -q
 ```
 
 Run formatting and linting when those tools are installed:
@@ -170,6 +178,10 @@ Run formatting and linting when those tools are installed:
 ruff check dokumen tests
 black dokumen tests
 ```
+
+The committed test suite is intentionally small. `tests/contracts` protects the
+public tool surface and SDK mapping behavior without carrying the old ad hoc
+unit-test scripts or credential-backed integration fixtures.
 
 ## Security Notes
 

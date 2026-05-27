@@ -83,6 +83,7 @@ IMPLEMENTABLE_IN: dict[str, frozenset[str]] = {
     "browser_wait": frozenset({"test"}),
     "browser_screenshot": frozenset({"test"}),
     "browser_take_screenshot": frozenset({"test"}),
+    "browser_evaluate": frozenset({"test"}),
     "browser_close": frozenset({"test"}),
     # Chat explore-only
     "explore_code": frozenset({"chat", "explore"}),

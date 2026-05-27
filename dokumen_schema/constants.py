@@ -8,7 +8,6 @@ KNOWN_MODEL_ALIASES = {
 
 CLI_RESOLVABLE_TOOLS = {
     "read_file",
-    "read_pdf_section",
     "write_file",
     "glob",
     "list_directory",
@@ -26,7 +25,7 @@ CLI_RESOLVABLE_TOOLS = {
     "task_create",
     "task_update",
     "task_list",
-    "task_get",
+    "task_output",
 }
 
 SDK_TOOL_ALIASES = {

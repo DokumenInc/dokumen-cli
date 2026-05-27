@@ -315,7 +315,7 @@ class CompactionConfig(BaseModel):
 class CoordinatorConfig(BaseModel):
     """Configuration for coordinator (multi-agent) mode."""
 
-    enabled: bool = Field(True, description="Enable coordinator mode for parallel worker execution")
+    enabled: bool = Field(False, description="Enable coordinator mode for parallel worker execution")
     max_workers: int = Field(5, ge=1, le=20, description="Maximum number of parallel worker agents")
     synthesis_strategy: str = Field(
         "merge", description="How to combine worker results: merge, vote, or chain"
@@ -340,7 +340,7 @@ class CoordinatorConfig(BaseModel):
 class TasksConfig(BaseModel):
     """Configuration for the task tracking system."""
 
-    enabled: bool = Field(True, description="Enable task tracking during execution")
+    enabled: bool = Field(False, description="Enable task tracking during execution")
     persist_to_disk: bool = Field(True, description="Persist tasks to .dokumen-cache/tasks/")
     max_tasks: int = Field(200, ge=1, le=1000, description="Maximum number of tasks per run")
 

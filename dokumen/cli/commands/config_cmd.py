@@ -45,7 +45,7 @@ SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
         ("executor_mode", "choice:api,sdk", "api", "api=direct calls for subagents  sdk=claude code cli (legacy)"),
     ]),
     ("tasks", [
-        ("enabled", "bool", True, "agent subtask tracking"),
+        ("enabled", "bool", False, "agent subtask tracking"),
         ("persist_to_disk", "bool", True, "save tasks to .dokumen-cache/"),
         ("max_tasks", "choice:100,200,500", 200, "max subtasks per run"),
     ]),

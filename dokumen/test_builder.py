@@ -4,7 +4,7 @@ Test builder for the Documentation Unit Test Framework.
 Handles creating LLM providers, constructing SDK executor/judge agents,
 building TestObject instances, and provider configuration from environment/config.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 import os
 import yaml
@@ -184,6 +184,7 @@ def build_sdk_executor(
     tools_config: Optional[Any] = None,
     user_dirs: Optional[List[Any]] = None,
     base_dir: Optional[str] = None,
+    executor_tools: Optional[List[Any]] = None,
 ):
     """Build SDK ExecutorAgent and SdkExecutorWrapper.
 
@@ -196,6 +197,7 @@ def build_sdk_executor(
         tools_config: Optional project-level tool config
         user_dirs: Optional agent definition directories (for delegate_to_agent)
         base_dir: Optional project base directory (for delegate_to_agent)
+        executor_tools: Pre-resolved ToolDefinition objects from the loader.
 
     Returns:
         SdkExecutorWrapper instance
@@ -222,6 +224,7 @@ def build_sdk_executor(
         test_name=data.get('name'),
         browser_config=browser_data if browser_data else None,
         agent_context=agent_context,
+        dokumen_tool_definitions=executor_tools,
     )
 
     mcp_servers = {}
@@ -306,7 +309,11 @@ def build_sdk_judge(
         sdk_judge_model = judge_provider.model
 
     judge_tool_names_for_sdk = [t.name for t in judge_tools]
-    judge_resolved = resolve_sdk_tools(judge_tool_names_for_sdk, tools_config)
+    judge_resolved = resolve_sdk_tools(
+        judge_tool_names_for_sdk,
+        tools_config,
+        dokumen_tool_definitions=judge_tools,
+    )
 
     sdk_judge = JudgeAgent(
         id=judge_data['name'],

@@ -16,12 +16,14 @@ import yaml
 
 from .file_object import LineCoverage, IncorrectLine
 from .sdk.types import ExecutorResult, JudgeVerdict
-# Backward-compatible aliases for type references in this module
-ExecutorOutput = ExecutorResult
-JudgeResult = JudgeVerdict
 from .explore_agent import ExploreAgent, ExploreResult
 from .debug import is_debug, debug
 from .logging_config import get_logger
+from .playwright_tools import BROWSER_TOOL_NAMES
+
+# Backward-compatible aliases for type references in this module.
+ExecutorOutput = ExecutorResult
+JudgeResult = JudgeVerdict
 
 logger = get_logger(__name__)
 
@@ -207,14 +209,6 @@ def collect_output_artifacts(output_dir: str, skip_inline_dirs: Optional[set] = 
     return artifacts
 
 
-# Browser tool names that require MCP client
-BROWSER_TOOL_NAMES = {
-    "browser_navigate", "browser_click", "browser_type",
-    "browser_screenshot", "browser_take_screenshot", "browser_snapshot",
-    "browser_wait", "browser_close"
-}
-
-
 def _extract_report_markdown(response: Optional[str]) -> str:
     """Extract markdown report from verdict judge response.
 
@@ -304,8 +298,11 @@ def resolve_browser_headless(config_headless: Optional[bool] = None) -> bool:
 
 if TYPE_CHECKING:
     from .config import ExploreConfig
-    from .coverage_agent import CoverageAgent, FailureAnalysisOutput
+    from .coverage_agent import CoverageAgent
+    from .pipeline import PipelineContext
     from .sandbox import Sandbox, SandboxConfig
+    from .tool_resolver import ToolProvenance
+    from .user_tool_overrides import ToolOverridesResult
 
 
 @dataclass
@@ -673,17 +670,6 @@ class TestObject:
                     await ctx.setup_runner.cleanup()
                 except Exception as e:
                     logger.error("test.setup.cleanup_error",
-                                 test_id=ctx.test_id, error=str(e))
-
-            # Stop MCP client if it was started
-            if ctx.mcp_client:
-                try:
-                    await ctx.mcp_client.stop()
-                    from .playwright_tools import clear_shared_mcp_client
-                    clear_shared_mcp_client()
-                    logger.info("test.browser.stopped", test_id=ctx.test_id)
-                except Exception as e:
-                    logger.error("test.browser.stop_error",
                                  test_id=ctx.test_id, error=str(e))
 
             # Restore original tools if we modified them
@@ -1124,7 +1110,7 @@ class TestObject:
             from .config import ExploreConfig
             explore_config = ExploreConfig()  # Use defaults
             if is_debug():
-                debug(f"[TEST] Created default ExploreConfig for test with required files")
+                debug("[TEST] Created default ExploreConfig for test with required files")
 
         if not explore_config:
             return None

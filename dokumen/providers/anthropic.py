@@ -1,9 +1,8 @@
 """
 Anthropic Provider for the Documentation Unit Test Framework.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import os
-import re
 
 from ..agent_object import Provider
 from ..config import DEFAULT_FAST_MODEL
@@ -11,61 +10,6 @@ from ..logging_config import get_logger
 from .retry import retry_with_exponential_backoff
 
 logger = get_logger(__name__)
-
-
-# Image data marker pattern for parsing tool results (with prompt)
-IMAGE_DATA_PATTERN = re.compile(
-    r'__IMAGE_DATA__\nmedia_type: ([^\n]+)\nprompt: ([^\n]+)\ndata: ([^\n]+)\n__END_IMAGE_DATA__',
-    re.DOTALL
-)
-
-# PDF data marker pattern for parsing tool results
-PDF_DATA_PATTERN = re.compile(
-    r'__PDF_DATA__\nmedia_type: ([^\n]+)\npath: ([^\n]+)\ndata: ([^\n]+)\n__END_PDF_DATA__',
-    re.DOTALL
-)
-
-
-def parse_image_data(content: str) -> Tuple[Optional[str], Optional[str], Optional[str], str]:
-    """Parse image data markers from content.
-
-    Args:
-        content: Content string that may contain image data markers
-
-    Returns:
-        Tuple of (media_type, prompt, base64_data, remaining_text)
-        If no image found, media_type, prompt, and base64_data are None
-    """
-    match = IMAGE_DATA_PATTERN.search(content)
-    if match:
-        media_type = match.group(1)
-        prompt = match.group(2)
-        base64_data = match.group(3)
-        # Get any text before/after the image marker
-        remaining = content[:match.start()] + content[match.end():]
-        return media_type, prompt, base64_data, remaining.strip()
-    return None, None, None, content
-
-
-def parse_pdf_data(content: str) -> Tuple[Optional[str], Optional[str], Optional[str], str]:
-    """Parse PDF data markers from content.
-
-    Args:
-        content: Content string that may contain PDF data markers
-
-    Returns:
-        Tuple of (media_type, path, base64_data, remaining_text)
-        If no PDF found, media_type, path, and base64_data are None
-    """
-    match = PDF_DATA_PATTERN.search(content)
-    if match:
-        media_type = match.group(1)      # "application/pdf"
-        path = match.group(2)            # file path
-        base64_data = match.group(3)     # base64 encoded PDF bytes
-        # Get any text before/after the PDF marker
-        remaining = content[:match.start()] + content[match.end():]
-        return media_type, path, base64_data, remaining.strip()
-    return None, None, None, content
 
 
 class AnthropicProvider(Provider):
@@ -160,68 +104,11 @@ class AnthropicProvider(Provider):
                 system_prompt = msg["content"]
             elif msg["role"] == "tool":
                 # Anthropic uses tool_result content blocks in a user message
-                # Check if content contains image data
-                tool_content = msg["content"]
-                media_type, prompt, base64_data, remaining_text = parse_image_data(tool_content)
-
-                # Try PDF if not image
-                if not media_type:
-                    media_type, prompt, base64_data, remaining_text = parse_pdf_data(tool_content)
-
-                if media_type and base64_data:
-                    # Build content blocks: prompt text, then image/PDF, then any remaining text
-                    content_blocks = []
-
-                    if prompt:
-                        if media_type == "application/pdf":
-                            content_blocks.append({
-                                "type": "text",
-                                "text": f"PDF document: {prompt}"
-                            })
-                        else:
-                            content_blocks.append({
-                                "type": "text",
-                                "text": f"Question about this image: {prompt}"
-                            })
-
-                    # Build appropriate content block
-                    if media_type == "application/pdf":
-                        content_blocks.append({
-                            "type": "document",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "application/pdf",
-                                "data": base64_data
-                            }
-                        })
-                    else:
-                        # Image handling (existing)
-                        content_blocks.append({
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": base64_data
-                            }
-                        })
-
-                    if remaining_text:
-                        content_blocks.append({
-                            "type": "text",
-                            "text": remaining_text
-                        })
-                    pending_tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": msg.get("tool_call_id", ""),
-                        "content": content_blocks
-                    })
-                else:
-                    # Regular text content
-                    pending_tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": msg.get("tool_call_id", ""),
-                        "content": tool_content
-                    })
+                pending_tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": msg.get("tool_call_id", ""),
+                    "content": msg["content"],
+                })
             else:
                 # Flush any pending tool results before adding non-tool message
                 if pending_tool_results:

@@ -1,8 +1,0 @@
-name: malformed-test
-executor:
-  system_prompt: "You are a validator."
-  user_prompt: |
-    This is a valid prompt.
-  tools: [invalid yaml here
-judges:
-  - name: test

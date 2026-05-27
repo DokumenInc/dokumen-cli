@@ -19,10 +19,6 @@ if TYPE_CHECKING:
 # Module-level logger
 logger = get_logger(__name__)
 
-# PDF support constant (module-level for importability)
-PDF_EXTENSION = ".pdf"
-
-
 @dataclass
 class ToolResult:
     """Result from executing a tool."""
@@ -1243,8 +1239,8 @@ def create_delegate_to_agent_tool(
 def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
     """Create a read_file tool for reading any file with line range support.
 
-    Matches gemini-cli's read_file tool. Supports text files with line numbers,
-    and integrates image reading (PNG, JPEG, GIF, WebP).
+    Matches gemini-cli's read_file tool for text files with line numbers.
+    Image and PDF handling is intentionally left to the SDK/native model path.
 
     Args:
         base_dir: Base directory for resolving relative paths
@@ -1252,21 +1248,10 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
     Returns:
         ToolDefinition for the read_file tool
     """
-    import base64
-    import json
     import os
-
-    IMAGE_TYPES = {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".gif": "image/gif",
-        ".webp": "image/webp",
-    }
 
     # Text file size limit (matches backend MAX_FILE_SIZE)
     MAX_TEXT_FILE_SIZE = 1024 * 1024  # 1MB
-    MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
     async def read_file_handler(params: Dict[str, Any]) -> ToolResult:
         file_path = params.get("file_path")
@@ -1303,123 +1288,11 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
             return ToolResult(success=False, output=None, error=f"File not found: {file_path}")
 
         if os.path.isdir(full_path):
-            # Check if this is a PDF document folder (contains _tree_index.json or _metadata.json)
-            tree_index_path = os.path.join(full_path, "_tree_index.json")
-            metadata_path = os.path.join(full_path, "_metadata.json")
-            if os.path.exists(tree_index_path) or os.path.exists(metadata_path):
-                # Handle as PDF folder — fall through to PDF handling below
-                pass
-            else:
-                return ToolResult(
-                    success=False,
-                    output=None,
-                    error=f"Path is a directory, not a file: {file_path}. Use list_directory instead.",
-                )
-
-        # Check if it's an image
-        ext = os.path.splitext(full_path)[1].lower()
-        if ext in IMAGE_TYPES:
-            try:
-                image_size = os.path.getsize(full_path)
-                if image_size > MAX_IMAGE_FILE_SIZE:
-                    return ToolResult(
-                        success=False,
-                        output=None,
-                        error=f"Image too large ({image_size:,} bytes, max {MAX_IMAGE_FILE_SIZE:,} bytes).",
-                    )
-                with open(full_path, "rb") as f:
-                    image_data = f.read()
-                base64_data = base64.b64encode(image_data).decode("utf-8")
-                media_type = IMAGE_TYPES[ext]
-                output = f"__IMAGE_DATA__\nmedia_type: {media_type}\nprompt: {file_path}\ndata: {base64_data}\n__END_IMAGE_DATA__"
-                return ToolResult(success=True, output=output)
-            except Exception as e:
-                return ToolResult(
-                    success=False, output=None, error=f"Failed to read image: {str(e)}"
-                )
-
-        # PDF files — return tree index overview if available
-        if ext == PDF_EXTENSION or os.path.isdir(full_path):
-            # Determine the parent dir for tree index lookup
-            if os.path.isdir(full_path):
-                parent_dir = full_path
-            else:
-                parent_dir = os.path.dirname(full_path)
-            tree_index_path = os.path.join(parent_dir, "_tree_index.json")
-            metadata_path = os.path.join(parent_dir, "_metadata.json")
-
-            if os.path.exists(tree_index_path):
-                try:
-                    logger.info(
-                        "Reading PDF tree index",
-                        extra={"path": tree_index_path},
-                    )
-                    with open(tree_index_path, "r", encoding="utf-8") as f:
-                        tree_data = json.load(f)
-
-                    from .pdf_tree import parse_pdf_tree
-
-                    tree = parse_pdf_tree(tree_data)
-                    outline = tree.get_outline(max_depth=3)
-
-                    return ToolResult(
-                        success=True,
-                        output=(
-                            f"# PDF Document: {os.path.basename(file_path)}\n\n"
-                            f"## Tree Index Overview\n\n{outline}\n\n"
-                            f"Use read_pdf_section(file_path, node_id) to read specific sections."
-                        ),
-                    )
-                except Exception as e:
-                    logger.error(
-                        "Failed to read PDF tree index",
-                        extra={"path": tree_index_path, "error": str(e)},
-                        exc_info=True,
-                    )
-                    return ToolResult(
-                        success=False, output=None, error=f"Failed to read PDF tree index: {str(e)}"
-                    )
-            elif os.path.exists(metadata_path):
-                try:
-                    logger.info(
-                        "Reading PDF metadata (no tree index)",
-                        extra={"path": metadata_path},
-                    )
-                    with open(metadata_path, "r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    return ToolResult(
-                        success=True,
-                        output=(
-                            f"# PDF Document: {metadata.get('original_filename', os.path.basename(file_path))}\n\n"
-                            f"Page count: {metadata.get('page_count', 'unknown')}\n"
-                            f"Converted: {metadata.get('converted_at', 'unknown')}\n\n"
-                            "No tree index available. Re-import this PDF through Dokumen "
-                            "to get structured navigation."
-                        ),
-                    )
-                except Exception as e:
-                    logger.error(
-                        "Failed to read PDF metadata",
-                        extra={"path": metadata_path, "error": str(e)},
-                        exc_info=True,
-                    )
-                    return ToolResult(
-                        success=False, output=None, error=f"Failed to read PDF metadata: {str(e)}"
-                    )
-            else:
-                logger.info(
-                    "Raw PDF file — no tree index",
-                    extra={"path": file_path},
-                )
-                return ToolResult(
-                    success=False,
-                    output=None,
-                    error=(
-                        f"Cannot read raw PDF file '{file_path}'. "
-                        "Import this PDF through the Dokumen UI to create a tree index, "
-                        "then use the document folder path to read the structured content."
-                    ),
-                )
+            return ToolResult(
+                success=False,
+                output=None,
+                error=f"Path is a directory, not a file: {file_path}. Use list_directory instead.",
+            )
 
         # Check text file size
         file_size = os.path.getsize(full_path)
@@ -1472,9 +1345,7 @@ def create_read_file_tool(base_dir: str = ".") -> ToolDefinition:
     return ToolDefinition(
         name="read_file",
         description=(
-            "Read a file's contents. For text files, returns content with line numbers. "
-            "For images (PNG, JPEG, GIF, WebP), returns encoded image data. "
-            "For PDF document folders, returns tree index overview for structured navigation. "
+            "Read a text file's contents with line numbers. "
             "Use offset and limit to read specific line ranges for large text files."
         ),
         parameters={
@@ -2645,225 +2516,6 @@ def create_write_file_tool(base_dir: str = ".") -> ToolDefinition:
     )
 
 
-def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
-    """Create a read_pdf_section tool for reading specific sections from indexed PDFs.
-
-    Allows agents to drill into specific sections of a PDF document that has a
-    Dokumen tree index. The agent can search by section title (case-insensitive)
-    or by node_id from the tree index.
-
-    Args:
-        base_dir: Base directory for resolving relative paths
-
-    Returns:
-        ToolDefinition for the read_pdf_section tool
-    """
-    import json
-    import os
-
-    def _find_node_by_title(nodes, title_query):
-        """Search tree nodes for a title match (case-insensitive substring)."""
-        title_lower = title_query.lower()
-        for node in nodes:
-            if title_lower in node.title.lower():
-                return node
-            found = _find_node_by_title(node.children, title_query)
-            if found:
-                return found
-        return None
-
-    def _find_node_by_id(nodes, node_id):
-        """Search tree nodes for an exact node_id match."""
-        for node in nodes:
-            if node.node_id == node_id:
-                return node
-            found = _find_node_by_id(node.children, node_id)
-            if found:
-                return found
-        return None
-
-    def _format_node_output(node, file_path):
-        """Format a found node into a readable output string."""
-        lines = []
-        lines.append(f"# {node.title}")
-        lines.append(f"Node ID: {node.node_id}")
-        if node.page_index is not None:
-            lines.append(f"Page: {node.page_index + 1}")
-        lines.append("")
-
-        if node.text:
-            lines.append(node.text)
-        elif node.summary:
-            lines.append(f"**Summary:** {node.summary}")
-        else:
-            lines.append("(No text content available for this section)")
-
-        if node.children:
-            lines.append("")
-            lines.append("## Subsections")
-            for child in node.children:
-                summary_part = f" — {child.summary[:120]}" if child.summary else ""
-                page_part = f" (p.{child.page_index + 1})" if child.page_index is not None else ""
-                lines.append(f"- [{child.node_id}] {child.title}{page_part}{summary_part}")
-
-        return "\n".join(lines)
-
-    def _resolve_pdf_folder(file_path, base_dir):
-        """Resolve the PDF folder from a file_path (could be .pdf file or folder)."""
-        if not os.path.isabs(file_path):
-            full_path = os.path.join(base_dir, file_path)
-        else:
-            full_path = file_path
-
-        full_path = os.path.normpath(full_path)
-
-        if os.path.isdir(full_path):
-            return full_path
-        # If it's a .pdf file, use the directory containing it
-        # PDF folders are named like "document.pdf/" with _tree_index.json inside
-        if full_path.lower().endswith(PDF_EXTENSION):
-            # Check if there's a folder with the same name (e.g., doc.pdf/)
-            if os.path.isdir(full_path):
-                return full_path
-            # Otherwise use the parent directory
-            parent = os.path.dirname(full_path)
-            return parent
-        # Default: use the path as-is (could be a folder path without trailing slash)
-        return full_path
-
-    async def read_pdf_section_handler(params: Dict[str, Any]) -> ToolResult:
-        file_path = params.get("file_path")
-        section = params.get("section")
-
-        if not file_path:
-            return ToolResult(success=False, output=None, error="Missing 'file_path' parameter")
-        if not section:
-            return ToolResult(success=False, output=None, error="Missing 'section' parameter")
-
-        logger.info(
-            "read_pdf_section called",
-            extra={"file_path": file_path, "section": section},
-        )
-
-        # Resolve the PDF folder
-        pdf_folder = _resolve_pdf_folder(file_path, base_dir)
-
-        # Path traversal protection
-        normalized_base = os.path.realpath(base_dir)
-        normalized_folder = os.path.realpath(pdf_folder)
-        if (
-            not normalized_folder.startswith(normalized_base + os.sep)
-            and normalized_folder != normalized_base
-        ):
-            logger.warning(
-                "read_pdf_section path traversal blocked",
-                extra={"file_path": file_path, "resolved": pdf_folder},
-            )
-            return ToolResult(
-                success=False,
-                output=None,
-                error="Access denied: path traversal not allowed. Path must be within base directory.",
-            )
-
-        # Find _tree_index.json
-        tree_index_path = os.path.join(pdf_folder, "_tree_index.json")
-        if not os.path.exists(tree_index_path):
-            logger.info(
-                "read_pdf_section: no tree index found",
-                extra={"pdf_folder": pdf_folder, "tree_index_path": tree_index_path},
-            )
-            return ToolResult(
-                success=False,
-                output=None,
-                error=(
-                    f"No tree index found at '{file_path}'. "
-                    "Use read_file on the PDF folder first to see the tree overview, "
-                    "or import the PDF through the Dokumen UI to create a tree index."
-                ),
-            )
-
-        # Load tree index
-        try:
-            with open(tree_index_path, "r", encoding="utf-8") as f:
-                tree_data = json.load(f)
-
-            from .pdf_tree import parse_pdf_tree
-
-            tree = parse_pdf_tree(tree_data)
-        except Exception as e:
-            logger.error(
-                "read_pdf_section: failed to load tree index",
-                extra={"path": tree_index_path, "error": str(e)},
-                exc_info=True,
-            )
-            return ToolResult(
-                success=False, output=None, error=f"Failed to read tree index: {str(e)}"
-            )
-
-        # Search for the section — try node_id first, then title
-        node = _find_node_by_id(tree.nodes, section)
-        search_method = "node_id"
-        if not node:
-            node = _find_node_by_title(tree.nodes, section)
-            search_method = "title"
-
-        if not node:
-            # Build a hint with available top-level sections
-            available = [f"[{n.node_id}] {n.title}" for n in tree.nodes[:10]]
-            hint = "\n".join(available)
-            logger.info(
-                "read_pdf_section: section not found",
-                extra={"section": section, "available_count": len(tree.nodes)},
-            )
-            return ToolResult(
-                success=False,
-                output=None,
-                error=(
-                    f"Section '{section}' not found in the tree index.\n\n"
-                    f"Available top-level sections:\n{hint}"
-                ),
-            )
-
-        logger.info(
-            "read_pdf_section: section found",
-            extra={
-                "section": section,
-                "search_method": search_method,
-                "node_id": node.node_id,
-                "title": node.title,
-                "has_text": bool(node.text),
-                "children_count": len(node.children),
-            },
-        )
-
-        output = _format_node_output(node, file_path)
-        return ToolResult(success=True, output=output)
-
-    return ToolDefinition(
-        name="read_pdf_section",
-        description=(
-            "Read a specific section from an indexed PDF document. "
-            "Use after read_file on a PDF to drill into specific sections. "
-            "Accepts a section title (case-insensitive search) or node_id from the tree index."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "Path to the PDF folder or PDF file",
-                },
-                "section": {
-                    "type": "string",
-                    "description": "Section title or node ID to find in the tree index",
-                },
-            },
-            "required": ["file_path", "section"],
-        },
-        handler=read_pdf_section_handler,
-    )
-
-
 # ============================================================================
 # Tool Registries (Gemini-CLI Compatible)
 # ============================================================================
@@ -2871,7 +2523,6 @@ def create_read_pdf_section_tool(base_dir: str = ".") -> ToolDefinition:
 # Phase 0: Built-in tools registry (file tools that don't require sandbox)
 BUILTIN_TOOLS = {
     "read_file": create_read_file_tool,
-    "read_pdf_section": create_read_pdf_section_tool,
     "write_file": create_write_file_tool,
     "glob": create_glob_tool,
     "list_directory": create_list_directory_tool,

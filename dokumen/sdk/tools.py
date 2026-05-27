@@ -91,6 +91,7 @@ def resolve_sdk_tools(
     test_name: Optional[str] = None,
     browser_config: Optional[Dict[str, Any]] = None,
     agent_context: Optional[AgentContext] = None,
+    dokumen_tool_definitions: Optional[List[ToolDefinition]] = None,
 ) -> ResolvedTools:
     """Resolve scaffold tool names into SDK-compatible tool sets.
 
@@ -98,13 +99,16 @@ def resolve_sdk_tools(
     - If in UNSUPPORTED_SDK_TOOLS -> raise ValueError
     - If in SDK_MAPPING -> add SDK name to sdk_tool_names
     - If a browser tool (in BROWSER_TOOLS) -> add to playwright_tool_names
-    - Otherwise -> resolve from Dokumen tool registries as MCP tool
+    - Otherwise -> expose a pre-resolved Dokumen ToolDefinition as MCP
 
     If any browser tools are found, "Read" is auto-injected into sdk_tool_names.
 
     Args:
         scaffold_tools: List of Dokumen tool names from the test scaffold.
         tools_config: Optional tool configuration from dokumen.yaml.
+        dokumen_tool_definitions: ToolDefinition objects already resolved by
+            the CLI loader. These are used for Dokumen-specific MCP tools such
+            as read_many_files, code repository tools, task tools, explore, and ask.
 
     Returns:
         ResolvedTools with categorized tool sets.
@@ -123,6 +127,10 @@ def resolve_sdk_tools(
     playwright_config = None
 
     seen_sdk: set = set()
+    provided_dokumen_tools = {
+        tool_def.name: tool_def
+        for tool_def in (dokumen_tool_definitions or [])
+    }
 
     for tool_name in scaffold_tools:
         # Check unsupported first
@@ -183,8 +191,11 @@ def resolve_sdk_tools(
             continue
 
         # Dokumen-specific tools (MCP)
-        resolved = resolve_dokumen_tool(tool_name, tools_config=tools_config)
-        dokumen_tools.append(resolved)
+        resolved = provided_dokumen_tools.get(tool_name)
+        if resolved is None:
+            resolved = resolve_dokumen_tool(tool_name, tools_config=tools_config)
+        if resolved.name not in {tool.name for tool in dokumen_tools}:
+            dokumen_tools.append(resolved)
         logger.debug(
             "Resolved as Dokumen MCP tool", extra={"tool": tool_name}
         )

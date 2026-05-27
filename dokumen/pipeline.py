@@ -7,7 +7,7 @@ that orchestrate test execution through independently testable stages.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .logging_config import get_logger
 
@@ -42,7 +42,6 @@ class PipelineContext:
         source_path: Optional path to the source YAML file.
         test_type: Optional test type (e.g., 'research', 'browser').
         output_dir: Path to the unified output directory.
-        mcp_client: Playwright MCP client (set by BrowserSetupStage).
         setup_runner: Setup runner instance (set by SetupStage).
         original_user_prompt: User prompt before explore injection.
         original_executor_tools: Executor tools before sandbox resolution.
@@ -90,7 +89,6 @@ class PipelineContext:
 
     # Runtime state set by stages
     output_dir: str = ""
-    mcp_client: Any = None  # Optional[PlaywrightMCPClient]
     setup_runner: Any = None  # Optional[SetupRunner]
     original_user_prompt: str = ""
     original_executor_tools: Any = None

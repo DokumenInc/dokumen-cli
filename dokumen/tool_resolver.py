@@ -137,8 +137,8 @@ def auto_inject_tools(
 
     # Auto-add browser tools for browser agents (bypasses allowed list)
     if is_browser_agent:
-        from .playwright_tools import BROWSER_TOOLS
-        browser_tool_names_to_inject = list(BROWSER_TOOLS.keys()) + ['read_file']
+        from .playwright_tools import get_browser_tool_names
+        browser_tool_names_to_inject = get_browser_tool_names() + ['read_file']
         injected = []
         for bt_name in browser_tool_names_to_inject:
             if bt_name not in executor_tool_names:
@@ -434,9 +434,8 @@ def resolve_tools(
                 tool_factory = STANDALONE_TOOLS[name]
                 resolved.append(tool_factory(sandbox=None))
         elif name in BROWSER_TOOLS:
-            debug(f"[DEBUG LOADER]     '{name}' is a BROWSER_TOOLS")
-            tool_factory = BROWSER_TOOLS[name]
-            resolved.append(tool_factory())
+            debug(f"[DEBUG LOADER]     '{name}' is a BROWSER_TOOLS placeholder")
+            resolved.append(_create_placeholder_tool(name))
         elif name == "delegate_to_agent":
             if agent_registry is not None and agent_provider is not None:
                 debug(f"[DEBUG LOADER]     '{name}' resolved with agent registry")

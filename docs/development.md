@@ -14,9 +14,9 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Some integration paths require external credentials. Keep local smoke checks
-offline and deterministic unless you are intentionally testing provider-backed
-commands.
+Some optional integration paths require external credentials. Keep local smoke
+checks offline and deterministic unless you are intentionally testing
+provider-backed commands.
 
 ## Useful Commands
 
@@ -24,11 +24,14 @@ commands.
 dokumen --help
 dokumen validate
 dokumen run --dry-run
+pytest tests/contracts -q
 python -m compileall -q dokumen dokumen_schema
 ```
 
 When editing behavior that touches agents or tools, run the smallest relevant
-smoke check first, then broaden to command-level checks.
+contract test first, then broaden to command-level smoke checks. The repository
+no longer carries the old ad hoc unit-test scripts; add focused contract tests
+when a cleanup needs a durable guardrail.
 
 ## Code Organization
 

@@ -1,7 +1,0 @@
-name: empty-judges-test
-executor:
-  system_prompt: "You are a documentation validator."
-  user_prompt: "Read and validate the refund policy."
-  tools:
-    - read_file
-judges: []

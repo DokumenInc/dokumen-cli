@@ -199,16 +199,43 @@ def list_files(ctx, metrics: bool):
 def list_tools(ctx):
     """List available tools for test scaffolds."""
     from ...tools_object import BUILTIN_TOOLS
+    from ...playwright_tools import get_browser_tool_names
+
+    core_tools = {
+        "run_shell_command": "Run shell commands through the SDK Bash tool.",
+        "search_file_content": "Search file contents through the SDK Grep tool.",
+        "web_fetch": "Fetch and summarize web pages.",
+        "web_search": "Search the web through the SDK WebSearch tool.",
+    }
+    code_tools = {
+        "code_read_file": "Read files from configured code repositories.",
+        "code_glob": "Find code files by glob pattern.",
+        "code_search": "Search configured code repositories.",
+        "code_list_directory": "List files in configured code repositories.",
+    }
+    agent_tools = {
+        "explore": "Run a focused workspace exploration sub-agent.",
+        "ask": "Ask a documentation-grounded follow-up question.",
+    }
 
     click.echo("\nAvailable Tools")
     click.echo("=" * 40)
 
     click.echo("\nBuilt-in Tools:")
     for name, tool_factory in BUILTIN_TOOLS.items():
-        # Create tool with empty file lookup to get description
-        tool_def = tool_factory({})
+        # Create a local definition to display the tool description.
+        tool_def = tool_factory(".")
         desc = tool_def.description
         click.echo(f"  - {name}: {desc}")
 
-    # TODO: List MCP tools if configured
-    click.echo("\nMCP Tools: (configure in dokumen.yaml)")
+    click.echo("\nSDK Core Tools:")
+    for name, desc in core_tools.items():
+        click.echo(f"  - {name}: {desc}")
+
+    click.echo("\nBrowser Tools (Playwright MCP):")
+    for name in get_browser_tool_names():
+        click.echo(f"  - {name}")
+
+    click.echo("\nOptional Dokumen MCP Tools:")
+    for name, desc in {**code_tools, **agent_tools}.items():
+        click.echo(f"  - {name}: {desc}")

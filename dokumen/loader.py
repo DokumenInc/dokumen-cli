@@ -360,6 +360,7 @@ def load_scaffold(
         tools_config=tools_config,
         user_dirs=user_dirs,
         base_dir=base_dir,
+        executor_tools=executor_tools,
     )
     logger.info("loader.sdk_path.enabled", scaffold=name)
 

@@ -12,7 +12,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,7 @@ WRITE_TOOLS = frozenset({
     "browser_navigate",
     "browser_click",
     "browser_type",
+    "browser_evaluate",
     "browser_wait",
     "browser_close",
 })
