@@ -6,9 +6,9 @@ to the system prompt as tips/guidelines.
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from .types import SkillEntry, SkillCategory
+from .types import SkillEntry
 from .store import SkillStore
 
 logger = logging.getLogger(__name__)
@@ -47,13 +47,17 @@ class SkillInjector:
             skills = [skill for skill, _score in results]
         else:
             # fall back to category + tag filtering
-            skills = self.store.get_by_category(category, client_id) if category else self.store.get_all(client_id)
+            skills = (
+                self.store.get_by_category(category, client_id)
+                if category
+                else self.store.get_all(client_id)
+            )
             if tags:
                 tag_set = set(tags)
                 skills = [s for s in skills if tag_set.intersection(s.tags)]
             # sort by effectiveness (most helpful first)
             skills.sort(key=lambda s: s.effectiveness, reverse=True)
-            skills = skills[:self.max_skills]
+            skills = skills[: self.max_skills]
 
         return skills
 

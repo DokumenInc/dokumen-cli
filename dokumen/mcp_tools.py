@@ -38,7 +38,12 @@ def create_mcp_tool_definitions(
     Returns:
         List of ToolDefinition instances for all 15 MCP tools.
     """
-    token = gitlab_token or os.environ.get("GITLAB_SERVICE_TOKEN") or os.environ.get("GITLAB_TOKEN") or ""
+    token = (
+        gitlab_token
+        or os.environ.get("GITLAB_SERVICE_TOKEN")
+        or os.environ.get("GITLAB_TOKEN")
+        or ""
+    )
     url = gitlab_url or os.environ.get("GITLAB_URL", "")
     pid_str = str(project_id) if project_id else os.environ.get("GITLAB_PROJECT_ID", "")
     mcp_branch = branch or os.environ.get("MCP_BRANCH", "main")

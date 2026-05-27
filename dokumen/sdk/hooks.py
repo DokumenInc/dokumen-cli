@@ -148,9 +148,7 @@ def build_validation_hooks(
                             },
                         )
                 except AttributeError:
-                    logger.debug(
-                        "tools_config missing run_shell_command.timeout, skipping"
-                    )
+                    logger.debug("tools_config missing run_shell_command.timeout, skipping")
 
         logger.debug(
             "PreToolUse allowed",

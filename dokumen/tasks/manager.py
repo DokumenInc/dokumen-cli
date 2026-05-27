@@ -8,9 +8,9 @@ supports dependency graphs: tasks can declare depends_on to other tasks.
 the manager handles topological ordering, auto-unblocking when dependencies
 complete, and cascade failure when dependencies fail.
 """
+
 import json
 import logging
-import os
 import time
 from collections import deque
 from pathlib import Path
@@ -73,7 +73,9 @@ class InMemoryTaskStore:
                 task = Task.from_dict(data)
                 self._tasks[task.id] = task
             except (json.JSONDecodeError, KeyError, ValueError) as e:
-                logger.warning("failed to load task from disk", extra={"path": str(filepath), "error": str(e)})
+                logger.warning(
+                    "failed to load task from disk", extra={"path": str(filepath), "error": str(e)}
+                )
 
 
 # ── event types ──
@@ -88,6 +90,7 @@ AllCompleteCallback = Callable[[], None]
 
 
 # ── DAG utilities ──
+
 
 def topological_sort(tasks: List[Task]) -> List[Task]:
     """kahn's algorithm — returns tasks in dependency order.
@@ -183,8 +186,7 @@ def is_task_ready(task: Task, all_tasks: Dict[str, Task]) -> bool:
     if not task.depends_on:
         return True
     return all(
-        all_tasks.get(dep_id, Task()).status == TaskStatus.COMPLETED
-        for dep_id in task.depends_on
+        all_tasks.get(dep_id, Task()).status == TaskStatus.COMPLETED for dep_id in task.depends_on
     )
 
 
@@ -274,8 +276,10 @@ class TaskManager:
         logger.info(
             "task created",
             extra={
-                "task_id": task.id, "name": name,
-                "parent_id": parent_id, "depends_on": task.depends_on,
+                "task_id": task.id,
+                "name": name,
+                "parent_id": parent_id,
+                "depends_on": task.depends_on,
                 "status": task.status.value,
             },
         )
@@ -310,7 +314,10 @@ class TaskManager:
         if task is None:
             return None
         if task.is_terminal:
-            logger.warning("cannot start terminal task", extra={"task_id": task_id, "status": task.status.value})
+            logger.warning(
+                "cannot start terminal task",
+                extra={"task_id": task_id, "status": task.status.value},
+            )
             return task
         if task.status == TaskStatus.BLOCKED:
             logger.warning("cannot start blocked task", extra={"task_id": task_id})
@@ -323,7 +330,9 @@ class TaskManager:
         logger.info("task started", extra={"task_id": task_id})
         return task
 
-    def add_output(self, task_id: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> Optional[Task]:
+    def add_output(
+        self, task_id: str, content: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[Task]:
         """add an output entry to a task."""
         task = self._store.load(task_id)
         if task is None:
@@ -524,7 +533,9 @@ class TaskManager:
                 unblocked.append(t)
 
         for t in unblocked:
-            logger.info("task unblocked", extra={"task_id": t.id, "unblocked_by": completed_task_id})
+            logger.info(
+                "task unblocked", extra={"task_id": t.id, "unblocked_by": completed_task_id}
+            )
             self._emit(TASK_READY, t)
 
     def _cascade_failure(self, failed_task_id: str) -> None:

@@ -5,6 +5,7 @@ older tool outputs get trimmed to just key findings. configurable
 per-tool via max_tool_result_chars. this runs on individual tool
 results, not on the full conversation.
 """
+
 import logging
 import time
 from dataclasses import dataclass, field
@@ -20,6 +21,7 @@ DEFAULT_TRUNCATE_TO = 500  # chars after truncation
 @dataclass
 class ToolResultEntry:
     """tracked tool result for micro-compaction."""
+
     tool_name: str
     content: str
     original_length: int
@@ -66,11 +68,13 @@ class MicroCompactor:
 
     def track(self, tool_name: str, content: str) -> None:
         """track a new tool result."""
-        self._entries.append(ToolResultEntry(
-            tool_name=tool_name,
-            content=content,
-            original_length=len(content),
-        ))
+        self._entries.append(
+            ToolResultEntry(
+                tool_name=tool_name,
+                content=content,
+                original_length=len(content),
+            )
+        )
 
     def compact(self) -> int:
         """compact old tool results in place.
@@ -89,7 +93,9 @@ class MicroCompactor:
 
             limit = self._per_tool.get(entry.tool_name, self._default_truncate_to)
             if len(entry.content) > limit:
-                entry.content = entry.content[:limit] + f"\n... [truncated from {entry.original_length} chars]"
+                entry.content = (
+                    entry.content[:limit] + f"\n... [truncated from {entry.original_length} chars]"
+                )
                 entry.truncated = True
                 truncated += 1
 

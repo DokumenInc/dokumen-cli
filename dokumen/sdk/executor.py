@@ -7,11 +7,9 @@ from the message stream. retries on rate limits.
 
 import asyncio
 import logging
-from typing import Any, Callable, Dict, List, Optional
 
 from .base import DokumenAgent
 from .messages import build_conversation_log, extract_tool_calls, extract_usage
-from .query_runner import QueryRunner
 from .types import ExecutorResult
 
 logger = logging.getLogger(__name__)
@@ -102,7 +100,10 @@ class ExecutorAgent(DokumenAgent):
 
             # retry on rate limit or any failure without a valid result
             if result_msg is None and attempt < MAX_RETRIES:
-                print(f"  ⚠ no result (likely rate limited), attempt {attempt}/{MAX_RETRIES} — retrying in {RETRY_DELAY_SECONDS}s...", flush=True)
+                print(
+                    f"  ⚠ no result (likely rate limited), attempt {attempt}/{MAX_RETRIES} — retrying in {RETRY_DELAY_SECONDS}s...",
+                    flush=True,
+                )
                 logger.warning(
                     "No valid result, retrying",
                     extra={
@@ -123,18 +124,20 @@ class ExecutorAgent(DokumenAgent):
             # fall back to extracting the last assistant text from collected messages.
             if not final_text.strip() and qr.messages:
                 for msg in reversed(qr.messages):
-                    if hasattr(msg, 'content') and getattr(msg, 'role', '') != 'user':
-                        content = getattr(msg, 'content', None)
+                    if hasattr(msg, "content") and getattr(msg, "role", "") != "user":
+                        content = getattr(msg, "content", None)
                         if isinstance(content, str) and content.strip():
                             final_text = content
                             break
                         elif isinstance(content, list):
                             texts = []
                             for block in content:
-                                if isinstance(block, dict) and block.get('type') == 'text':
-                                    texts.append(block.get('text', ''))
-                                elif hasattr(block, 'type') and getattr(block, 'type', '') == 'text':
-                                    texts.append(getattr(block, 'text', ''))
+                                if isinstance(block, dict) and block.get("type") == "text":
+                                    texts.append(block.get("text", ""))
+                                elif (
+                                    hasattr(block, "type") and getattr(block, "type", "") == "text"
+                                ):
+                                    texts.append(getattr(block, "text", ""))
                             combined = "\n".join(t for t in texts if t.strip())
                             if combined.strip():
                                 final_text = combined

@@ -11,6 +11,7 @@ inspired by anthropic's harness design research:
 - but compaction is still useful within a single session
 - for cross-session work, use progress artifacts instead
 """
+
 import logging
 import time
 from dataclasses import dataclass, field
@@ -30,6 +31,7 @@ DEFAULT_KEEP_RECENT = 10  # keep last N turns intact
 @dataclass
 class Turn:
     """a single conversation turn."""
+
     role: str  # user, assistant, tool_result
     content: str
     timestamp: float = field(default_factory=time.time)
@@ -44,6 +46,7 @@ class Turn:
 @dataclass
 class CompactionResult:
     """result of a compaction operation."""
+
     summary: str
     turns_removed: int
     turns_kept: int
@@ -70,8 +73,7 @@ class CompactionResult:
 class Summarizer(Protocol):
     """protocol for summarizing turns into a compact string."""
 
-    async def summarize(self, turns: List[Turn]) -> str:
-        ...
+    async def summarize(self, turns: List[Turn]) -> str: ...
 
 
 class RuleSummarizer:
@@ -101,7 +103,7 @@ class RuleSummarizer:
 
         combined = "\n".join(points)
         if len(combined) > self._max_chars:
-            combined = combined[:self._max_chars] + "\n... (truncated)"
+            combined = combined[: self._max_chars] + "\n... (truncated)"
 
         return f"## compacted context ({len(turns)} turns)\n\n{combined}"
 
@@ -197,8 +199,8 @@ class ContextCompactor:
                 tokens_after=tokens_before,
             )
 
-        to_compact = self._turns[:-self._keep_recent]
-        to_keep = self._turns[-self._keep_recent:]
+        to_compact = self._turns[: -self._keep_recent]
+        to_keep = self._turns[-self._keep_recent :]
 
         logger.info(
             "starting compaction",
@@ -215,7 +217,12 @@ class ContextCompactor:
         if self._archive is not None:
             try:
                 turn_dicts = [
-                    {"role": t.role, "content": t.content, "timestamp": t.timestamp, "metadata": t.metadata}
+                    {
+                        "role": t.role,
+                        "content": t.content,
+                        "timestamp": t.timestamp,
+                        "metadata": t.metadata,
+                    }
                     for t in to_compact
                 ]
                 self._archive.save(

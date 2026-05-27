@@ -4,7 +4,6 @@ import hashlib
 import time
 from typing import Optional
 
-from ..debug import is_debug, debug
 from ..logging_config import get_logger
 from ..pipeline import PipelineContext, PipelineStage
 
@@ -41,8 +40,7 @@ class ExecutorStage(PipelineStage):
         Returns:
             Updated context with executor_output set.
         """
-        logger.info("stage.executor.start", test_id=ctx.test_id,
-                     max_retries=ctx.retries)
+        logger.info("stage.executor.start", test_id=ctx.test_id, max_retries=ctx.retries)
 
         # Capture original user prompt if not already set by explore stage
         if not ctx.original_user_prompt:
@@ -69,15 +67,9 @@ class ExecutorStage(PipelineStage):
 
         # Prompt observability logging
         exec_sys = (
-            ctx.executor.system_prompt
-            if isinstance(ctx.executor.system_prompt, str)
-            else None
+            ctx.executor.system_prompt if isinstance(ctx.executor.system_prompt, str) else None
         )
-        exec_usr = (
-            ctx.executor.user_prompt
-            if isinstance(ctx.executor.user_prompt, str)
-            else None
-        )
+        exec_usr = ctx.executor.user_prompt if isinstance(ctx.executor.user_prompt, str) else None
         logger.info(
             "agent.prompt_applied",
             test_id=ctx.test_id,
@@ -88,11 +80,7 @@ class ExecutorStage(PipelineStage):
             user_prompt_len=len(exec_usr) if exec_usr else 0,
         )
         for judge in ctx.judges:
-            judge_sys = (
-                judge.system_prompt
-                if isinstance(judge.system_prompt, str)
-                else None
-            )
+            judge_sys = judge.system_prompt if isinstance(judge.system_prompt, str) else None
             logger.info(
                 "agent.prompt_applied",
                 test_id=ctx.test_id,
@@ -110,8 +98,12 @@ class ExecutorStage(PipelineStage):
         while attempts < max_attempts:
             attempts += 1
             attempt_start = time.time()
-            logger.debug("stage.executor.attempt", test_id=ctx.test_id,
-                         attempt=attempts, max_attempts=max_attempts)
+            logger.debug(
+                "stage.executor.attempt",
+                test_id=ctx.test_id,
+                attempt=attempts,
+                max_attempts=max_attempts,
+            )
 
             try:
                 executor_output = await ctx.executor.run(
@@ -123,29 +115,43 @@ class ExecutorStage(PipelineStage):
 
                 attempt_duration_ms = int((time.time() - attempt_start) * 1000)
                 if executor_output.success:
-                    logger.info("stage.executor.attempt.complete",
-                                test_id=ctx.test_id,
-                                attempt=attempts,
-                                duration_ms=attempt_duration_ms,
-                                success=True)
+                    logger.info(
+                        "stage.executor.attempt.complete",
+                        test_id=ctx.test_id,
+                        attempt=attempts,
+                        duration_ms=attempt_duration_ms,
+                        success=True,
+                    )
                     break
                 elif attempts < max_attempts:
-                    logger.info("stage.executor.attempt.complete",
-                                test_id=ctx.test_id,
-                                attempt=attempts,
-                                duration_ms=attempt_duration_ms,
-                                success=False)
-                    logger.debug("stage.executor.retry", test_id=ctx.test_id,
-                                 attempt=attempts, error=executor_output.error)
+                    logger.info(
+                        "stage.executor.attempt.complete",
+                        test_id=ctx.test_id,
+                        attempt=attempts,
+                        duration_ms=attempt_duration_ms,
+                        success=False,
+                    )
+                    logger.debug(
+                        "stage.executor.retry",
+                        test_id=ctx.test_id,
+                        attempt=attempts,
+                        error=executor_output.error,
+                    )
                     continue
                 else:
-                    logger.info("stage.executor.attempt.complete",
-                                test_id=ctx.test_id,
-                                attempt=attempts,
-                                duration_ms=attempt_duration_ms,
-                                success=False)
-                    logger.warning("stage.executor.failed", test_id=ctx.test_id,
-                                   attempts=attempts, error=executor_output.error)
+                    logger.info(
+                        "stage.executor.attempt.complete",
+                        test_id=ctx.test_id,
+                        attempt=attempts,
+                        duration_ms=attempt_duration_ms,
+                        success=False,
+                    )
+                    logger.warning(
+                        "stage.executor.failed",
+                        test_id=ctx.test_id,
+                        attempts=attempts,
+                        error=executor_output.error,
+                    )
                     if executor_output and not getattr(executor_output, "final_response", None):
                         conversation_log = getattr(executor_output, "conversation_log", None) or []
                         text_chunks = []
@@ -167,21 +173,27 @@ class ExecutorStage(PipelineStage):
 
                     ctx.executor_output = executor_output
                     ctx.fail(
-                        f"Executor failed after {attempts} attempts: "
-                        f"{executor_output.error}"
+                        f"Executor failed after {attempts} attempts: " f"{executor_output.error}"
                     )
                     return ctx
 
             except Exception as e:
                 attempt_duration_ms = int((time.time() - attempt_start) * 1000)
-                logger.info("stage.executor.attempt.complete",
-                            test_id=ctx.test_id,
-                            attempt=attempts,
-                            duration_ms=attempt_duration_ms,
-                            success=False)
-                logger.error("stage.executor.error", test_id=ctx.test_id,
-                             attempt=attempts, error=str(e),
-                             error_type=type(e).__name__, exc_info=True)
+                logger.info(
+                    "stage.executor.attempt.complete",
+                    test_id=ctx.test_id,
+                    attempt=attempts,
+                    duration_ms=attempt_duration_ms,
+                    success=False,
+                )
+                logger.error(
+                    "stage.executor.error",
+                    test_id=ctx.test_id,
+                    attempt=attempts,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    exc_info=True,
+                )
                 if attempts >= max_attempts:
                     ctx.fail(f"Executor error: {str(e)}")
                     return ctx
@@ -211,6 +223,9 @@ class ExecutorStage(PipelineStage):
         if ctx.on_executor_complete and executor_output:
             ctx.on_executor_complete(executor_output)
 
-        logger.info("stage.executor.complete", test_id=ctx.test_id,
-                     success=bool(executor_output and executor_output.success))
+        logger.info(
+            "stage.executor.complete",
+            test_id=ctx.test_id,
+            success=bool(executor_output and executor_output.success),
+        )
         return ctx

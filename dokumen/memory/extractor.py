@@ -5,6 +5,7 @@ post-run background extraction: after each test run, extracts learnings
 (failure patterns, useful tool sequences, domain knowledge) and writes
 them to persistent memory.
 """
+
 import logging
 import time
 from dataclasses import dataclass, field
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ExtractionResult:
     """result of extracting memories from a test run."""
+
     memories: List[Memory] = field(default_factory=list)
     skipped: int = 0  # duplicates or low-quality
     source_test: str = ""
@@ -103,7 +105,7 @@ class MemoryExtractor:
         # cap at max
         if len(memories) > self._max_memories_per_run:
             skipped += len(memories) - self._max_memories_per_run
-            memories = memories[:self._max_memories_per_run]
+            memories = memories[: self._max_memories_per_run]
 
         elapsed = time.time() - start
         logger.info(
@@ -164,7 +166,9 @@ class MemoryExtractor:
             },
         )
 
-    def _extract_tool_pattern(self, test_id: str, tool_calls: List[Dict[str, Any]]) -> Optional[Memory]:
+    def _extract_tool_pattern(
+        self, test_id: str, tool_calls: List[Dict[str, Any]]
+    ) -> Optional[Memory]:
         """extract a useful tool sequence from a successful run."""
         if len(tool_calls) < 2:
             return None

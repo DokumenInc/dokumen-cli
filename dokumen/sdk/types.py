@@ -19,7 +19,9 @@ class QueryResult:
     """Raw result from a query() call."""
 
     session_id: Optional[str]
-    messages: List[Any]  # List[AssistantMessage | UserMessage] — Any to avoid SDK import at module level
+    messages: List[
+        Any
+    ]  # List[AssistantMessage | UserMessage] — Any to avoid SDK import at module level
     result: Optional[Any]  # Optional[ResultMessage]
 
 

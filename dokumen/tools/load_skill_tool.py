@@ -7,6 +7,7 @@ specialized instructions and workflows during test execution.
 The tool scans configurable directories for SKILL.md files with YAML
 frontmatter, similar to how ``read_file`` provides file access.
 """
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,6 +36,7 @@ class SkillInfo:
         content: Full markdown body (after frontmatter).
         argument_hint: Hint for arguments (e.g., "[issue-number]").
     """
+
     name: str
     description: str
     file_path: str
@@ -68,7 +70,7 @@ def _parse_skill_file(raw_content: str, file_path: str) -> Optional[SkillInfo]:
         return None
 
     frontmatter_text = stripped[3:end_idx].strip()
-    body = stripped[end_idx + 3:].strip()
+    body = stripped[end_idx + 3 :].strip()
 
     # Parse YAML frontmatter (simple key: value pairs, no external deps)
     fields: Dict[str, str] = {}
@@ -85,7 +87,7 @@ def _parse_skill_file(raw_content: str, file_path: str) -> Optional[SkillInfo]:
 
             colon_idx = line.index(":")
             key = line[:colon_idx].strip()
-            value = line[colon_idx + 1:].strip()
+            value = line[colon_idx + 1 :].strip()
 
             # Handle YAML block scalar indicators (| or >)
             if value in ("|", ">", "|-", ">-"):
@@ -93,8 +95,9 @@ def _parse_skill_file(raw_content: str, file_path: str) -> Optional[SkillInfo]:
                 multiline_value = []
             else:
                 # Strip surrounding quotes
-                if (value.startswith('"') and value.endswith('"')) or \
-                   (value.startswith("'") and value.endswith("'")):
+                if (value.startswith('"') and value.endswith('"')) or (
+                    value.startswith("'") and value.endswith("'")
+                ):
                     value = value[1:-1]
                 fields[key] = value
                 current_key = None
@@ -408,8 +411,7 @@ def create_load_skill_tool(workspace_dir: str) -> ToolDefinition:
                 "arguments": {
                     "type": "string",
                     "description": (
-                        "Arguments to substitute into $ARGUMENTS placeholders "
-                        "in skill content."
+                        "Arguments to substitute into $ARGUMENTS placeholders " "in skill content."
                     ),
                 },
             },

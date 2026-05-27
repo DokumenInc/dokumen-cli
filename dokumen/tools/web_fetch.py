@@ -8,6 +8,7 @@ The old function in tools_object.py stays for backward compat.
 from __future__ import annotations
 
 import asyncio
+import importlib.util
 import ipaddress
 import socket
 import time
@@ -80,10 +81,10 @@ _BLOCKED_HOSTNAMES: Set[str] = {
     "127.0.0.1",
     "0.0.0.0",
     "::1",
-    "169.254.169.254",      # aws/gcp/azure metadata
+    "169.254.169.254",  # aws/gcp/azure metadata
     "metadata.google.internal",
     "metadata.google",
-    "169.254.170.2",        # aws ecs metadata
+    "169.254.170.2",  # aws ecs metadata
 }
 
 
@@ -93,8 +94,9 @@ _BLOCKED_HOSTNAMES: Set[str] = {
 @dataclass
 class WebFetchConfig:
     """Runtime configuration for WebFetcher."""
-    cache_ttl: int = 900                        # 15 minutes in seconds
-    max_cache_bytes: int = 50 * 1024 * 1024     # 50 MB
+
+    cache_ttl: int = 900  # 15 minutes in seconds
+    max_cache_bytes: int = 50 * 1024 * 1024  # 50 MB
     max_content_chars: int = 100_000
     max_url_length: int = 2000
     timeout: float = 30.0
@@ -145,7 +147,7 @@ class ProviderSummarizer(ContentSummarizer):
     async def summarize(self, content: str, prompt: str) -> str:
         # truncate content before sending to model
         if len(content) > self._max_chars:
-            content = content[:self._max_chars] + "\n\n[truncated]"
+            content = content[: self._max_chars] + "\n\n[truncated]"
 
         user_msg = f"web page content:\n---\n{content}\n---\n\n{prompt}"
 
@@ -171,6 +173,7 @@ class ProviderSummarizer(ContentSummarizer):
 @dataclass
 class WebFetchResult:
     """Structured result from a web fetch operation."""
+
     url: str
     status_code: int
     content: str
@@ -190,7 +193,7 @@ class _CacheEntry:
     status_code: int
     content_type: str
     byte_size: int
-    fetched_at: float   # unix timestamp
+    fetched_at: float  # unix timestamp
 
 
 class WebFetchCacheStore:
@@ -261,11 +264,7 @@ def _is_private_ip(ip_str: str) -> bool:
     try:
         ip = ipaddress.ip_address(ip_str)
         return (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
+            ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast
         )
     except ValueError:
         return False
@@ -340,6 +339,7 @@ def _html_to_markdown(html: str) -> str:
     """convert html to markdown, lazy-loading markdownify."""
     try:
         from markdownify import markdownify as md  # type: ignore
+
         return md(html, heading_style="ATX", strip=["script", "style"])
     except ImportError:
         logger.debug("markdownify not installed, returning raw html")
@@ -529,16 +529,18 @@ class WebFetcher:
         returns (content, status_code, content_type, final_url).
         cross-host redirects raise a ValueError telling the caller the new url.
         """
-        try:
-            import aiohttp
+        if importlib.util.find_spec("aiohttp") is not None:
             return await self._do_request_aiohttp(url, method, headers, body)
-        except ImportError:
-            logger.debug("aiohttp not available, falling back to urllib")
-            return await asyncio.get_event_loop().run_in_executor(
-                None,
-                self._do_request_urllib_sync,
-                url, method, headers, body,
-            )
+
+        logger.debug("aiohttp not available, falling back to urllib")
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            self._do_request_urllib_sync,
+            url,
+            method,
+            headers,
+            body,
+        )
 
     async def _do_request_aiohttp(
         self,
@@ -592,9 +594,7 @@ class WebFetcher:
                             continue
                         else:
                             # cross-host redirect — tell the agent to retry
-                            raise ValueError(
-                                f"cross-host redirect detected: retry with {location}"
-                            )
+                            raise ValueError(f"cross-host redirect detected: retry with {location}")
 
                     content = await response.text(errors="replace")
                     return content, status, ct, current_url
@@ -623,9 +623,7 @@ class WebFetcher:
             data = body.encode("utf-8") if body else None
 
             try:
-                with urllib.request.urlopen(
-                    req, data=data, timeout=self._config.timeout
-                ) as resp:
+                with urllib.request.urlopen(req, data=data, timeout=self._config.timeout) as resp:
                     ct = resp.headers.get("Content-Type", "text/plain")
                     content = resp.read().decode("utf-8", errors="replace")
                     return content, resp.status, ct, current_url

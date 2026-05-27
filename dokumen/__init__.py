@@ -6,22 +6,7 @@ A framework for testing agent skills against project knowledge and tools.
 
 from pathlib import Path
 
-def _read_version() -> str:
-    """Read version from VERSION file."""
-    version_file = Path(__file__).parent.parent / "VERSION"
-    if version_file.exists():
-        return version_file.read_text().strip()
-    return "0.0.0"  # Fallback for development
-
-from .file_object import FileObject, FileMetrics
-from .tools.types import (
-    ToolDefinition,
-    ToolResult,
-    ToolCall,
-    ToolsObject,
-)
 # Canonical result types
-from .sdk.types import ExecutorResult, JudgeVerdict
 from .agent_object import (
     AgentType,
     Provider,
@@ -30,6 +15,15 @@ from .agent_object import (
     JudgeResult,
     LogEntry,
 )
+from .file_object import FileMetrics, FileObject
+from .loader import (
+    get_configured_provider,
+    load_all_scaffolds,
+    load_scaffold,
+    load_test_from_yaml,
+    resolve_tools,
+)
+from .providers import AnthropicProvider
 from .test_object import TestObject, TestResult, TestConfig
 from .test_suite import (
     TestSuite,
@@ -45,14 +39,22 @@ from .scaffold import (
     load_scaffold_yaml,
     ValidationResult,
 )
-from .loader import (
-    load_scaffold,
-    load_test_from_yaml,
-    resolve_tools,
-    get_configured_provider,
-    load_all_scaffolds,
+from .sdk.types import ExecutorResult, JudgeVerdict
+from .tools.types import (
+    ToolDefinition,
+    ToolResult,
+    ToolCall,
+    ToolsObject,
 )
-from .providers import AnthropicProvider
+
+
+def _read_version() -> str:
+    """Read version from VERSION file."""
+    version_file = Path(__file__).parent.parent / "VERSION"
+    if version_file.exists():
+        return version_file.read_text().strip()
+    return "0.0.0"  # Fallback for development
+
 
 __version__ = _read_version()
 

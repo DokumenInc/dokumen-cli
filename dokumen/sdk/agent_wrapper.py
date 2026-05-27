@@ -10,7 +10,7 @@ result, and assertion_text to the judge result).
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ..agent_object import AgentType
 from .executor import ExecutorAgent
@@ -59,10 +59,10 @@ class SdkExecutorWrapper:
         self.user_prompt = user_prompt
         self._executor = executor
         # Expose provider stub for test_suite.py model logging
-        model = getattr(executor._options, 'model', None)
+        model = getattr(executor._options, "model", None)
         self.provider = _SdkProviderStub(model)
         # Expose tools as stubs for provenance tracking
-        sdk_tools = getattr(executor._options, 'allowed_tools', []) or []
+        sdk_tools = getattr(executor._options, "allowed_tools", []) or []
         self.tools = [_SdkToolStub(name) for name in sdk_tools]
         # test_object.py accesses max_tool_result_chars for explore agent
         self.max_tool_result_chars = 50000
@@ -118,7 +118,7 @@ class SdkJudgeWrapper:
         self._judge = judge
         self._assertion_text = assertion_text
         # Expose provider stub for test_object.py model logging
-        model = getattr(judge._options, 'model', None)
+        model = getattr(judge._options, "model", None)
         self.provider = _SdkProviderStub(model)
         # Expose for compatibility
         self.tools = []

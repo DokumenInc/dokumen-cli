@@ -17,7 +17,7 @@ from claude_agent_sdk import (
     UserMessage,
 )
 
-from .query_runner import MockQueryRunner, QueryRunner, SDKQueryRunner
+from .query_runner import QueryRunner, SDKQueryRunner
 from .types import QueryResult
 
 logger = logging.getLogger(__name__)
@@ -112,6 +112,7 @@ class DokumenAgent:
         hooks = None
         if tools_config is not None or on_tool_call is not None:
             from .hooks import build_validation_hooks
+
             hooks = build_validation_hooks(tools_config, on_tool_call)
 
         # Determine permission mode: can't use bypassPermissions as root
@@ -153,11 +154,11 @@ class DokumenAgent:
         result_msg = None
 
         prompt_for_runner: str | AsyncIterable[dict[str, Any]] = prompt
-        use_streaming_prompt = (
-            (self._options.mcp_servers or self._options.hooks)
-            and isinstance(self._runner, SDKQueryRunner)
+        use_streaming_prompt = (self._options.mcp_servers or self._options.hooks) and isinstance(
+            self._runner, SDKQueryRunner
         )
         if use_streaming_prompt:
+
             async def _stream_prompt() -> AsyncIterable[dict[str, Any]]:
                 yield {
                     "type": "user",
@@ -166,6 +167,7 @@ class DokumenAgent:
                         "content": prompt,
                     },
                 }
+
             prompt_for_runner = _stream_prompt()
 
         logger.info(
@@ -189,38 +191,54 @@ class DokumenAgent:
                     all_messages.append(msg)
                     # live progress
                     if isinstance(msg, AssistantMessage):
-                        content = getattr(msg, 'content', None)
+                        content = getattr(msg, "content", None)
                         if content:
                             for block in content:
                                 # handle both object and dict blocks
                                 if isinstance(block, dict):
-                                    bt = block.get('type', '')
-                                    if bt == 'tool_use':
-                                        tn = block.get('name', '?')
-                                        ti = block.get('input', {})
-                                        d = ti.get('file_path', '') or ti.get('command', '') or ti.get('pattern', '') if isinstance(ti, dict) else ''
-                                        print(f"  ↳ {tn}: {str(d)[:120]}" if d else f"  ↳ {tn}", flush=True)
-                                    elif bt == 'text':
-                                        t = block.get('text', '').strip()
+                                    bt = block.get("type", "")
+                                    if bt == "tool_use":
+                                        tn = block.get("name", "?")
+                                        ti = block.get("input", {})
+                                        d = (
+                                            ti.get("file_path", "")
+                                            or ti.get("command", "")
+                                            or ti.get("pattern", "")
+                                            if isinstance(ti, dict)
+                                            else ""
+                                        )
+                                        print(
+                                            f"  ↳ {tn}: {str(d)[:120]}" if d else f"  ↳ {tn}",
+                                            flush=True,
+                                        )
+                                    elif bt == "text":
+                                        t = block.get("text", "").strip()
                                         if t:
                                             print(f"  → {t.split(chr(10))[0][:150]}", flush=True)
                                 else:
-                                    bt = getattr(block, 'type', '')
-                                    if bt == 'tool_use':
-                                        tn = getattr(block, 'name', '?')
-                                        ti = getattr(block, 'input', {})
-                                        d = ''
+                                    bt = getattr(block, "type", "")
+                                    if bt == "tool_use":
+                                        tn = getattr(block, "name", "?")
+                                        ti = getattr(block, "input", {})
+                                        d = ""
                                         if isinstance(ti, dict):
-                                            d = ti.get('file_path', '') or ti.get('command', '') or ti.get('pattern', '')
-                                        print(f"  ↳ {tn}: {str(d)[:120]}" if d else f"  ↳ {tn}", flush=True)
-                                    elif bt == 'text':
-                                        t = getattr(block, 'text', '').strip()
+                                            d = (
+                                                ti.get("file_path", "")
+                                                or ti.get("command", "")
+                                                or ti.get("pattern", "")
+                                            )
+                                        print(
+                                            f"  ↳ {tn}: {str(d)[:120]}" if d else f"  ↳ {tn}",
+                                            flush=True,
+                                        )
+                                    elif bt == "text":
+                                        t = getattr(block, "text", "").strip()
                                         if t:
                                             print(f"  → {t.split(chr(10))[0][:150]}", flush=True)
                         else:
                             # fallback: try to print something useful
                             msg_str = str(msg)[:200]
-                            if 'tool' in msg_str.lower() or len(msg_str) > 50:
+                            if "tool" in msg_str.lower() or len(msg_str) > 50:
                                 print(f"  · {msg_str[:150]}", flush=True)
                 elif isinstance(msg, ResultMessage):
                     result_msg = msg
@@ -237,11 +255,15 @@ class DokumenAgent:
                 else:
                     # handle rate limits, subagent events, task events, etc.
                     msg_type = type(msg).__name__
-                    if 'RateLimit' in msg_type:
-                        data = getattr(msg, 'data', {}) or {}
-                        retry_after = data.get('retry_after', '') or data.get('retryAfter', '') or data.get('delay', '')
-                        limit_type = data.get('type', '') or data.get('limit_type', '') or ''
-                        msg_text = data.get('message', '') or data.get('error', '') or ''
+                    if "RateLimit" in msg_type:
+                        data = getattr(msg, "data", {}) or {}
+                        retry_after = (
+                            data.get("retry_after", "")
+                            or data.get("retryAfter", "")
+                            or data.get("delay", "")
+                        )
+                        limit_type = data.get("type", "") or data.get("limit_type", "") or ""
+                        msg_text = data.get("message", "") or data.get("error", "") or ""
                         parts = ["  ⚠ rate limited"]
                         if limit_type:
                             parts[0] += f" ({limit_type})"
@@ -254,43 +276,55 @@ class DokumenAgent:
                         for p in parts:
                             print(p, flush=True)
                     else:
-                        subtype = getattr(msg, 'subtype', '') or ''
-                        data = getattr(msg, 'data', {}) or {}
-                        if subtype == 'task_started':
-                            task_name = data.get('name', '') or data.get('task', '') or ''
-                            print(f"  ▶ task started{': ' + task_name if task_name else ''}", flush=True)
-                        elif subtype == 'task_progress':
+                        subtype = getattr(msg, "subtype", "") or ""
+                        data = getattr(msg, "data", {}) or {}
+                        if subtype == "task_started":
+                            task_name = data.get("name", "") or data.get("task", "") or ""
+                            print(
+                                f"  ▶ task started{': ' + task_name if task_name else ''}",
+                                flush=True,
+                            )
+                        elif subtype == "task_progress":
                             # only print progress if there's meaningful content
-                            progress = data.get('message', '') or data.get('progress', '') or data.get('content', '')
+                            progress = (
+                                data.get("message", "")
+                                or data.get("progress", "")
+                                or data.get("content", "")
+                            )
                             if isinstance(progress, str) and progress.strip():
                                 print(f"  · {progress.strip()[:150]}", flush=True)
                             # else: suppress empty progress spam
-                        elif subtype == 'task_notification':
-                            status = data.get('status', '')
-                            task_id = data.get('task_id', '')[:12] if data.get('task_id') else ''
-                            note = data.get('message', '') or data.get('notification', '') or status
+                        elif subtype == "task_notification":
+                            status = data.get("status", "")
+                            task_id = data.get("task_id", "")[:12] if data.get("task_id") else ""
+                            note = data.get("message", "") or data.get("notification", "") or status
                             if note:
                                 print(f"  ℹ {note}", flush=True)
                             elif status:
                                 print(f"  ℹ task {task_id}: {status}", flush=True)
-                        elif subtype == 'task_completed':
-                            task_name = data.get('name', '') or data.get('task', '') or ''
-                            print(f"  ✓ task completed{': ' + task_name if task_name else ''}", flush=True)
-                        elif subtype == 'api_retry':
-                            delay = data.get('delay', '') or data.get('retry_after', '')
-                            attempt = data.get('attempt', '') or data.get('retry_count', '')
-                            reason = data.get('error', '') or data.get('reason', '') or 'rate limited'
-                            parts = [f"  ⏳ retrying api call"]
+                        elif subtype == "task_completed":
+                            task_name = data.get("name", "") or data.get("task", "") or ""
+                            print(
+                                f"  ✓ task completed{': ' + task_name if task_name else ''}",
+                                flush=True,
+                            )
+                        elif subtype == "api_retry":
+                            delay = data.get("delay", "") or data.get("retry_after", "")
+                            attempt = data.get("attempt", "") or data.get("retry_count", "")
+                            reason = (
+                                data.get("error", "") or data.get("reason", "") or "rate limited"
+                            )
+                            parts = ["  ⏳ retrying api call"]
                             if attempt:
                                 parts[0] += f" (attempt {attempt})"
                             if delay:
                                 parts[0] += f" — waiting {delay}s"
-                            if reason and str(reason) != 'rate limited':
+                            if reason and str(reason) != "rate limited":
                                 parts[0] += f" ({str(reason)[:80]})"
                             print(parts[0], flush=True)
-                        elif subtype and subtype != 'init':
+                        elif subtype and subtype != "init":
                             # catch-all for unknown event types — show data if available
-                            detail = data.get('message', '') or data.get('content', '') or ''
+                            detail = data.get("message", "") or data.get("content", "") or ""
                             if detail:
                                 print(f"  ◆ {subtype}: {str(detail)[:120]}", flush=True)
                             else:
@@ -300,7 +334,11 @@ class DokumenAgent:
             # salvage whatever messages and result we already collected.
             logger.error(
                 "Fatal error in message reader",
-                extra={"error": str(e), "had_result": result_msg is not None, "messages_collected": len(all_messages)},
+                extra={
+                    "error": str(e),
+                    "had_result": result_msg is not None,
+                    "messages_collected": len(all_messages),
+                },
             )
 
         return QueryResult(

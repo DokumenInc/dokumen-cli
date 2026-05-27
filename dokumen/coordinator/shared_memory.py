@@ -5,6 +5,7 @@ agents write findings to shared memory during execution. other agents
 (and the coordinator) can read them. task results are auto-persisted
 so downstream tasks in the DAG can access upstream outputs.
 """
+
 import logging
 import time
 from typing import Any, Dict, List, Optional, Protocol
@@ -25,7 +26,9 @@ class InMemorySharedStore:
     """in-memory implementation of shared memory."""
 
     def __init__(self):
-        self._data: Dict[str, Dict[str, Any]] = {}  # key -> {value, metadata, created_at, updated_at}
+        self._data: Dict[str, Dict[str, Any]] = (
+            {}
+        )  # key -> {value, metadata, created_at, updated_at}
 
     def get(self, key: str) -> Optional[str]:
         entry = self._data.get(key)
@@ -81,7 +84,9 @@ class SharedMemory:
     def __init__(self, store: Optional[SharedMemoryStore] = None):
         self._store = store or InMemorySharedStore()
 
-    def write(self, agent_name: str, key: str, value: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def write(
+        self, agent_name: str, key: str, value: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         """write a value under an agent's namespace."""
         namespaced_key = f"{agent_name}/{key}"
         meta = {"agent": agent_name}
@@ -108,7 +113,7 @@ class SharedMemory:
         result = {}
         for key in self._store.keys():
             if key.startswith(prefix):
-                short_key = key[len(prefix):]
+                short_key = key[len(prefix) :]
                 val = self._store.get(key)
                 if val is not None:
                     result[short_key] = val
@@ -139,7 +144,7 @@ class SharedMemory:
             short_key = parts[1] if len(parts) > 1 else key
             val = self._store.get(key) or ""
             if len(val) > max_value_chars:
-                val = val[:max_value_chars - 3] + "..."
+                val = val[: max_value_chars - 3] + "..."
             by_agent.setdefault(agent, []).append((short_key, val))
 
         lines = ["## shared team memory\n"]

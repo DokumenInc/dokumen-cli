@@ -3,6 +3,7 @@
 these tools let the executor agent create and manage subtasks
 during test execution. registered in tools_object when tasks are enabled.
 """
+
 import logging
 from typing import Any, Dict
 
@@ -55,7 +56,10 @@ async def handle_task_update(params: Dict[str, Any]) -> Dict[str, Any]:
     try:
         status_enum = TaskStatus(status)
     except ValueError:
-        return {"success": False, "error": f"invalid status: {status}. use: pending, in_progress, completed, failed, cancelled"}
+        return {
+            "success": False,
+            "error": f"invalid status: {status}. use: pending, in_progress, completed, failed, cancelled",
+        }
 
     task = mgr.get(task_id)
     if task is None:
@@ -121,7 +125,10 @@ TASK_TOOL_DEFINITIONS = [
             "type": "object",
             "properties": {
                 "description": {"type": "string", "description": "what this task does"},
-                "name": {"type": "string", "description": "short task name (defaults to description)"},
+                "name": {
+                    "type": "string",
+                    "description": "short task name (defaults to description)",
+                },
                 "parent_id": {"type": "string", "description": "parent task id (optional)"},
             },
             "required": ["description"],
@@ -135,7 +142,10 @@ TASK_TOOL_DEFINITIONS = [
             "type": "object",
             "properties": {
                 "task_id": {"type": "string", "description": "the task id to update"},
-                "status": {"type": "string", "enum": ["pending", "in_progress", "completed", "failed", "cancelled"]},
+                "status": {
+                    "type": "string",
+                    "enum": ["pending", "in_progress", "completed", "failed", "cancelled"],
+                },
                 "error": {"type": "string", "description": "error message (for failed status)"},
             },
             "required": ["task_id", "status"],
@@ -159,7 +169,11 @@ TASK_TOOL_DEFINITIONS = [
             "properties": {
                 "task_id": {"type": "string", "description": "the task id"},
                 "content": {"type": "string", "description": "the output content"},
-                "type": {"type": "string", "description": "output type (text, json, code)", "default": "text"},
+                "type": {
+                    "type": "string",
+                    "description": "output type (text, json, code)",
+                    "default": "text",
+                },
             },
             "required": ["task_id", "content"],
         },

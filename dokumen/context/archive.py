@@ -5,6 +5,7 @@ when the compactor discards old turns, this module can save them to disk
 (or memory for testing) before they're gone. useful for auditing,
 debugging, and replaying sessions.
 """
+
 import json
 import logging
 import time
@@ -21,10 +22,11 @@ DEFAULT_ARCHIVE_DIR = ".dokumen-cache/archives"
 @dataclass
 class ArchiveEntry:
     """a single compaction event saved to the archive."""
+
     session_id: str
     timestamp: float
-    turns: List[Dict[str, Any]]       # full turn content at compaction time
-    summary: str                       # the summary that replaced these turns
+    turns: List[Dict[str, Any]]  # full turn content at compaction time
+    summary: str  # the summary that replaced these turns
     turn_count: int
     token_estimate: int
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -85,9 +87,7 @@ class FileArchiveStore:
         self._ensure_dir()
 
         ts = time.time()
-        token_estimate = sum(
-            len(t.get("content", "")) // 4 for t in turns
-        )
+        token_estimate = sum(len(t.get("content", "")) // 4 for t in turns)
 
         entry = ArchiveEntry(
             session_id=session_id,
@@ -127,7 +127,9 @@ class FileArchiveStore:
     def load(self, session_id: str) -> List[ArchiveEntry]:
         """load all archive entries for a session, sorted by timestamp."""
         if not self._dir.exists():
-            logger.debug("archive dir does not exist, returning empty", extra={"dir": str(self._dir)})
+            logger.debug(
+                "archive dir does not exist, returning empty", extra={"dir": str(self._dir)}
+            )
             return []
 
         # match files that start with the session_id prefix
@@ -188,9 +190,7 @@ class InMemoryArchiveStore:
         summary: str,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> ArchiveEntry:
-        token_estimate = sum(
-            len(t.get("content", "")) // 4 for t in turns
-        )
+        token_estimate = sum(len(t.get("content", "")) // 4 for t in turns)
 
         entry = ArchiveEntry(
             session_id=session_id,

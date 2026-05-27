@@ -158,9 +158,7 @@ def main() -> None:
     from urllib.parse import urlparse, urlunparse
 
     parsed_proxy = urlparse(proxy_url)
-    authed_url = urlunparse(
-        parsed_proxy._replace(netloc=f"oauth2:{pat}@{parsed_proxy.netloc}")
-    )
+    authed_url = urlunparse(parsed_proxy._replace(netloc=f"oauth2:{pat}@{parsed_proxy.netloc}"))
     os.environ["GIT_TERMINAL_PROMPT"] = "0"
 
     # Ensure clean/smudge filter is configured before delegating to git

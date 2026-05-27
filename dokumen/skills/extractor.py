@@ -160,9 +160,25 @@ def _extract_tags(text: str) -> List[str]:
     """extract simple keyword tags from text."""
     # common domain keywords
     keywords = [
-        "oauth", "auth", "api", "refund", "policy", "token", "endpoint",
-        "error", "timeout", "rate_limit", "permission", "format", "json",
-        "markdown", "code", "test", "validation", "security", "config",
+        "oauth",
+        "auth",
+        "api",
+        "refund",
+        "policy",
+        "token",
+        "endpoint",
+        "error",
+        "timeout",
+        "rate_limit",
+        "permission",
+        "format",
+        "json",
+        "markdown",
+        "code",
+        "test",
+        "validation",
+        "security",
+        "config",
     ]
     text_lower = text.lower()
     return [kw for kw in keywords if kw in text_lower][:5]

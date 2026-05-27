@@ -25,7 +25,9 @@ class CoordinatorStage(PipelineStage):
 
     async def run(self, ctx: PipelineContext) -> PipelineContext:
         if self._config is None or not self._config.enabled:
-            logger.debug("stage.coordinator.skipped", extra={"test_id": ctx.test_id, "reason": "disabled"})
+            logger.debug(
+                "stage.coordinator.skipped", extra={"test_id": ctx.test_id, "reason": "disabled"}
+            )
             return ctx
 
         start = time.time()
@@ -43,8 +45,8 @@ class CoordinatorStage(PipelineStage):
             from ..coordinator.types import WorkerTask, CoordinatorPlan
 
             # build worker tasks from the executor prompt
-            system_prompt = getattr(ctx.executor, 'system_prompt', '') or ''
-            user_prompt = getattr(ctx.executor, 'user_prompt', '') or ''
+            system_prompt = getattr(ctx.executor, "system_prompt", "") or ""
+            user_prompt = getattr(ctx.executor, "user_prompt", "") or ""
 
             # the coordinator creates its own plan from the user prompt
             coordinator = CoordinatorAgent(
@@ -54,18 +56,20 @@ class CoordinatorStage(PipelineStage):
 
             # build worker configs from executor tools
             tool_names = []
-            executor_tools = getattr(ctx.executor, 'tools', None) or []
+            executor_tools = getattr(ctx.executor, "tools", None) or []
             if executor_tools:
-                tool_names = [getattr(t, 'name', str(t)) for t in executor_tools]
+                tool_names = [getattr(t, "name", str(t)) for t in executor_tools]
 
             worker_configs = []
             for i in range(min(self._config.max_workers, 3)):
-                worker_configs.append({
-                    "id": f"worker-{ctx.test_id}-{i}",
-                    "tools": tool_names,
-                    "timeout": self._config.worker_timeout,
-                    "model": self._config.worker_model,
-                })
+                worker_configs.append(
+                    {
+                        "id": f"worker-{ctx.test_id}-{i}",
+                        "tools": tool_names,
+                        "timeout": self._config.worker_timeout,
+                        "model": self._config.worker_model,
+                    }
+                )
 
             # create a plan with the user prompt as the main task
             plan = CoordinatorPlan(
@@ -91,6 +95,7 @@ class CoordinatorStage(PipelineStage):
             if result.get("success"):
                 # store synthesized result as executor output
                 from ..sdk.executor import ExecutorResult
+
                 ctx.executor_output = ExecutorResult(
                     success=True,
                     response=result.get("synthesis", ""),

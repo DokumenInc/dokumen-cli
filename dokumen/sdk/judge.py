@@ -149,11 +149,13 @@ def parse_decomposed_verdict(text: Optional[str]):
     for item in raw_subs:
         if not isinstance(item, dict):
             continue
-        sub_assertions.append(SubAssertion(
-            question=str(item.get("question", "")),
-            passed=bool(item.get("passed", False)),
-            reason=str(item.get("reason", "")),
-        ))
+        sub_assertions.append(
+            SubAssertion(
+                question=str(item.get("question", "")),
+                passed=bool(item.get("passed", False)),
+                reason=str(item.get("reason", "")),
+            )
+        )
 
     if not sub_assertions:
         return sub_assertions, 0.0
@@ -268,9 +270,7 @@ class JudgeAgent(DokumenAgent):
                 sub_assertions, pass_ratio = decomposed_result
                 passed = pass_ratio >= self.decomposed_threshold
                 failed_subs = [sa for sa in sub_assertions if not sa.passed]
-                failure_reasons = "; ".join(
-                    f"{sa.question}: {sa.reason}" for sa in failed_subs
-                )
+                failure_reasons = "; ".join(f"{sa.question}: {sa.reason}" for sa in failed_subs)
                 verdict = Verdict(
                     passed=passed,
                     reason=failure_reasons if not passed else "all sub-assertions passed",

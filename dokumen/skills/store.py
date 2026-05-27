@@ -102,7 +102,11 @@ class SkillStore:
                 self._save()
                 logger.info(
                     "recorded skill usage",
-                    extra={"id": skill_id, "helpful": was_helpful, "effectiveness": skill.effectiveness},
+                    extra={
+                        "id": skill_id,
+                        "helpful": was_helpful,
+                        "effectiveness": skill.effectiveness,
+                    },
                 )
                 return
 
@@ -110,7 +114,8 @@ class SkillStore:
         """remove skills that have been used enough times but aren't effective."""
         before = len(self._skills)
         self._skills = [
-            s for s in self._skills
+            s
+            for s in self._skills
             if s.times_used < min_uses or s.effectiveness > max_effectiveness
         ]
         pruned = before - len(self._skills)

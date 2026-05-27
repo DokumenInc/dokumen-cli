@@ -7,6 +7,7 @@ it gets too long.
 
 protocol-based (rule 2.6) so backing store is swappable.
 """
+
 import logging
 import time
 from dataclasses import dataclass, field
@@ -23,6 +24,7 @@ DEFAULT_MAX_CHARS = 50_000
 @dataclass
 class SessionEntry:
     """single entry in session working memory."""
+
     content: str
     category: str = "general"  # general, tool_result, finding, decision, error
     timestamp: float = field(default_factory=time.time)
@@ -102,7 +104,9 @@ class SessionMemory:
             extra={"max_entries": max_entries, "max_chars": max_chars},
         )
 
-    def add(self, content: str, category: str = "general", metadata: Optional[Dict[str, Any]] = None) -> None:
+    def add(
+        self, content: str, category: str = "general", metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         """add an entry to session memory."""
         entry = SessionEntry(
             content=content,
@@ -114,7 +118,11 @@ class SessionMemory:
 
         logger.debug(
             "session entry added",
-            extra={"category": category, "entries": len(self._entries), "total_chars": self._total_chars},
+            extra={
+                "category": category,
+                "entries": len(self._entries),
+                "total_chars": self._total_chars,
+            },
         )
 
     @property

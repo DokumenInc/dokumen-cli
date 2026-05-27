@@ -1,6 +1,7 @@
 """
 Output formatters for CLI commands.
 """
+
 import logging
 from typing import Dict, List, Optional, Tuple
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Run Settings Banner
 # =============================================================================
+
 
 def print_run_settings(
     config: dict,
@@ -33,59 +35,66 @@ def print_run_settings(
         bail: Whether --bail flag is active.
         timeout_override: CLI --timeout override value, if provided.
     """
-    logger.info("Printing run settings", extra={
-        "test_count": test_count, "force": force, "bail": bail,
-        "debug": debug, "verbose": verbose, "timeout_override": timeout_override,
-    })
+    logger.info(
+        "Printing run settings",
+        extra={
+            "test_count": test_count,
+            "force": force,
+            "bail": bail,
+            "debug": debug,
+            "verbose": verbose,
+            "timeout_override": timeout_override,
+        },
+    )
 
     # Provider & models
-    provider_cfg = config.get('provider', {})
-    provider_name = provider_cfg.get('name', 'unknown')
-    default_model = provider_cfg.get('model', 'default')
-    executor_model = config.get('executor_model', default_model)
-    judge_model = config.get('judge_model', default_model)
+    provider_cfg = config.get("provider", {})
+    provider_name = provider_cfg.get("name", "unknown")
+    default_model = provider_cfg.get("model", "default")
+    executor_model = config.get("executor_model", default_model)
+    judge_model = config.get("judge_model", default_model)
 
     click.echo(f"\nProvider: {provider_name}")
     click.echo(f"  Executor model: {executor_model}")
     click.echo(f"  Judge model: {judge_model}")
 
     # Explore
-    explore_cfg = config.get('explore', {})
-    explore_enabled = explore_cfg.get('enabled', True) if explore_cfg else True
+    explore_cfg = config.get("explore", {})
+    explore_enabled = explore_cfg.get("enabled", True) if explore_cfg else True
     if explore_enabled and explore_cfg:
-        explore_model = explore_cfg.get('model', default_model)
-        max_files = explore_cfg.get('max_files', 20)
-        explore_timeout = explore_cfg.get('timeout', 60)
+        explore_model = explore_cfg.get("model", default_model)
+        max_files = explore_cfg.get("max_files", 20)
+        explore_timeout = explore_cfg.get("timeout", 60)
         click.echo(f"  Explore model: {explore_model}")
         click.echo(f"  Explore: max_files={max_files}, timeout={explore_timeout}s")
     else:
         click.echo("  Explore: disabled")
 
     # Execution
-    exec_cfg = config.get('execution', {})
-    exec_timeout = exec_cfg.get('timeout', 60)
-    retries = exec_cfg.get('retries', 0)
+    exec_cfg = config.get("execution", {})
+    exec_timeout = exec_cfg.get("timeout", 60)
+    retries = exec_cfg.get("retries", 0)
     click.echo(f"Execution: timeout={exec_timeout}s, retries={retries}")
 
     # Coverage
-    cov_cfg = config.get('coverage', {})
-    include = cov_cfg.get('include', [])
-    min_threshold = cov_cfg.get('min_threshold')
+    cov_cfg = config.get("coverage", {})
+    include = cov_cfg.get("include", [])
+    min_threshold = cov_cfg.get("min_threshold")
     cov_parts = [f"include={include}"]
     if min_threshold is not None:
         cov_parts.append(f"min={min_threshold}%")
     click.echo(f"Coverage: {', '.join(cov_parts)}")
 
     # Tools
-    tools_cfg = config.get('tools', {})
+    tools_cfg = config.get("tools", {})
     if tools_cfg:
-        defaults = tools_cfg.get('defaults')
-        allowed = tools_cfg.get('allowed')
+        defaults = tools_cfg.get("defaults")
+        allowed = tools_cfg.get("allowed")
         if defaults:
             click.echo(f"Tools defaults: {defaults}")
         if allowed:
             click.echo(f"Tools allowed: {allowed}")
-        blocked = tools_cfg.get('blocked')
+        blocked = tools_cfg.get("blocked")
         if blocked:
             click.echo(f"Tools blocked: {blocked}")
 
@@ -93,9 +102,9 @@ def print_run_settings(
     if force:
         click.echo("Cache: disabled (force)")
     else:
-        cache_cfg = config.get('cache', {})
-        cache_enabled = cache_cfg.get('enabled', True)
-        cache_path = cache_cfg.get('path', '.dokumen-cache')
+        cache_cfg = config.get("cache", {})
+        cache_enabled = cache_cfg.get("enabled", True)
+        cache_path = cache_cfg.get("path", ".dokumen-cache")
         if cache_enabled:
             click.echo(f"Cache: enabled ({cache_path})")
         else:
@@ -119,6 +128,7 @@ def print_run_settings(
     # Test count
     click.echo(f"Running {test_count} test(s)...\n")
     import sys
+
     sys.stdout.flush()
 
     logger.debug("Run settings printed successfully")
@@ -128,28 +138,40 @@ def print_run_settings(
 # Coverage Formatters
 # =============================================================================
 
-def print_coverage_text(stats: dict, files: bool = False, uncovered: bool = False,
-                        tree: bool = False, verbose: bool = False,
-                        line_stats: dict = None, quiet: bool = False):
+
+def print_coverage_text(
+    stats: dict,
+    files: bool = False,
+    uncovered: bool = False,
+    tree: bool = False,
+    verbose: bool = False,
+    line_stats: dict = None,
+    quiet: bool = False,
+):
     """Print coverage in text format with bar-per-state display."""
-    total = stats['total']
-    by_state = stats.get('by_state', {
-        'passed': stats.get('passed', 0),
-        'failed': stats.get('failed', 0),
-        'uncovered': len(stats.get('uncovered_files', []))
-    })
-    test_counts = stats.get('test_counts', {})
+    total = stats["total"]
+    by_state = stats.get(
+        "by_state",
+        {
+            "passed": stats.get("passed", 0),
+            "failed": stats.get("failed", 0),
+            "uncovered": len(stats.get("uncovered_files", [])),
+        },
+    )
+    test_counts = stats.get("test_counts", {})
     total_tests = sum(test_counts.values())
 
     # Quiet mode: only show summary line
     if quiet:
-        pct = stats['percentage']
-        passed = stats['passed']
-        line_pct = line_stats.get('percentage', 0) if line_stats else 0
-        line_total = line_stats.get('total_lines', 0) if line_stats else 0
-        line_covered = line_stats.get('covered_lines', 0) if line_stats else 0
+        pct = stats["percentage"]
+        passed = stats["passed"]
+        line_pct = line_stats.get("percentage", 0) if line_stats else 0
+        line_total = line_stats.get("total_lines", 0) if line_stats else 0
+        line_covered = line_stats.get("covered_lines", 0) if line_stats else 0
         if line_stats and line_total > 0:
-            click.echo(f"Coverage: {pct:.0f}% files ({passed}/{total}), {line_pct:.1f}% lines ({line_covered}/{line_total})")
+            click.echo(
+                f"Coverage: {pct:.0f}% files ({passed}/{total}), {line_pct:.1f}% lines ({line_covered}/{line_total})"
+            )
         else:
             click.echo(f"Coverage: {pct:.0f}% ({passed}/{total} files)")
         return
@@ -164,12 +186,15 @@ def print_coverage_text(stats: dict, files: bool = False, uncovered: bool = Fals
 
     # Lines section with bar per state
     if line_stats:
-        line_total = line_stats.get('total_lines', 0)
-        line_by_state = line_stats.get('by_state', {
-            'passed': line_stats.get('covered_lines', 0),
-            'failed': line_stats.get('failed_lines', 0),
-            'uncovered': 0
-        })
+        line_total = line_stats.get("total_lines", 0)
+        line_by_state = line_stats.get(
+            "by_state",
+            {
+                "passed": line_stats.get("covered_lines", 0),
+                "failed": line_stats.get("failed_lines", 0),
+                "uncovered": 0,
+            },
+        )
         if line_total > 0:
             click.echo(f"\nLines: {line_total} total")
             click.echo("-" * 44)
@@ -180,18 +205,20 @@ def print_coverage_text(stats: dict, files: bool = False, uncovered: bool = Fals
         _print_files_table(stats, line_stats)
 
     # Show failed files (always visible if any)
-    if stats.get('failed_files') and not files:
-        click.echo(f"\n{click.style('Failed Files', fg='red', bold=True)} ({len(stats['failed_files'])})")
+    if stats.get("failed_files") and not files:
+        click.echo(
+            f"\n{click.style('Failed Files', fg='red', bold=True)} ({len(stats['failed_files'])})"
+        )
         click.echo("-" * 40)
-        for f in stats['failed_files']:
+        for f in stats["failed_files"]:
             status = click.style("[X]", fg="red")
             click.echo(f"  {status} {f}")
 
     # Show uncovered files with --uncovered flag
-    if uncovered and stats.get('uncovered_files') and not files:
+    if uncovered and stats.get("uncovered_files") and not files:
         click.echo(f"\nUncovered Files ({len(stats['uncovered_files'])})")
         click.echo("-" * 40)
-        for f in stats['uncovered_files']:
+        for f in stats["uncovered_files"]:
             status = click.style("-", fg="white", dim=True)
             click.echo(f"  {status} {f}")
 
@@ -202,11 +229,7 @@ def print_coverage_text(stats: dict, files: bool = False, uncovered: bool = Fals
 def _print_state_bars(by_state: dict, total: int):
     """Print progress bars for each state."""
     width = 24
-    states = [
-        ('passed', 'green', '[+]'),
-        ('failed', 'red', '[X]'),
-        ('uncovered', 'white', '[-]')
-    ]
+    states = [("passed", "green", "[+]"), ("failed", "red", "[X]"), ("uncovered", "white", "[-]")]
 
     for state, color, icon in states:
         count = by_state.get(state, 0)
@@ -221,8 +244,8 @@ def _print_state_bars(by_state: dict, total: int):
 
 def _print_files_table(stats: dict, line_stats: dict = None):
     """Print per-file coverage table."""
-    files_detail = stats.get('files_detail', {})
-    line_files = line_stats.get('files', {}) if line_stats else {}
+    files_detail = stats.get("files_detail", {})
+    line_files = line_stats.get("files", {}) if line_stats else {}
 
     click.echo("\nPer-File Coverage")
     click.echo("-" * 70)
@@ -231,18 +254,18 @@ def _print_files_table(stats: dict, line_stats: dict = None):
 
     for file_path in sorted(files_detail.keys()):
         detail = files_detail[file_path]
-        test_count = detail.get('test_count', 0)
-        status = detail.get('status', 'uncovered')
+        test_count = detail.get("test_count", 0)
+        status = detail.get("status", "uncovered")
 
         # Get line coverage percentage
-        line_pct = detail.get('line_coverage_pct')
+        line_pct = detail.get("line_coverage_pct")
         if line_pct is None and file_path in line_files:
-            line_pct = line_files[file_path].get('percentage', 0.0)
+            line_pct = line_files[file_path].get("percentage", 0.0)
 
         # Format status with icon and color
-        if status == 'passed':
+        if status == "passed":
             status_str = click.style("[+] pass", fg="green")
-        elif status == 'failed':
+        elif status == "failed":
             status_str = click.style("[X] fail", fg="red")
         else:
             status_str = click.style("- none", fg="white", dim=True)
@@ -271,10 +294,10 @@ def print_line_coverage_text(stats: dict, detailed: bool = False):
     click.echo("\nLine-Level Coverage")
     click.echo("=" * 20)
 
-    total_lines = stats.get('total_lines', 0)
-    covered_lines = stats.get('covered_lines', 0)
-    failed_lines_count = stats.get('failed_lines', 0)
-    pct = stats.get('percentage', 0.0)
+    total_lines = stats.get("total_lines", 0)
+    covered_lines = stats.get("covered_lines", 0)
+    failed_lines_count = stats.get("failed_lines", 0)
+    pct = stats.get("percentage", 0.0)
 
     if total_lines == 0:
         click.echo("\nNo line coverage data available.")
@@ -305,20 +328,20 @@ def print_line_coverage_text(stats: dict, detailed: bool = False):
     bar_empty = "-" * (width - filled)
     click.echo(f"\n  [{bar_filled}{bar_empty}] {pct:.1f}%")
 
-    if detailed and stats.get('files'):
+    if detailed and stats.get("files"):
         click.echo("\nPer-File Line Coverage")
         click.echo("-" * 40)
 
-        for file_path in sorted(stats['files'].keys()):
-            data = stats['files'][file_path]
-            file_pct = data.get('percentage', 0.0)
-            file_total = data.get('total_lines', 0)
-            file_count = data.get('covered_count', 0)
-            file_failed = data.get('failed_count', 0)
-            file_status = data.get('status', 'uncovered')
+        for file_path in sorted(stats["files"].keys()):
+            data = stats["files"][file_path]
+            file_pct = data.get("percentage", 0.0)
+            file_total = data.get("total_lines", 0)
+            file_count = data.get("covered_count", 0)
+            file_failed = data.get("failed_count", 0)
+            file_status = data.get("status", "uncovered")
 
             # Color based on status and percentage
-            if file_status == 'failed':
+            if file_status == "failed":
                 file_color = "red"
                 status_icon = click.style("[X]", fg="red")
             elif file_pct >= 80:
@@ -340,30 +363,32 @@ def print_line_coverage_text(stats: dict, detailed: bool = False):
             click.echo(coverage_summary)
 
             # Show covered line ranges
-            covered = data.get('covered_lines', [])
+            covered = data.get("covered_lines", [])
             if covered:
                 ranges = _compress_line_ranges(covered)
                 click.echo(f"    Covered: {ranges}")
 
             # Show failed line ranges
-            failed = data.get('failed_lines', [])
+            failed = data.get("failed_lines", [])
             if failed:
                 ranges = _compress_line_ranges(failed)
                 failed_ranges = click.style(ranges, fg="red")
                 click.echo(f"    Failed: {failed_ranges}")
 
             # Show incorrect lines with reasons
-            incorrect = data.get('incorrect_lines', [])
+            incorrect = data.get("incorrect_lines", [])
             if incorrect:
-                click.echo(f"    {click.style('Potentially Incorrect Lines:', fg='red', bold=True)}")
+                click.echo(
+                    f"    {click.style('Potentially Incorrect Lines:', fg='red', bold=True)}"
+                )
                 for item in incorrect:
-                    line_num = item.get('line_number', 0)
-                    reason = item.get('reason', 'Unknown')
+                    line_num = item.get("line_number", 0)
+                    reason = item.get("reason", "Unknown")
                     line_str = click.style(f"Line {line_num}", fg="red", bold=True)
                     click.echo(f"      {line_str}: {reason}")
 
     # Show failure analysis summary if available
-    failure_analysis = stats.get('failure_analysis', {})
+    failure_analysis = stats.get("failure_analysis", {})
     if failure_analysis:
         click.echo(f"\n{click.style('Failure Analysis', fg='red', bold=True)}")
         click.echo("-" * 40)
@@ -371,13 +396,13 @@ def print_line_coverage_text(stats: dict, detailed: bool = False):
             click.echo(f"\n  {click.style(file_path, bold=True)}")
             for test_id, analysis in analyses.items():
                 click.echo(f"    Test: {test_id}")
-                analysis_text = analysis.get('analysis', 'No analysis')
+                analysis_text = analysis.get("analysis", "No analysis")
                 click.echo(f"    Analysis: {analysis_text}")
-                incorrect = analysis.get('incorrect_lines', [])
+                incorrect = analysis.get("incorrect_lines", [])
                 if incorrect:
                     for item in incorrect:
-                        line_num = item.get('line_number', 0)
-                        reason = item.get('reason', 'Unknown')
+                        line_num = item.get("line_number", 0)
+                        reason = item.get("reason", "Unknown")
                         line_str = click.style(f"Line {line_num}", fg="red")
                         click.echo(f"      {line_str}: {reason}")
 
@@ -430,11 +455,11 @@ def coverage_to_lcov(stats: dict) -> str:
     """
     lines = []
 
-    for file_path, data in stats.get('files', {}).items():
+    for file_path, data in stats.get("files", {}).items():
         lines.append(f"SF:{file_path}")
 
-        covered_set = set(data.get('covered_lines', []))
-        total = data.get('total_lines', 0)
+        covered_set = set(data.get("covered_lines", []))
+        total = data.get("total_lines", 0)
 
         for line_num in range(1, total + 1):
             hit = 1 if line_num in covered_set else 0
@@ -457,12 +482,12 @@ def print_file_with_coverage(file_path: str, lines: List[str], coverage_data: di
             Expected keys: covered_lines, failed_lines, incorrect_lines, total_lines,
                           covered_count, failed_count, percentage
     """
-    covered = set(coverage_data.get('covered_lines', []))
-    failed = set(coverage_data.get('failed_lines', []))
-    incorrect = {item['line_number']: item for item in coverage_data.get('incorrect_lines', [])}
+    covered = set(coverage_data.get("covered_lines", []))
+    failed = set(coverage_data.get("failed_lines", []))
+    incorrect = {item["line_number"]: item for item in coverage_data.get("incorrect_lines", [])}
 
-    failed_count = coverage_data.get('failed_count', len(failed))
-    percentage = coverage_data.get('percentage', 0.0)
+    failed_count = coverage_data.get("failed_count", len(failed))
+    percentage = coverage_data.get("percentage", 0.0)
 
     # Header with stats
     header = f"{file_path} ({percentage:.0f}% covered"
@@ -510,7 +535,7 @@ def print_file_with_coverage(file_path: str, lines: List[str], coverage_data: di
         click.style("[X]", fg="red") + " failed",
         click.style("[!]", fg="yellow") + " incorrect",
         click.style("[-]", dim=True) + " uncovered",
-        "[ ] blank"
+        "[ ] blank",
     ]
     click.echo("Legend: " + "  ".join(legend_parts))
 
@@ -526,9 +551,9 @@ def file_coverage_to_dict(file_path: str, lines: List[str], coverage_data: dict)
     Returns:
         Dictionary with line-by-line coverage data
     """
-    covered = set(coverage_data.get('covered_lines', []))
-    failed = set(coverage_data.get('failed_lines', []))
-    incorrect = {item['line_number']: item for item in coverage_data.get('incorrect_lines', [])}
+    covered = set(coverage_data.get("covered_lines", []))
+    failed = set(coverage_data.get("failed_lines", []))
+    incorrect = {item["line_number"]: item for item in coverage_data.get("incorrect_lines", [])}
 
     line_data = []
     for i, line_content in enumerate(lines, 1):
@@ -542,36 +567,32 @@ def file_coverage_to_dict(file_path: str, lines: List[str], coverage_data: dict)
         elif not line_content.strip():
             status = "blank"
 
-        entry = {
-            "line_number": i,
-            "content": line_content.rstrip(),
-            "status": status
-        }
+        entry = {"line_number": i, "content": line_content.rstrip(), "status": status}
 
         if i in incorrect:
-            entry["reason"] = incorrect[i].get('reason', '')
+            entry["reason"] = incorrect[i].get("reason", "")
 
         line_data.append(entry)
 
     return {
         "file_path": file_path,
         "total_lines": len(lines),
-        "covered_count": coverage_data.get('covered_count', 0),
-        "failed_count": coverage_data.get('failed_count', 0),
-        "percentage": coverage_data.get('percentage', 0.0),
-        "lines": line_data
+        "covered_count": coverage_data.get("covered_count", 0),
+        "failed_count": coverage_data.get("failed_count", 0),
+        "percentage": coverage_data.get("percentage", 0.0),
+        "lines": line_data,
     }
 
 
 def print_coverage_tree(stats: dict):
     """Print coverage as directory tree with status (passed/failed/uncovered)."""
     all_files = (
-        stats.get('covered_files', []) +
-        stats.get('failed_files', []) +
-        stats.get('uncovered_files', [])
+        stats.get("covered_files", [])
+        + stats.get("failed_files", [])
+        + stats.get("uncovered_files", [])
     )
-    covered_set = set(stats.get('covered_files', []))
-    failed_set = set(stats.get('failed_files', []))
+    covered_set = set(stats.get("covered_files", []))
+    failed_set = set(stats.get("failed_files", []))
 
     if not all_files:
         return
@@ -582,12 +603,12 @@ def print_coverage_tree(stats: dict):
     # Group by directory with status
     dirs: Dict[str, List[Tuple[str, str]]] = {}  # file_name, status
     for f in sorted(set(all_files)):  # Use set to avoid duplicates
-        parts = f.split('/')
+        parts = f.split("/")
         if len(parts) > 1:
-            dir_name = '/'.join(parts[:-1])
+            dir_name = "/".join(parts[:-1])
             file_name = parts[-1]
         else:
-            dir_name = '.'
+            dir_name = "."
             file_name = f
 
         if dir_name not in dirs:
@@ -628,6 +649,7 @@ def print_coverage_tree(stats: dict):
 # Test Results Formatters
 # =============================================================================
 
+
 def results_to_dict(results) -> dict:
     """Convert TestSuiteResults to dict for JSON output."""
     tests_output = []
@@ -635,24 +657,21 @@ def results_to_dict(results) -> dict:
         test_data = {
             "id": r.test_id,
             "passed": r.passed,
-            "duration": round(r.duration, 2) if hasattr(r, 'duration') else 0
+            "duration": round(r.duration, 2) if hasattr(r, "duration") else 0,
         }
         # Include failure reasons if test failed
-        if not r.passed and hasattr(r, 'failure_reasons'):
+        if not r.passed and hasattr(r, "failure_reasons"):
             test_data["failure_reasons"] = r.failure_reasons
         # Include failure analysis if available
-        if hasattr(r, 'failure_analysis') and r.failure_analysis:
+        if hasattr(r, "failure_analysis") and r.failure_analysis:
             test_data["failure_analysis"] = {
                 file_path: {
                     "referenced_lines": analysis.referenced_lines,
                     "incorrect_lines": [
-                        {
-                            "line_number": il.line_number,
-                            "reason": il.reason
-                        }
+                        {"line_number": il.line_number, "reason": il.reason}
                         for il in analysis.incorrect_lines
                     ],
-                    "analysis": analysis.analysis
+                    "analysis": analysis.analysis,
                 }
                 for file_path, analysis in r.failure_analysis.items()
             }
@@ -665,7 +684,7 @@ def results_to_dict(results) -> dict:
         "skipped": results.skipped,
         "duration": round(results.duration, 2),
         "cached": results.cached_results,
-        "tests": tests_output
+        "tests": tests_output,
     }
 
 
@@ -678,16 +697,18 @@ def results_to_junit(results) -> str:
     ]
 
     for r in results.test_results:
-        duration = r.duration if hasattr(r, 'duration') else 0
+        duration = r.duration if hasattr(r, "duration") else 0
         if r.passed:
             lines.append(f'  <testcase name="{r.test_id}" time="{duration:.2f}"/>')
         else:
             lines.append(f'  <testcase name="{r.test_id}" time="{duration:.2f}">')
-            reason = getattr(r, 'failure_reasons', ['Unknown failure'])
-            lines.append(f'    <failure message="{"; ".join(reason) if isinstance(reason, list) else reason}"/>')
-            lines.append('  </testcase>')
+            reason = getattr(r, "failure_reasons", ["Unknown failure"])
+            lines.append(
+                f'    <failure message="{"; ".join(reason) if isinstance(reason, list) else reason}"/>'
+            )
+            lines.append("  </testcase>")
 
-    lines.append('</testsuite>')
+    lines.append("</testsuite>")
     return "\n".join(lines)
 
 
@@ -716,14 +737,16 @@ def print_results_text(results, verbose=False):
     # Adjust passed count to exclude cached (they weren't actually run)
     actually_passed = passed - cached
 
-    passed_str = click.style(f"{actually_passed} passed", fg="green" if actually_passed > 0 else "white")
+    passed_str = click.style(
+        f"{actually_passed} passed", fg="green" if actually_passed > 0 else "white"
+    )
     failed_str = click.style(f"{failed} failed", fg="red" if failed > 0 else "white")
     skipped_str = click.style(f"{cached} skipped", fg="yellow" if cached > 0 else "white")
     click.echo(f"\nResults: {passed_str}, {failed_str}, {skipped_str}, {total} total")
     click.echo(f"Duration: {results.duration:.1f}s")
 
     # Get cached test IDs if available
-    cached_test_ids = getattr(results, 'cached_test_ids', set())
+    cached_test_ids = getattr(results, "cached_test_ids", set())
 
     # Individual results
     if verbose or failed > 0:
@@ -740,24 +763,28 @@ def print_results_text(results, verbose=False):
                 status = click.style("FAIL", fg="red", bold=True)
                 click.echo(f"  [{status}] {r.test_id}")
 
-            if not r.passed and hasattr(r, 'failure_reasons'):
-                for reason in (r.failure_reasons or []):
+            if not r.passed and hasattr(r, "failure_reasons"):
+                for reason in r.failure_reasons or []:
                     reason_str = click.style(reason, fg="red")
                     click.echo(f"         {reason_str}")
 
             # Show failure analysis for failed tests
-            if not r.passed and hasattr(r, 'failure_analysis') and r.failure_analysis:
+            if not r.passed and hasattr(r, "failure_analysis") and r.failure_analysis:
                 for file_path, analysis in r.failure_analysis.items():
-                    click.echo(f"\n         {click.style('Failure Analysis:', fg='red', bold=True)} {file_path}")
+                    click.echo(
+                        f"\n         {click.style('Failure Analysis:', fg='red', bold=True)} {file_path}"
+                    )
                     click.echo(f"         {analysis.analysis}")
                     if analysis.incorrect_lines:
-                        click.echo(f"         {click.style('Potentially Incorrect Lines:', fg='red')}")
+                        click.echo(
+                            f"         {click.style('Potentially Incorrect Lines:', fg='red')}"
+                        )
                         for il in analysis.incorrect_lines:
                             line_str = click.style(f"Line {il.line_number}", fg="red", bold=True)
                             click.echo(f"           {line_str}: {il.reason}")
 
             # Show verbose details
-            if verbose and hasattr(r, 'executor_output') and r.executor_output:
+            if verbose and hasattr(r, "executor_output") and r.executor_output:
                 eo = r.executor_output
                 tool_count = click.style(f"{len(eo.tool_calls)}", fg="cyan")
                 click.echo(f"         Tool calls: {tool_count}")
@@ -765,10 +792,7 @@ def print_results_text(results, verbose=False):
                     if isinstance(tc, dict):
                         raw_name = tc.get("tool_name") or tc.get("name") or "unknown"
                         raw_params = (
-                            tc.get("parameters")
-                            or tc.get("tool_input")
-                            or tc.get("input")
-                            or {}
+                            tc.get("parameters") or tc.get("tool_input") or tc.get("input") or {}
                         )
                     else:
                         raw_name = getattr(tc, "tool_name", "unknown")
@@ -777,20 +801,28 @@ def print_results_text(results, verbose=False):
                     click.echo(f"           - {tool_name}({raw_params})")
                 if eo.final_response:
                     click.echo()
-                    click.echo(click.style("         --- Executor Response ---", fg="cyan", bold=True))
-                    for line in eo.final_response.strip().split('\n'):
+                    click.echo(
+                        click.style("         --- Executor Response ---", fg="cyan", bold=True)
+                    )
+                    for line in eo.final_response.strip().split("\n"):
                         click.echo(f"         {line}")
                     click.echo(click.style("         -------------------------", fg="cyan"))
 
             # Show judge results in verbose mode
-            if verbose and hasattr(r, 'judge_results') and r.judge_results:
+            if verbose and hasattr(r, "judge_results") and r.judge_results:
                 for jr in r.judge_results:
-                    judge_status = click.style("PASS", fg="green") if jr.passed else click.style("FAIL", fg="red")
+                    judge_status = (
+                        click.style("PASS", fg="green")
+                        if jr.passed
+                        else click.style("FAIL", fg="red")
+                    )
                     click.echo(f"         Judge [{jr.judge_id}]: {judge_status}")
                     if jr.response:
                         click.echo()
-                        click.echo(click.style("         --- Judge Response ---", fg="magenta", bold=True))
-                        for line in jr.response.strip().split('\n'):
+                        click.echo(
+                            click.style("         --- Judge Response ---", fg="magenta", bold=True)
+                        )
+                        for line in jr.response.strip().split("\n"):
                             click.echo(f"         {line}")
                         click.echo(click.style("         ----------------------", fg="magenta"))
 
@@ -799,6 +831,7 @@ def print_results_text(results, verbose=False):
 # Progress Callback
 # =============================================================================
 
+
 def _print_tool_provenance(provenance: dict) -> None:
     """Print tool provenance grouped by source.
 
@@ -806,11 +839,11 @@ def _print_tool_provenance(provenance: dict) -> None:
         provenance: Dict with executor_tools, judge_tools, explore_tools,
                     overrides_active, and removed_tools.
     """
-    executor_tools = provenance.get('executor_tools', {})
-    judge_tools = provenance.get('judge_tools', {})
-    explore_tools = provenance.get('explore_tools', {})
-    overrides_active = provenance.get('overrides_active', False)
-    removed_tools = provenance.get('removed_tools', [])
+    executor_tools = provenance.get("executor_tools", {})
+    judge_tools = provenance.get("judge_tools", {})
+    explore_tools = provenance.get("explore_tools", {})
+    overrides_active = provenance.get("overrides_active", False)
+    removed_tools = provenance.get("removed_tools", [])
 
     # Group executor tools by source
     if executor_tools:
@@ -820,24 +853,24 @@ def _print_tool_provenance(provenance: dict) -> None:
 
         click.echo("         Executor tools:")
         for source, tools in groups.items():
-            tool_list = ', '.join(sorted(tools))
+            tool_list = ", ".join(sorted(tools))
             source_styled = click.style(f"({source})", dim=True)
             click.echo(f"           {tool_list} {source_styled}")
 
     # Print judge tools
     for judge_name, tools in judge_tools.items():
         if tools:
-            tool_list = ', '.join(sorted(tools.keys()))
+            tool_list = ", ".join(sorted(tools.keys()))
             sources = sorted(set(tools.values()))
-            source_str = ', '.join(sources)
+            source_str = ", ".join(sources)
             source_styled = click.style(f"({source_str})", dim=True)
             click.echo(f"         Judge [{judge_name}]: [{tool_list}] {source_styled}")
 
     # Print explore tools
     if explore_tools:
-        tool_list = ', '.join(sorted(explore_tools.keys()))
+        tool_list = ", ".join(sorted(explore_tools.keys()))
         sources = sorted(set(explore_tools.values()))
-        source_str = ', '.join(sources)
+        source_str = ", ".join(sources)
         source_styled = click.style(f"({source_str})", dim=True)
         click.echo(f"         Explore: [{tool_list}] {source_styled}")
 
@@ -847,7 +880,7 @@ def _print_tool_provenance(provenance: dict) -> None:
 
     # Show filtered-out tools
     if removed_tools:
-        removed_list = ', '.join(sorted(removed_tools))
+        removed_list = ", ".join(sorted(removed_tools))
         click.echo("         " + click.style(f"Filtered out: [{removed_list}]", dim=True))
 
 
@@ -866,30 +899,31 @@ def make_progress_callback(quiet: bool = False, cached_tests: set = None, verbos
     import sys
 
     def on_progress(event: str, test_id: str, data):
-        if event == 'cached' and cached_tests is not None:
+        if event == "cached" and cached_tests is not None:
             cached_tests.add(test_id)
         if quiet:
             return
         # Flush stdout after echo to ensure immediate output during async test execution
-        if event == 'start':
+        if event == "start":
             click.echo(click.style("  RUN  ", fg="cyan", bold=True) + f" {test_id}")
             if data and isinstance(data, dict):
-                provenance = data.get('tool_provenance')
+                provenance = data.get("tool_provenance")
                 if provenance:
                     _print_tool_provenance(provenance)
-                elif data.get('tools'):
-                    tool_list = ', '.join(data['tools'])
+                elif data.get("tools"):
+                    tool_list = ", ".join(data["tools"])
                     click.echo(f"         Tools: [{tool_list}]")
             sys.stdout.flush()
-        elif event == 'complete':
+        elif event == "complete":
             if data and data.passed:
                 click.echo(click.style("  PASS ", fg="green", bold=True) + f" {test_id}")
             else:
                 click.echo(click.style("  FAIL ", fg="red", bold=True) + f" {test_id}")
             sys.stdout.flush()
-        elif event == 'cached':
+        elif event == "cached":
             click.echo(click.style("  SKIP ", fg="yellow", bold=True) + f" {test_id} (cached)")
             sys.stdout.flush()
+
     return on_progress
 
 
@@ -962,7 +996,7 @@ def make_conversation_callback(quiet: bool = False, verbose: bool = False):
 
         click.echo(f"\n{header}")
         # Indent content for readability
-        for line in content.strip().split('\n'):
+        for line in content.strip().split("\n"):
             click.echo(f"    {line}")
         sys.stdout.flush()
 
@@ -1005,7 +1039,7 @@ def make_executor_complete_callback(quiet: bool = False, verbose: bool = False):
         if verbose and executor_output.final_response:
             click.echo(click.style("    Final Response:", fg="cyan"))
             # Show full response in verbose mode
-            for line in executor_output.final_response.strip().split('\n'):
+            for line in executor_output.final_response.strip().split("\n"):
                 click.echo(f"      {line}")
         elif executor_output.final_response:
             # Show truncated response
@@ -1052,7 +1086,7 @@ def make_judge_complete_callback(quiet: bool = False, verbose: bool = False):
 
         if verbose and judge_result.response:
             click.echo(click.style("    Full Response:", fg="magenta"))
-            for line in judge_result.response.strip().split('\n'):
+            for line in judge_result.response.strip().split("\n"):
                 click.echo(f"      {line}")
 
         sys.stdout.flush()
@@ -1063,6 +1097,7 @@ def make_judge_complete_callback(quiet: bool = False, verbose: bool = False):
 # =============================================================================
 # Explore Formatters
 # =============================================================================
+
 
 def make_explore_callback(quiet: bool = False):
     """Create a callback that prints explore events as they occur.
@@ -1082,23 +1117,23 @@ def make_explore_callback(quiet: bool = False):
         if quiet:
             return
 
-        if event_type == 'start':
-            goal = data.get('goal', 'documentation')
+        if event_type == "start":
+            goal = data.get("goal", "documentation")
             click.echo(click.style("  EXPLORE", fg="magenta", bold=True) + f" Finding {goal}...")
             sys.stdout.flush()
 
-        elif event_type == 'file_found':
-            path = data.get('path', '')
+        elif event_type == "file_found":
+            path = data.get("path", "")
             click.echo(click.style("    Found:", fg="magenta") + f" {path}")
             sys.stdout.flush()
 
-        elif event_type == 'complete':
-            files_found = data.get('files_found', 0)
-            duration = data.get('duration', 0)
+        elif event_type == "complete":
+            files_found = data.get("files_found", 0)
+            duration = data.get("duration", 0)
             file_word = "file" if files_found == 1 else "files"
             click.echo(
-                click.style("  EXPLORE", fg="magenta", bold=True) +
-                f" Complete ({files_found} {file_word}, {duration:.1f}s)"
+                click.style("  EXPLORE", fg="magenta", bold=True)
+                + f" Complete ({files_found} {file_word}, {duration:.1f}s)"
             )
             sys.stdout.flush()
 
@@ -1115,21 +1150,16 @@ def explore_to_dict(result) -> dict:
         Dictionary with explore results
     """
     output = {
-        'success': result.success,
-        'duration': result.duration,
-        'tool_calls_count': result.tool_calls_count,
-        'files': [
-            {
-                'path': f.path,
-                'summary': f.summary,
-                'relevance': f.relevance
-            }
-            for f in result.files
-        ]
+        "success": result.success,
+        "duration": result.duration,
+        "tool_calls_count": result.tool_calls_count,
+        "files": [
+            {"path": f.path, "summary": f.summary, "relevance": f.relevance} for f in result.files
+        ],
     }
 
     if result.error:
-        output['error'] = result.error
+        output["error"] = result.error
 
     return output
 
@@ -1145,27 +1175,23 @@ def explore_event_to_json(event_type: str, test_id: str, data: dict) -> dict:
     Returns:
         Dictionary ready for JSON serialization
     """
-    if event_type == 'start':
+    if event_type == "start":
+        return {"event": "explore_start", "test_id": test_id, "goal": data.get("goal", "")}
+
+    elif event_type == "file_found":
         return {
-            'event': 'explore_start',
-            'test_id': test_id,
-            'goal': data.get('goal', '')
+            "event": "explore_file",
+            "test_id": test_id,
+            "path": data.get("path", ""),
+            "summary": data.get("summary", ""),
         }
 
-    elif event_type == 'file_found':
+    elif event_type == "complete":
         return {
-            'event': 'explore_file',
-            'test_id': test_id,
-            'path': data.get('path', ''),
-            'summary': data.get('summary', '')
+            "event": "explore_complete",
+            "test_id": test_id,
+            "files_found": data.get("files_found", 0),
+            "duration_ms": int(data.get("duration", 0) * 1000),
         }
 
-    elif event_type == 'complete':
-        return {
-            'event': 'explore_complete',
-            'test_id': test_id,
-            'files_found': data.get('files_found', 0),
-            'duration_ms': int(data.get('duration', 0) * 1000)
-        }
-
-    return {'event': event_type, 'test_id': test_id, **data}
+    return {"event": event_type, "test_id": test_id, **data}

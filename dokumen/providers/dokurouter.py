@@ -9,7 +9,6 @@ API format and normalizes responses to our internal format. no magic, no 97M
 download attack surface.
 """
 
-import asyncio
 import json
 import os
 import time
@@ -49,7 +48,12 @@ PROVIDER_BASE_URLS = {
 
 # providers that use openai-compatible chat/completions format
 OPENAI_COMPATIBLE_PROVIDERS = {
-    "openai", "mistral", "deepseek", "groq", "together", "custom",
+    "openai",
+    "mistral",
+    "deepseek",
+    "groq",
+    "together",
+    "custom",
 }
 
 
@@ -225,36 +229,42 @@ class DokuRouter(Provider):
             role = msg.get("role")
 
             if role == "tool":
-                prepared.append({
-                    "role": "tool",
-                    "tool_call_id": msg.get("tool_call_id", ""),
-                    "content": msg.get("content", ""),
-                })
+                prepared.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": msg.get("tool_call_id", ""),
+                        "content": msg.get("content", ""),
+                    }
+                )
             elif role == "assistant" and msg.get("tool_calls"):
-                prepared.append({
-                    "role": "assistant",
-                    "content": msg.get("content") or None,
-                    "tool_calls": [
-                        {
-                            "id": tc.get("id", tc.get("name", "")),
-                            "type": "function",
-                            "function": {
-                                "name": tc.get("name"),
-                                "arguments": (
-                                    tc.get("arguments")
-                                    if isinstance(tc.get("arguments"), str)
-                                    else json.dumps(tc.get("arguments", {}))
-                                ),
-                            },
-                        }
-                        for tc in msg["tool_calls"]
-                    ],
-                })
+                prepared.append(
+                    {
+                        "role": "assistant",
+                        "content": msg.get("content") or None,
+                        "tool_calls": [
+                            {
+                                "id": tc.get("id", tc.get("name", "")),
+                                "type": "function",
+                                "function": {
+                                    "name": tc.get("name"),
+                                    "arguments": (
+                                        tc.get("arguments")
+                                        if isinstance(tc.get("arguments"), str)
+                                        else json.dumps(tc.get("arguments", {}))
+                                    ),
+                                },
+                            }
+                            for tc in msg["tool_calls"]
+                        ],
+                    }
+                )
             else:
-                prepared.append({
-                    "role": role,
-                    "content": msg.get("content", ""),
-                })
+                prepared.append(
+                    {
+                        "role": role,
+                        "content": msg.get("content", ""),
+                    }
+                )
         return prepared
 
     def _format_tools_openai(self, tools: List[Dict]) -> List[Dict]:
@@ -266,14 +276,16 @@ class DokuRouter(Provider):
                 params = func.get("parameters", {"type": "object", "properties": {}})
                 if params.get("_server_side"):
                     continue
-                formatted.append({
-                    "type": "function",
-                    "function": {
-                        "name": func["name"],
-                        "description": func.get("description", ""),
-                        "parameters": params,
-                    },
-                })
+                formatted.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": func["name"],
+                            "description": func.get("description", ""),
+                            "parameters": params,
+                        },
+                    }
+                )
         return formatted
 
     def _normalize_openai_response(self, data: Dict) -> Dict[str, Any]:
@@ -301,11 +313,13 @@ class DokuRouter(Provider):
                         arguments = json.loads(arguments)
                     except (json.JSONDecodeError, TypeError):
                         arguments = {"raw": arguments}
-                tool_use.append({
-                    "id": tc.get("id", ""),
-                    "name": func.get("name", ""),
-                    "input": arguments,
-                })
+                tool_use.append(
+                    {
+                        "id": tc.get("id", ""),
+                        "name": func.get("name", ""),
+                        "input": arguments,
+                    }
+                )
             if tool_use:
                 result["tool_use"] = tool_use
 
@@ -407,24 +421,30 @@ class DokuRouter(Provider):
                                 args = json.loads(args)
                             except (json.JSONDecodeError, TypeError):
                                 args = {"raw": args}
-                        parts.append({
-                            "functionCall": {
-                                "name": tc.get("name", ""),
-                                "args": args,
+                        parts.append(
+                            {
+                                "functionCall": {
+                                    "name": tc.get("name", ""),
+                                    "args": args,
+                                }
                             }
-                        })
+                        )
                 if parts:
                     contents.append({"role": "model", "parts": parts})
             elif role == "tool":
-                contents.append({
-                    "role": "user",
-                    "parts": [{
-                        "functionResponse": {
-                            "name": msg.get("tool_call_id", ""),
-                            "response": {"result": content},
-                        }
-                    }],
-                })
+                contents.append(
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "functionResponse": {
+                                    "name": msg.get("tool_call_id", ""),
+                                    "response": {"result": content},
+                                }
+                            }
+                        ],
+                    }
+                )
 
         return contents, system_instruction
 
@@ -466,11 +486,13 @@ class DokuRouter(Provider):
                 text_parts.append(part["text"])
             elif "functionCall" in part:
                 fc = part["functionCall"]
-                tool_use.append({
-                    "id": fc.get("name", ""),
-                    "name": fc.get("name", ""),
-                    "input": fc.get("args", {}),
-                })
+                tool_use.append(
+                    {
+                        "id": fc.get("name", ""),
+                        "name": fc.get("name", ""),
+                        "input": fc.get("args", {}),
+                    }
+                )
 
         if text_parts:
             result["content"] = "\n".join(text_parts)
@@ -502,6 +524,7 @@ class DokuRouter(Provider):
 
 # ── embedding support ──────────────────────────────────────────
 
+
 async def embed_text(
     texts: List[str],
     model: str = "text-embedding-004",
@@ -528,7 +551,9 @@ async def embed_text(
         return await _embed_openai(texts, model, api_key, api_base)
     else:
         # try openai-compatible
-        return await _embed_openai(texts, model, api_key, api_base or PROVIDER_BASE_URLS.get(provider))
+        return await _embed_openai(
+            texts, model, api_key, api_base or PROVIDER_BASE_URLS.get(provider)
+        )
 
 
 async def _embed_gemini(
@@ -543,8 +568,7 @@ async def _embed_gemini(
 
     body = {
         "requests": [
-            {"model": f"models/{model}", "content": {"parts": [{"text": t}]}}
-            for t in texts
+            {"model": f"models/{model}", "content": {"parts": [{"text": t}]}} for t in texts
         ]
     }
 
@@ -581,6 +605,7 @@ async def _embed_openai(
 
 
 # ── completion helper for memory/skills (non-Provider interface) ──
+
 
 async def dokurouter_completion(
     messages: List[Dict[str, str]],

@@ -3,6 +3,7 @@ Test Suite module for the Skill Testing Framework.
 
 Manages collections of tests, caching, and coverage reporting.
 """
+
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Callable, Any, TYPE_CHECKING
 from datetime import datetime
@@ -48,7 +49,7 @@ def _log_tool_provenance(test_id: str, provenance) -> None:
     prov = provenance.to_dict()
 
     # Group executor tools by source
-    executor = prov.get('executor_tools', {})
+    executor = prov.get("executor_tools", {})
     if executor:
         groups: dict[str, list[str]] = {}
         for tool_name, source in executor.items():
@@ -57,40 +58,47 @@ def _log_tool_provenance(test_id: str, provenance) -> None:
         logger.info("Executor tools", test_id=test_id, tools="; ".join(parts))
 
     # Log judge tools
-    for judge_name, tools in prov.get('judge_tools', {}).items():
+    for judge_name, tools in prov.get("judge_tools", {}).items():
         if tools:
             parts = [f"{t} ({s})" for t, s in tools.items()]
             logger.info("Judge tools", test_id=test_id, judge=judge_name, tools=", ".join(parts))
 
     # Log explore tools
-    explore = prov.get('explore_tools', {})
+    explore = prov.get("explore_tools", {})
     if explore:
         sources = sorted(set(explore.values()))
-        logger.info("Explore tools", test_id=test_id, tools=", ".join(sorted(explore.keys())), source=", ".join(sources))
+        logger.info(
+            "Explore tools",
+            test_id=test_id,
+            tools=", ".join(sorted(explore.keys())),
+            source=", ".join(sources),
+        )
 
     # Log overrides/removals
-    if prov.get('overrides_active'):
+    if prov.get("overrides_active"):
         logger.info("Tool overrides active", test_id=test_id)
-    if prov.get('removed_tools'):
-        logger.info("Tools filtered out", test_id=test_id, removed=prov['removed_tools'])
+    if prov.get("removed_tools"):
+        logger.info("Tools filtered out", test_id=test_id, removed=prov["removed_tools"])
 
 
 @dataclass
 class TestSuiteConfig:
     """Configuration options for the test suite."""
+
     __test__ = False  # Prevent pytest from collecting this as a test class
 
     name: str
     cache_path: str = ".dokumen-cache"
     parallel_execution: bool = False
     max_concurrency: int = 4
-    coverage_agent: Optional['CoverageAgent'] = None  # Agent for line-level coverage
-    sandbox_config: Optional['SandboxConfig'] = None  # Sandbox config for isolated test execution
+    coverage_agent: Optional["CoverageAgent"] = None  # Agent for line-level coverage
+    sandbox_config: Optional["SandboxConfig"] = None  # Sandbox config for isolated test execution
 
 
 @dataclass
 class TestSuiteResults:
     """Aggregated results from running the test suite."""
+
     __test__ = False  # Tell pytest this is not a test class
     total_tests: int
     passed: int
@@ -105,6 +113,7 @@ class TestSuiteResults:
 @dataclass
 class CoverageReport:
     """Coverage statistics for knowledge files."""
+
     total_files: int
     covered_files: int
     coverage_percentage: float
@@ -113,6 +122,7 @@ class CoverageReport:
 
 class TestSuite:
     """Manages a collection of test objects."""
+
     __test__ = False  # Prevent pytest from collecting this as a test class
 
     def __init__(self, config: TestSuiteConfig):
@@ -129,7 +139,9 @@ class TestSuite:
         self._last_results: Optional[TestSuiteResults] = None
         self._file_registry: Dict[str, FileObject] = {}
         self._file_status: Dict[str, FileStatus] = {}  # Track file status
-        self._failure_analysis: Dict[str, Dict[str, FailureAnalysis]] = {}  # file_path -> {test_id -> analysis}
+        self._failure_analysis: Dict[str, Dict[str, FailureAnalysis]] = (
+            {}
+        )  # file_path -> {test_id -> analysis}
         self._coverage_attempted: set = set()  # Track files where coverage inference was attempted
 
     def add_test(self, test: TestObject) -> None:
@@ -179,8 +191,8 @@ class TestSuite:
         on_conversation_message: Optional[Callable] = None,
         on_executor_complete: Optional[Callable] = None,
         on_judge_complete: Optional[Callable] = None,
-        history_manager: Optional['HistoryManager'] = None,
-        run_id: Optional[str] = None
+        history_manager: Optional["HistoryManager"] = None,
+        run_id: Optional[str] = None,
     ) -> TestSuiteResults:
         """
         Execute all tests in the suite.
@@ -206,23 +218,43 @@ class TestSuite:
         results: List[TestResult] = []
         cached_count = 0
 
-        logger.info("suite.run.start", test_count=len(self.tests), parallel=self.config.parallel_execution)
+        logger.info(
+            "suite.run.start", test_count=len(self.tests), parallel=self.config.parallel_execution
+        )
 
         if self.config.parallel_execution:
-            logger.info("suite.parallel.start",
-                        max_concurrency=self.config.max_concurrency,
-                        test_count=len(self.tests))
+            logger.info(
+                "suite.parallel.start",
+                max_concurrency=self.config.max_concurrency,
+                test_count=len(self.tests),
+            )
             results, cached_count = await self._run_concurrent(
-                on_progress, on_tool_call, on_conversation_message, on_executor_complete, on_judge_complete, history_manager, run_id
+                on_progress,
+                on_tool_call,
+                on_conversation_message,
+                on_executor_complete,
+                on_judge_complete,
+                history_manager,
+                run_id,
             )
         else:
             results, cached_count = await self._run_sequential(
-                on_progress, on_tool_call, on_conversation_message, on_executor_complete, on_judge_complete, history_manager, run_id
+                on_progress,
+                on_tool_call,
+                on_conversation_message,
+                on_executor_complete,
+                on_judge_complete,
+                history_manager,
+                run_id,
             )
 
         duration = time.time() - start_time
-        logger.info("suite.run.complete", total=len(results), cached=cached_count,
-                     duration_ms=int(duration * 1000))
+        logger.info(
+            "suite.run.complete",
+            total=len(results),
+            cached=cached_count,
+            duration_ms=int(duration * 1000),
+        )
         self._last_results = self._aggregate_results(results, duration, cached_count)
         return self._last_results
 
@@ -233,8 +265,8 @@ class TestSuite:
         on_conversation_message: Optional[Callable] = None,
         on_executor_complete: Optional[Callable] = None,
         on_judge_complete: Optional[Callable] = None,
-        history_manager: Optional['HistoryManager'] = None,
-        run_id: Optional[str] = None
+        history_manager: Optional["HistoryManager"] = None,
+        run_id: Optional[str] = None,
     ) -> tuple:
         """
         Run tests sequentially.
@@ -266,7 +298,7 @@ class TestSuite:
             if cached and not test.is_stale():
                 logger.info("cache.hit", test_id=test.id)
                 if on_progress:
-                    on_progress('cached', test.id, cached)
+                    on_progress("cached", test.id, cached)
                 results.append(cached)
                 cached_count += 1
                 continue
@@ -276,16 +308,20 @@ class TestSuite:
                 logger.info("cache.miss", test_id=test.id)
 
             # Log test header with important configuration
-            model_name = getattr(test.executor.provider, 'model', 'unknown') if test.executor.provider else 'unknown'
+            model_name = (
+                getattr(test.executor.provider, "model", "unknown")
+                if test.executor.provider
+                else "unknown"
+            )
             judge_ids = [j.id for j in test.judges] if test.judges else []
             tool_names = [t.name for t in test.executor.tools] if test.executor.tools else []
 
             # Notify test start (pass tool names and provenance so CLI can print them)
-            progress_data = {'tools': tool_names}
+            progress_data = {"tools": tool_names}
             if test.tool_provenance:
-                progress_data['tool_provenance'] = test.tool_provenance.to_dict()
+                progress_data["tool_provenance"] = test.tool_provenance.to_dict()
             if on_progress:
-                on_progress('start', test.id, progress_data)
+                on_progress("start", test.id, progress_data)
             _log_tool_provenance(test.id, test.tool_provenance)
 
             logger.info(
@@ -313,12 +349,14 @@ class TestSuite:
                 def callback(executor_output):
                     if on_executor_complete:
                         on_executor_complete(test_id, executor_output)
+
                 return callback
 
             def make_judge_complete_callback(test_id):
                 def callback(judge_result):
                     if on_judge_complete:
                         on_judge_complete(test_id, judge_result)
+
                 return callback
 
             # Run the test (no per-test sandbox - runs directly in host environment)
@@ -328,7 +366,7 @@ class TestSuite:
                 on_tool_call=on_tool_call,
                 on_conversation_message=on_conversation_message,
                 on_executor_complete=make_executor_complete_callback(test.id),
-                on_judge_complete=make_judge_complete_callback(test.id)
+                on_judge_complete=make_judge_complete_callback(test.id),
             )
             results.append(result)
 
@@ -348,19 +386,25 @@ class TestSuite:
                         session.finish_judge(judge_result.to_dict())
 
                     # Finish test tracking
-                    session.finish_test({
-                        "test_id": result.test_id,
-                        "passed": result.passed,
-                        "duration": result.duration,
-                        "failure_reasons": result.failure_reasons
-                    })
+                    session.finish_test(
+                        {
+                            "test_id": result.test_id,
+                            "passed": result.passed,
+                            "duration": result.duration,
+                            "failure_reasons": result.failure_reasons,
+                        }
+                    )
 
             # Notify test complete
             if on_progress:
-                on_progress('complete', test.id, result)
+                on_progress("complete", test.id, result)
 
-            logger.info("test.complete", test_id=test.id, passed=result.passed,
-                        duration_ms=int(result.duration * 1000))
+            logger.info(
+                "test.complete",
+                test_id=test.id,
+                passed=result.passed,
+                duration_ms=int(result.duration * 1000),
+            )
 
             # Post-test processing (coverage, file status, cache)
             self._process_test_result(test, result)
@@ -386,8 +430,8 @@ class TestSuite:
         on_conversation_message: Optional[Callable] = None,
         on_executor_complete: Optional[Callable] = None,
         on_judge_complete: Optional[Callable] = None,
-        history_manager: Optional['HistoryManager'] = None,
-        run_id: Optional[str] = None
+        history_manager: Optional["HistoryManager"] = None,
+        run_id: Optional[str] = None,
     ) -> tuple:
         """
         Run tests concurrently with semaphore-controlled concurrency.
@@ -423,7 +467,7 @@ class TestSuite:
             if cached and not test.is_stale():
                 logger.info("cache.hit", test_id=test.id)
                 if on_progress:
-                    on_progress('cached', test.id, cached)
+                    on_progress("cached", test.id, cached)
                 async with results_lock:
                     results.append(cached)
                     cached_count += 1
@@ -431,16 +475,20 @@ class TestSuite:
 
             async with semaphore:
                 # Log test header
-                model_name = getattr(test.executor.provider, 'model', 'unknown') if test.executor.provider else 'unknown'
+                model_name = (
+                    getattr(test.executor.provider, "model", "unknown")
+                    if test.executor.provider
+                    else "unknown"
+                )
                 judge_ids = [j.id for j in test.judges] if test.judges else []
                 tool_names = [t.name for t in test.executor.tools] if test.executor.tools else []
 
                 # Notify test start (pass tool names and provenance so CLI can print them)
-                progress_data = {'tools': tool_names}
+                progress_data = {"tools": tool_names}
                 if test.tool_provenance:
-                    progress_data['tool_provenance'] = test.tool_provenance.to_dict()
+                    progress_data["tool_provenance"] = test.tool_provenance.to_dict()
                 if on_progress:
-                    on_progress('start', test.id, progress_data)
+                    on_progress("start", test.id, progress_data)
                 _log_tool_provenance(test.id, test.tool_provenance)
 
                 logger.info(
@@ -469,12 +517,14 @@ class TestSuite:
                     def callback(executor_output):
                         if on_executor_complete:
                             on_executor_complete(test_id, executor_output)
+
                     return callback
 
                 def make_judge_complete_callback(test_id):
                     def callback(judge_result):
                         if on_judge_complete:
                             on_judge_complete(test_id, judge_result)
+
                     return callback
 
                 # Run the test
@@ -484,7 +534,7 @@ class TestSuite:
                     on_tool_call=on_tool_call,
                     on_conversation_message=on_conversation_message,
                     on_executor_complete=make_executor_complete_callback(test.id),
-                    on_judge_complete=make_judge_complete_callback(test.id)
+                    on_judge_complete=make_judge_complete_callback(test.id),
                 )
 
                 # Finish debug tracking for this test
@@ -500,19 +550,25 @@ class TestSuite:
                             session.start_judge(judge_result.judge_id)
                             session.finish_judge(judge_result.to_dict())
 
-                        session.finish_test({
-                            "test_id": result.test_id,
-                            "passed": result.passed,
-                            "duration": result.duration,
-                            "failure_reasons": result.failure_reasons
-                        })
+                        session.finish_test(
+                            {
+                                "test_id": result.test_id,
+                                "passed": result.passed,
+                                "duration": result.duration,
+                                "failure_reasons": result.failure_reasons,
+                            }
+                        )
 
                 # Notify test complete
                 if on_progress:
-                    on_progress('complete', test.id, result)
+                    on_progress("complete", test.id, result)
 
-                logger.info("test.complete", test_id=test.id, passed=result.passed,
-                            duration_ms=int(result.duration * 1000))
+                logger.info(
+                    "test.complete",
+                    test_id=test.id,
+                    passed=result.passed,
+                    duration_ms=int(result.duration * 1000),
+                )
 
                 # Post-test processing (coverage, file status) under lock
                 async with registry_lock:
@@ -537,8 +593,7 @@ class TestSuite:
         # Launch all tests concurrently (semaphore limits actual concurrency)
         await asyncio.gather(*[run_single(test) for test in self.tests])
 
-        logger.info("suite.parallel.complete",
-                    total=len(results), cached=cached_count)
+        logger.info("suite.parallel.complete", total=len(results), cached=cached_count)
         return results, cached_count
 
     def _process_test_result(self, test: TestObject, result: TestResult) -> None:
@@ -563,7 +618,9 @@ class TestSuite:
             debug(f"[COVERAGE] Extracted subagent coverage for {len(subagent_coverage)} files")
             for file_path, line_cov in subagent_coverage.items():
                 if file_path in result.line_coverage:
-                    result.line_coverage[file_path] = result.line_coverage[file_path].merge(line_cov)
+                    result.line_coverage[file_path] = result.line_coverage[file_path].merge(
+                        line_cov
+                    )
                 else:
                     result.line_coverage[file_path] = line_cov
                 if file_path not in accessed_files:
@@ -593,13 +650,18 @@ class TestSuite:
                     if file_path in self._file_registry:
                         existing = self._file_registry[file_path].metrics.line_coverage
                         if existing:
-                            self._file_registry[file_path].metrics.line_coverage = existing.merge(lc)
+                            self._file_registry[file_path].metrics.line_coverage = existing.merge(
+                                lc
+                            )
                         else:
                             self._file_registry[file_path].metrics.line_coverage = lc
 
-        logger.debug("test.result.processed", test_id=test.id,
-                     status="passed" if result.passed else "failed",
-                     files_updated=len(all_covered_files))
+        logger.debug(
+            "test.result.processed",
+            test_id=test.id,
+            status="passed" if result.passed else "failed",
+            files_updated=len(all_covered_files),
+        )
 
     async def process_test_coverage(self, test: TestObject, result: TestResult) -> None:
         """
@@ -620,9 +682,13 @@ class TestSuite:
         if subagent_coverage:
             debug(f"[COVERAGE] Extracted subagent coverage for {len(subagent_coverage)} files")
             for file_path, line_cov in subagent_coverage.items():
-                debug(f"[COVERAGE] Subagent coverage for {file_path}: {len(line_cov.covered_lines)} lines")
+                debug(
+                    f"[COVERAGE] Subagent coverage for {file_path}: {len(line_cov.covered_lines)} lines"
+                )
                 if file_path in result.line_coverage:
-                    result.line_coverage[file_path] = result.line_coverage[file_path].merge(line_cov)
+                    result.line_coverage[file_path] = result.line_coverage[file_path].merge(
+                        line_cov
+                    )
                 else:
                     result.line_coverage[file_path] = line_cov
                 if file_path not in accessed_files:
@@ -635,7 +701,9 @@ class TestSuite:
             debug(f"[COVERAGE] No accessed files for test '{test.id}'")
 
         if self.config.coverage_agent and accessed_files:
-            debug(f"[COVERAGE] Running coverage agent for test '{test.id}' on {len(accessed_files)} files")
+            debug(
+                f"[COVERAGE] Running coverage agent for test '{test.id}' on {len(accessed_files)} files"
+            )
             for file_path in accessed_files:
                 # Skip files that already have subagent coverage
                 if file_path in result.line_coverage:
@@ -652,45 +720,51 @@ class TestSuite:
                     # Mark that we attempted coverage for this file (even if it fails)
                     self._coverage_attempted.add(file_path)
                     line_cov = await self.config.coverage_agent.infer_coverage(
-                        result.executor_output, file_obj, test.id,
-                        goal=test.executor.user_prompt
+                        result.executor_output, file_obj, test.id, goal=test.executor.user_prompt
                     )
                     if line_cov:
-                        debug(f"[COVERAGE] infer_coverage returned {len(line_cov.covered_lines)} covered lines")
+                        debug(
+                            f"[COVERAGE] infer_coverage returned {len(line_cov.covered_lines)} covered lines"
+                        )
                         result.line_coverage[file_path] = line_cov
                     else:
-                        debug("[COVERAGE] infer_coverage returned None (coverage attempted but failed)")
+                        debug(
+                            "[COVERAGE] infer_coverage returned None (coverage attempted but failed)"
+                        )
                 else:
                     debug("[COVERAGE] Calling analyze_failure for failed test")
                     failure_output = await self.config.coverage_agent.analyze_failure(
-                        result.executor_output,
-                        file_obj,
-                        test.id,
-                        "; ".join(result.failure_reasons)
+                        result.executor_output, file_obj, test.id, "; ".join(result.failure_reasons)
                     )
                     if failure_output:
-                        debug(f"[COVERAGE] analyze_failure returned {len(failure_output.referenced_lines)} referenced lines")
+                        debug(
+                            f"[COVERAGE] analyze_failure returned {len(failure_output.referenced_lines)} referenced lines"
+                        )
                         try:
                             content = await file_obj.read()
                             total_lines = len(content.splitlines())
                         except Exception as e:
                             logger.debug("total_lines.fallback", test_id=test.id, error=str(e))
-                            total_lines = max(failure_output.referenced_lines) if failure_output.referenced_lines else 0
+                            total_lines = (
+                                max(failure_output.referenced_lines)
+                                if failure_output.referenced_lines
+                                else 0
+                            )
 
                         line_cov = LineCoverage(
                             file_path=file_path,
                             total_lines=total_lines,
                             covered_lines=set(),
                             failed_lines=set(failure_output.referenced_lines),
-                            source_test_ids={ln: {test.id} for ln in failure_output.referenced_lines}
+                            source_test_ids={
+                                ln: {test.id} for ln in failure_output.referenced_lines
+                            },
                         )
                         result.line_coverage[file_path] = line_cov
 
                         incorrect_lines = [
                             IncorrectLine(
-                                line_number=il.line_number,
-                                reason=il.reason,
-                                test_id=test.id
+                                line_number=il.line_number, reason=il.reason, test_id=test.id
                             )
                             for il in failure_output.incorrect_lines
                         ]
@@ -701,7 +775,7 @@ class TestSuite:
                             file_path=file_path,
                             referenced_lines=failure_output.referenced_lines,
                             incorrect_lines=incorrect_lines,
-                            analysis=failure_output.analysis
+                            analysis=failure_output.analysis,
                         )
 
         # Update file status
@@ -725,7 +799,9 @@ class TestSuite:
                     if file_path in self._file_registry:
                         existing = self._file_registry[file_path].metrics.line_coverage
                         if existing:
-                            self._file_registry[file_path].metrics.line_coverage = existing.merge(lc)
+                            self._file_registry[file_path].metrics.line_coverage = existing.merge(
+                                lc
+                            )
                         else:
                             self._file_registry[file_path].metrics.line_coverage = lc
 
@@ -777,11 +853,12 @@ class TestSuite:
             Set of file paths extracted from the command
         """
         import re
+
         files = set()
 
         # Pattern to match file-reading commands followed by file paths
         # Matches: cat file.txt, cat ./path/file.md, head -n 10 file.txt, etc.
-        read_commands = r'(?:cat|head|tail|less|more)\s+'
+        read_commands = r"(?:cat|head|tail|less|more)\s+"
 
         # Find all potential file paths after read commands
         # This regex handles:
@@ -790,18 +867,18 @@ class TestSuite:
         # - cat /absolute/path/file.md
         # - head -n 100 file.txt (flags before file)
         # - cat file.txt | grep ... (pipes)
-        pattern = read_commands + r'(?:-[a-zA-Z0-9]+\s+)*([^\s|><;]+)'
+        pattern = read_commands + r"(?:-[a-zA-Z0-9]+\s+)*([^\s|><;]+)"
 
         for match in re.finditer(pattern, command):
             path = match.group(1)
             # Skip if it looks like a flag or special char
-            if path.startswith('-') or path in ['2>&1', '2>/dev/null']:
+            if path.startswith("-") or path in ["2>&1", "2>/dev/null"]:
                 continue
             # Normalize path (remove ./ prefix, handle relative paths)
-            if path.startswith('./'):
+            if path.startswith("./"):
                 path = path[2:]
             # Only include if it looks like a real file path
-            if '.' in path or '/' in path:
+            if "." in path or "/" in path:
                 normalized = normalize_path(path)
                 files.add(normalized)
                 debug(f"[COVERAGE] Extracted file from shell command: {normalized}")
@@ -859,8 +936,9 @@ class TestSuite:
                     try:
                         # Use sync file read since we're in a potentially non-async context
                         import os
+
                         if os.path.exists(normalized_path):
-                            with open(normalized_path, 'r') as f:
+                            with open(normalized_path, "r") as f:
                                 total_lines = len(f.readlines())
                         else:
                             total_lines = max(covered_lines) if covered_lines else 0
@@ -872,7 +950,7 @@ class TestSuite:
                         file_path=normalized_path,
                         total_lines=total_lines,
                         covered_lines=set(),
-                        source_test_ids={}
+                        source_test_ids={},
                     )
 
                 # Add covered lines from this subagent
@@ -886,10 +964,7 @@ class TestSuite:
         return coverage_by_file
 
     def _aggregate_results(
-        self,
-        results: List[TestResult],
-        duration: float,
-        cached_count: int
+        self, results: List[TestResult], duration: float, cached_count: int
     ) -> TestSuiteResults:
         """
         Aggregate individual test results.
@@ -903,8 +978,8 @@ class TestSuite:
             TestSuiteResults with aggregated data
         """
         passed = sum(1 for r in results if r.passed)
-        failed = sum(1 for r in results if not r.passed and getattr(r, 'status', '') != 'error')
-        error = sum(1 for r in results if getattr(r, 'status', '') == 'error')
+        failed = sum(1 for r in results if not r.passed and getattr(r, "status", "") != "error")
+        error = sum(1 for r in results if getattr(r, "status", "") == "error")
 
         return TestSuiteResults(
             total_tests=len(results),
@@ -914,7 +989,7 @@ class TestSuite:
             skipped=0,
             duration=duration,
             test_results=results,
-            cached_results=cached_count
+            cached_results=cached_count,
         )
 
     async def run_test(self, test_id: str) -> TestResult:
@@ -956,7 +1031,7 @@ class TestSuite:
             return
 
         try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 # Deserialize cached results
                 for test_id, result_data in data.get("results", {}).items():
@@ -973,8 +1048,10 @@ class TestSuite:
                                     judge_results=[],
                                     executor_output=None,
                                     duration=0.0,
-                                    timestamp=datetime.fromisoformat(result_data.get("timestamp", datetime.now().isoformat())),
-                                    line_coverage={}
+                                    timestamp=datetime.fromisoformat(
+                                        result_data.get("timestamp", datetime.now().isoformat())
+                                    ),
+                                    line_coverage={},
                                 )
                             break
 
@@ -1002,7 +1079,7 @@ class TestSuite:
                             IncorrectLine(
                                 line_number=il["line_number"],
                                 reason=il["reason"],
-                                test_id=il["test_id"]
+                                test_id=il["test_id"],
                             )
                             for il in analysis_data.get("incorrect_lines", [])
                         ]
@@ -1010,7 +1087,7 @@ class TestSuite:
                             file_path=analysis_data["file_path"],
                             referenced_lines=analysis_data.get("referenced_lines", []),
                             incorrect_lines=incorrect_lines,
-                            analysis=analysis_data.get("analysis", "")
+                            analysis=analysis_data.get("analysis", ""),
                         )
         except (json.JSONDecodeError, IOError) as e:
             logger.debug("cache.load.failed", error=str(e))
@@ -1026,13 +1103,13 @@ class TestSuite:
             "generated": datetime.now().isoformat(),
             "results": {},
             "line_coverage": {},  # Aggregated line coverage per file
-            "file_status": {},    # File status (covered/failed/uncovered)
+            "file_status": {},  # File status (covered/failed/uncovered)
             "failure_analysis": {},  # Failure analysis per file per test
-            "coverage_attempted": []  # Files where line coverage inference was attempted
+            "coverage_attempted": [],  # Files where line coverage inference was attempted
         }
         if os.path.exists(cache_file):
             try:
-                with open(cache_file, 'r', encoding='utf-8') as f:
+                with open(cache_file, "r", encoding="utf-8") as f:
                     existing = json.load(f)
                     # Preserve existing results, line_coverage, file_status, failure_analysis
                     cache_data["results"] = existing.get("results", {})
@@ -1040,7 +1117,9 @@ class TestSuite:
                     cache_data["file_status"] = existing.get("file_status", {})
                     cache_data["failure_analysis"] = existing.get("failure_analysis", {})
                     cache_data["coverage_attempted"] = existing.get("coverage_attempted", [])
-                    debug(f"[CACHE] Loaded {len(cache_data['results'])} existing results: {list(cache_data['results'].keys())}")
+                    debug(
+                        f"[CACHE] Loaded {len(cache_data['results'])} existing results: {list(cache_data['results'].keys())}"
+                    )
             except (json.JSONDecodeError, IOError) as e:
                 logger.debug("cache.read.failed", path=cache_file, error=str(e))
 
@@ -1054,7 +1133,9 @@ class TestSuite:
                     "hash": test.get_hash(),
                     "duration": result.duration,
                     "failure_reasons": result.failure_reasons,
-                    "executor_output": result.executor_output.final_response if result.executor_output else None,
+                    "executor_output": (
+                        result.executor_output.final_response if result.executor_output else None
+                    ),
                     "judge_results": [
                         {
                             "judge_id": jr.judge_id,
@@ -1105,18 +1186,16 @@ class TestSuite:
                     "file_path": analysis.file_path,
                     "referenced_lines": analysis.referenced_lines,
                     "incorrect_lines": [
-                        {
-                            "line_number": il.line_number,
-                            "reason": il.reason,
-                            "test_id": il.test_id
-                        }
+                        {"line_number": il.line_number, "reason": il.reason, "test_id": il.test_id}
                         for il in analysis.incorrect_lines
                     ],
-                    "analysis": analysis.analysis
+                    "analysis": analysis.analysis,
                 }
 
-        debug(f"[CACHE] Saving {len(cache_data['results'])} results: {list(cache_data['results'].keys())}")
-        with open(cache_file, 'w', encoding='utf-8') as f:
+        debug(
+            f"[CACHE] Saving {len(cache_data['results'])} results: {list(cache_data['results'].keys())}"
+        )
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2)
 
     async def _save_cache_incremental(self, test_id: str, result: TestResult) -> None:
@@ -1141,12 +1220,12 @@ class TestSuite:
             "line_coverage": {},
             "file_status": {},
             "failure_analysis": {},
-            "coverage_attempted": []
+            "coverage_attempted": [],
         }
 
         if os.path.exists(cache_file):
             try:
-                with open(cache_file, 'r', encoding='utf-8') as f:
+                with open(cache_file, "r", encoding="utf-8") as f:
                     existing = json.load(f)
                     cache_data["results"] = existing.get("results", {})
                     cache_data["line_coverage"] = existing.get("line_coverage", {})
@@ -1161,11 +1240,15 @@ class TestSuite:
         cache_data["results"][test_id] = {
             "passed": result.passed,
             "executor_passed": result.executor_passed,
-            "timestamp": result.timestamp.isoformat() if result.timestamp else datetime.now().isoformat(),
+            "timestamp": (
+                result.timestamp.isoformat() if result.timestamp else datetime.now().isoformat()
+            ),
             "hash": test_obj.get_hash() if test_obj else "",
             "duration": result.duration,
             "failure_reasons": result.failure_reasons,
-            "executor_output": result.executor_output.final_response if result.executor_output else None,
+            "executor_output": (
+                result.executor_output.final_response if result.executor_output else None
+            ),
             "judge_results": [
                 {
                     "judge_id": jr.judge_id,
@@ -1205,18 +1288,14 @@ class TestSuite:
                     "file_path": analysis.file_path,
                     "referenced_lines": analysis.referenced_lines,
                     "incorrect_lines": [
-                        {
-                            "line_number": il.line_number,
-                            "reason": il.reason,
-                            "test_id": il.test_id
-                        }
+                        {"line_number": il.line_number, "reason": il.reason, "test_id": il.test_id}
                         for il in analysis.incorrect_lines
                     ],
-                    "analysis": analysis.analysis
+                    "analysis": analysis.analysis,
                 }
 
         cache_data["generated"] = datetime.now().isoformat()
-        with open(cache_file, 'w', encoding='utf-8') as f:
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2)
 
     async def clear_cache(self) -> None:
@@ -1238,17 +1317,14 @@ class TestSuite:
         all_files = list(self._file_registry.values())
 
         # Calculate coverage based on file status
-        covered = sum(
-            1 for f in all_files
-            if self._file_status.get(f.path) == FileStatus.PASSED
-        )
+        covered = sum(1 for f in all_files if self._file_status.get(f.path) == FileStatus.PASSED)
         total = len(all_files)
 
         return CoverageReport(
             total_files=total,
             covered_files=covered,
             coverage_percentage=(covered / total * 100) if total > 0 else 0.0,
-            file_details=[f.metrics for f in all_files]
+            file_details=[f.metrics for f in all_files],
         )
 
     def get_uncovered_files(self) -> List[str]:
@@ -1258,10 +1334,7 @@ class TestSuite:
         Returns:
             List of file paths with zero coverage
         """
-        return [
-            path for path, file in self._file_registry.items()
-            if file.metrics.coverage == 0
-        ]
+        return [path for path, file in self._file_registry.items() if file.metrics.coverage == 0]
 
     def get_line_coverage(self) -> Dict[str, Any]:
         """
@@ -1299,16 +1372,15 @@ class TestSuite:
                     "covered_count": lc.covered_count,
                     "percentage": lc.coverage_percentage,
                     "source_tests": {
-                        str(ln): sorted(list(tests))
-                        for ln, tests in lc.source_test_ids.items()
-                    }
+                        str(ln): sorted(list(tests)) for ln, tests in lc.source_test_ids.items()
+                    },
                 }
 
         return {
             "total_lines": total_lines,
             "covered_lines": covered_lines,
             "percentage": (covered_lines / total_lines * 100) if total_lines > 0 else 0.0,
-            "files": files_data
+            "files": files_data,
         }
 
     def get_all_files(self) -> List[FileObject]:
@@ -1352,10 +1424,7 @@ class TestSuite:
         Returns:
             List of file paths with failed status
         """
-        return [
-            path for path, status in self._file_status.items()
-            if status == FileStatus.FAILED
-        ]
+        return [path for path, status in self._file_status.items() if status == FileStatus.FAILED]
 
     def get_failure_analysis(self, file_path: str) -> Dict[str, FailureAnalysis]:
         """

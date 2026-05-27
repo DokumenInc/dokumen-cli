@@ -1,7 +1,6 @@
 """memory data types."""
 
 import time
-import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -9,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 class MemoryOperation(Enum):
     """operations the LLM can choose during the update phase."""
+
     ADD = "add"
     UPDATE = "update"
     DELETE = "delete"

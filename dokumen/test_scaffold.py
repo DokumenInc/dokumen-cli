@@ -23,6 +23,21 @@ from dokumen_schema import (
     validate_test_data,
 )
 
+__all__ = [
+    "VALID_EXECUTOR_TOOLS",
+    "BrowserScaffoldConfig",
+    "DockerMount",
+    "ExecutorConfig",
+    "FileRef",
+    "JudgeConfig",
+    "SandboxConfig",
+    "TestScaffold",
+    "validate_test_data",
+    "ScaffoldError",
+    "load_scaffold",
+    "validate_scaffold_file",
+]
+
 
 class ScaffoldError(Exception):
     """Scaffold-related errors."""

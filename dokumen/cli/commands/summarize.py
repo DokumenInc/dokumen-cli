@@ -90,7 +90,9 @@ async def _run_summarize(
             except Exception as e:
                 logger.warning(f"[SUMMARIZE] Failed to read {path}: {e}")
 
-    logger.info(f"[SUMMARIZE] Read {len(doc_files)} text files, {len(image_files)} image files, {len(pdf_files)} PDF files")
+    logger.info(
+        f"[SUMMARIZE] Read {len(doc_files)} text files, {len(image_files)} image files, {len(pdf_files)} PDF files"
+    )
 
     # Load existing index (unless --force)
     existing_index = None
@@ -99,7 +101,9 @@ async def _run_summarize(
         try:
             existing_content = index_path.read_text(encoding="utf-8")
             existing_index = parse_summary_index(existing_content)
-            logger.info(f"[SUMMARIZE] Loaded existing index with {len(existing_index.entries)} entries")
+            logger.info(
+                f"[SUMMARIZE] Loaded existing index with {len(existing_index.entries)} entries"
+            )
         except Exception as e:
             logger.warning(f"[SUMMARIZE] Failed to parse existing index: {e}")
 
@@ -111,9 +115,7 @@ async def _run_summarize(
             current_hashes[p] = compute_content_hash(b64)
         for p, b64 in pdf_files.items():
             current_hashes[p] = compute_content_hash(b64)
-        new_files, changed_files, removed_files = compute_staleness(
-            existing_index, current_hashes
-        )
+        new_files, changed_files, removed_files = compute_staleness(existing_index, current_hashes)
         files_to_process = len(new_files) + len(changed_files)
         files_to_skip = all_file_count - files_to_process
     else:
@@ -125,7 +127,9 @@ async def _run_summarize(
 
     if dry_run:
         duration = time.time() - start_time
-        logger.info(f"[SUMMARIZE] Dry run: would_process={files_to_process}, would_skip={files_to_skip}, would_remove={len(removed_files)}")
+        logger.info(
+            f"[SUMMARIZE] Dry run: would_process={files_to_process}, would_skip={files_to_skip}, would_remove={len(removed_files)}"
+        )
         return {
             "files_processed": files_to_process,
             "files_skipped": files_to_skip,
@@ -171,7 +175,9 @@ async def _run_summarize(
     index_path.write_text(rendered, encoding="utf-8")
 
     duration = time.time() - start_time
-    logger.info(f"[SUMMARIZE] Complete: {len(result_index.entries)} entries in {int(duration * 1000)}ms")
+    logger.info(
+        f"[SUMMARIZE] Complete: {len(result_index.entries)} entries in {int(duration * 1000)}ms"
+    )
 
     return {
         "files_processed": files_to_process,

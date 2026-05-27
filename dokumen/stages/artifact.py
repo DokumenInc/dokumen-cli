@@ -33,12 +33,10 @@ class ArtifactStage(PipelineStage):
         """
         output_dir = ctx.output_dir
         if not output_dir:
-            logger.info("stage.artifact.skip", test_id=ctx.test_id,
-                        reason="no output dir set")
+            logger.info("stage.artifact.skip", test_id=ctx.test_id, reason="no output dir set")
             return ctx
 
-        logger.info("stage.artifact.start", test_id=ctx.test_id,
-                     output_dir=output_dir)
+        logger.info("stage.artifact.start", test_id=ctx.test_id, output_dir=output_dir)
 
         all_output = collect_output_artifacts(output_dir)
 
@@ -57,9 +55,7 @@ class ArtifactStage(PipelineStage):
 
             # Override report content with full markdown
             if ctx.research_report_rel_path:
-                full_report_path = os.path.join(
-                    output_dir, ctx.research_report_rel_path
-                )
+                full_report_path = os.path.join(output_dir, ctx.research_report_rel_path)
                 if os.path.exists(full_report_path):
                     try:
                         with open(full_report_path, "r", encoding="utf-8") as f:
@@ -72,11 +68,11 @@ class ArtifactStage(PipelineStage):
 
             # Store for TestResult assembly (done in TestObject._build_result)
             ctx.output_artifacts = all_output
-            logger.info("stage.artifact.complete", test_id=ctx.test_id,
-                        artifact_count=len(all_output))
+            logger.info(
+                "stage.artifact.complete", test_id=ctx.test_id, artifact_count=len(all_output)
+            )
         else:
             ctx.output_artifacts = []
-            logger.info("stage.artifact.complete", test_id=ctx.test_id,
-                        artifact_count=0)
+            logger.info("stage.artifact.complete", test_id=ctx.test_id, artifact_count=0)
 
         return ctx

@@ -7,8 +7,8 @@ or as forked sub-agents.
 
 inspired by claude code's skill architecture but built originally.
 """
+
 import logging
-import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -21,8 +21,9 @@ logger = logging.getLogger(__name__)
 
 class ExecutionMode(Enum):
     """how a skill runs."""
+
     INLINE = "inline"  # injected into prompt
-    FORK = "fork"      # runs as separate agent
+    FORK = "fork"  # runs as separate agent
 
 
 @dataclass
@@ -38,6 +39,7 @@ class SkillDefinition:
           the skill prompt text...
         tools: [read_file, glob]  # optional tool allowlist
     """
+
     name: str
     description: str = ""
     prompt: str = ""
@@ -107,6 +109,7 @@ def load_skill_file(filepath: str) -> Optional[SkillDefinition]:
         # check for yaml frontmatter
         if content.startswith("---"):
             import re
+
             match = re.match(r"^---\n(.*?)\n---\n\n?(.*)", content, re.DOTALL)
             if match:
                 try:

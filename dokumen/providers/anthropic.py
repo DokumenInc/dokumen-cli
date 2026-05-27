@@ -1,6 +1,7 @@
 """
 Anthropic Provider for the Skill Testing Framework.
 """
+
 from typing import Any, Dict, List, Optional
 import os
 
@@ -17,11 +18,7 @@ class AnthropicProvider(Provider):
     Anthropic Claude provider for real LLM calls.
     """
 
-    def __init__(
-        self,
-        api_key: str = None,
-        model: str = None
-    ):
+    def __init__(self, api_key: str = None, model: str = None):
         """
         Initialize Anthropic provider.
 
@@ -36,6 +33,7 @@ class AnthropicProvider(Provider):
             # Try loading from 1Password or env var via secrets module
             try:
                 from ..secrets import get_anthropic_key
+
                 self.api_key = get_anthropic_key()
             except (ImportError, ValueError):
                 # Fallback to direct env var check
@@ -49,26 +47,17 @@ class AnthropicProvider(Provider):
         if self._client is None:
             import anthropic
             import httpx
+
             # Set a reasonable timeout (60 seconds connect, 120 seconds read)
             timeout = httpx.Timeout(60.0, read=120.0)
-            self._client = anthropic.AsyncAnthropic(
-                api_key=self.api_key,
-                timeout=timeout
-            )
+            self._client = anthropic.AsyncAnthropic(api_key=self.api_key, timeout=timeout)
             # Security: Don't log any part of the API key, even prefixes
             # Truncated keys can still aid attackers in credential stuffing
-            logger.debug(
-                "anthropic.client.init",
-                has_api_key=bool(self.api_key),
-                model=self.model
-            )
+            logger.debug("anthropic.client.init", has_api_key=bool(self.api_key), model=self.model)
         return self._client
 
     async def complete(
-        self,
-        messages: List[Dict[str, str]],
-        tools: Optional[List[Dict]] = None,
-        **kwargs
+        self, messages: List[Dict[str, str]], tools: Optional[List[Dict]] = None, **kwargs
     ) -> Dict[str, Any]:
         """
         Send a completion request to Anthropic Claude.
@@ -104,18 +93,17 @@ class AnthropicProvider(Provider):
                 system_prompt = msg["content"]
             elif msg["role"] == "tool":
                 # Anthropic uses tool_result content blocks in a user message
-                pending_tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": msg.get("tool_call_id", ""),
-                    "content": msg["content"],
-                })
+                pending_tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": msg.get("tool_call_id", ""),
+                        "content": msg["content"],
+                    }
+                )
             else:
                 # Flush any pending tool results before adding non-tool message
                 if pending_tool_results:
-                    anthropic_messages.append({
-                        "role": "user",
-                        "content": pending_tool_results
-                    })
+                    anthropic_messages.append({"role": "user", "content": pending_tool_results})
                     pending_tool_results = []
 
                 # Handle assistant messages with tool_calls
@@ -123,33 +111,23 @@ class AnthropicProvider(Provider):
                     # Convert to Anthropic format with tool_use content blocks
                     content_blocks = []
                     if msg.get("content"):
-                        content_blocks.append({
-                            "type": "text",
-                            "text": msg["content"]
-                        })
+                        content_blocks.append({"type": "text", "text": msg["content"]})
                     for tc in msg["tool_calls"]:
-                        content_blocks.append({
-                            "type": "tool_use",
-                            "id": tc.get("id", tc.get("name", "")),
-                            "name": tc.get("name"),
-                            "input": tc.get("arguments", {})
-                        })
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": content_blocks
-                    })
+                        content_blocks.append(
+                            {
+                                "type": "tool_use",
+                                "id": tc.get("id", tc.get("name", "")),
+                                "name": tc.get("name"),
+                                "input": tc.get("arguments", {}),
+                            }
+                        )
+                    anthropic_messages.append({"role": "assistant", "content": content_blocks})
                 else:
-                    anthropic_messages.append({
-                        "role": msg["role"],
-                        "content": msg["content"]
-                    })
+                    anthropic_messages.append({"role": msg["role"], "content": msg["content"]})
 
         # Flush any remaining tool results
         if pending_tool_results:
-            anthropic_messages.append({
-                "role": "user",
-                "content": pending_tool_results
-            })
+            anthropic_messages.append({"role": "user", "content": pending_tool_results})
 
         # Convert tools from OpenAI format to Anthropic format
         anthropic_tools = None
@@ -176,7 +154,7 @@ class AnthropicProvider(Provider):
             "anthropic.request.start",
             model=self.model,
             messages_count=len(anthropic_messages),
-            tools_count=len(anthropic_tools) if anthropic_tools else 0
+            tools_count=len(anthropic_tools) if anthropic_tools else 0,
         )
 
         # Extract deadline before building request (not an Anthropic API param)
@@ -185,6 +163,7 @@ class AnthropicProvider(Provider):
         # Make the API call with retry on rate limit
         import asyncio
         import time as time_module
+
         start_time = time_module.time()
         try:
             logger.debug("anthropic.request.calling", model=self.model)
@@ -195,19 +174,24 @@ class AnthropicProvider(Provider):
                     **request_kwargs,
                     deadline=deadline,
                 ),
-                timeout=600.0
+                timeout=600.0,
             )
             duration = time_module.time() - start_time
             logger.info(
                 "anthropic.request.complete",
                 model=self.model,
                 duration_ms=int(duration * 1000),
-                input_tokens=getattr(response.usage, 'input_tokens', 0),
-                output_tokens=getattr(response.usage, 'output_tokens', 0)
+                input_tokens=getattr(response.usage, "input_tokens", 0),
+                output_tokens=getattr(response.usage, "output_tokens", 0),
             )
         except asyncio.TimeoutError:
             duration = time_module.time() - start_time
-            logger.error("anthropic.request.timeout", model=self.model, timeout=600, duration_ms=int(duration * 1000))
+            logger.error(
+                "anthropic.request.timeout",
+                model=self.model,
+                timeout=600,
+                duration_ms=int(duration * 1000),
+            )
             raise
         except Exception as e:
             duration = time_module.time() - start_time
@@ -216,7 +200,7 @@ class AnthropicProvider(Provider):
                 model=self.model,
                 error=str(e),
                 error_type=type(e).__name__,
-                duration_ms=int(duration * 1000)
+                duration_ms=int(duration * 1000),
             )
             raise
 
@@ -226,10 +210,10 @@ class AnthropicProvider(Provider):
         logger.info(
             "anthropic.complete.response",
             model=self.model,
-            stop_reason=getattr(response, 'stop_reason', None),
+            stop_reason=getattr(response, "stop_reason", None),
             content_block_types=content_block_types,
-            content_length=len(result.get('content', '')),
-            tool_calls_count=len(result.get('tool_use', [])),
+            content_length=len(result.get("content", "")),
+            tool_calls_count=len(result.get("tool_use", [])),
         )
         return result
 
@@ -273,18 +257,22 @@ class AnthropicProvider(Provider):
                     )
                     anthropic_tools.append(server_tool)
                 else:
-                    anthropic_tools.append({
-                        "name": func["name"],
-                        "description": func.get("description", ""),
-                        "input_schema": params,
-                    })
+                    anthropic_tools.append(
+                        {
+                            "name": func["name"],
+                            "description": func.get("description", ""),
+                            "input_schema": params,
+                        }
+                    )
             elif "name" in tool and "input_schema" in tool:
                 # already in anthropic format — pass through directly
-                anthropic_tools.append({
-                    "name": tool["name"],
-                    "description": tool.get("description", ""),
-                    "input_schema": tool["input_schema"],
-                })
+                anthropic_tools.append(
+                    {
+                        "name": tool["name"],
+                        "description": tool.get("description", ""),
+                        "input_schema": tool["input_schema"],
+                    }
+                )
         return anthropic_tools
 
     def _normalize_response(self, response) -> Dict[str, Any]:
@@ -303,26 +291,28 @@ class AnthropicProvider(Provider):
             if block.type == "text":
                 result["content"] += block.text
             elif block.type == "tool_use":
-                result["tool_use"].append({
-                    "id": block.id,
-                    "name": block.name,
-                    "input": block.input
-                })
+                result["tool_use"].append(
+                    {"id": block.id, "name": block.name, "input": block.input}
+                )
             elif block.type == "server_tool_use":
                 logger.info(
                     "anthropic.web_search.invoked",
-                    tool_use_id=getattr(block, 'id', None),
-                    query=getattr(block, 'input', {}).get("query", "") if isinstance(getattr(block, 'input', None), dict) else "",
+                    tool_use_id=getattr(block, "id", None),
+                    query=(
+                        getattr(block, "input", {}).get("query", "")
+                        if isinstance(getattr(block, "input", None), dict)
+                        else ""
+                    ),
                 )
             elif block.type == "web_search_tool_result":
-                content_items = getattr(block, 'content', [])
+                content_items = getattr(block, "content", [])
                 if isinstance(content_items, list):
                     for item in content_items:
-                        if hasattr(item, 'url'):
+                        if hasattr(item, "url"):
                             logger.debug(
                                 "anthropic.web_search.result",
-                                url=getattr(item, 'url', ''),
-                                title=getattr(item, 'title', ''),
+                                url=getattr(item, "url", ""),
+                                title=getattr(item, "title", ""),
                             )
 
         # Remove empty tool_use list for cleaner response
@@ -330,17 +320,17 @@ class AnthropicProvider(Provider):
             del result["tool_use"]
 
         # Propagate stop_reason so agent loop can detect truncation
-        stop_reason = getattr(response, 'stop_reason', None)
+        stop_reason = getattr(response, "stop_reason", None)
         if stop_reason:
             result["stop_reason"] = stop_reason
 
         # Include token usage from response
-        if hasattr(response, 'usage') and response.usage:
+        if hasattr(response, "usage") and response.usage:
             result["usage"] = {
-                "input_tokens": getattr(response.usage, 'input_tokens', 0),
-                "output_tokens": getattr(response.usage, 'output_tokens', 0),
-                "cache_creation_tokens": getattr(response.usage, 'cache_creation_input_tokens', 0),
-                "cache_read_tokens": getattr(response.usage, 'cache_read_input_tokens', 0),
+                "input_tokens": getattr(response.usage, "input_tokens", 0),
+                "output_tokens": getattr(response.usage, "output_tokens", 0),
+                "cache_creation_tokens": getattr(response.usage, "cache_creation_input_tokens", 0),
+                "cache_read_tokens": getattr(response.usage, "cache_read_input_tokens", 0),
             }
 
         return result

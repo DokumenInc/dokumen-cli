@@ -5,10 +5,9 @@ Provides scaffold generation, validation, and discovery.
 """
 
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Dict, Any
 import re
 import yaml
-import glob as glob_module
 
 from dokumen_schema import ValidationResult, validate_test_data
 

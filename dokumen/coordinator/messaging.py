@@ -5,6 +5,7 @@ agents can send point-to-point messages or broadcast to all.
 messages are tracked per-agent with read state so agents
 can retrieve unread messages between turns.
 """
+
 import logging
 import time
 import uuid
@@ -19,6 +20,7 @@ BROADCAST = "*"
 @dataclass
 class Message:
     """a message between agents."""
+
     id: str = field(default_factory=lambda: f"msg-{uuid.uuid4().hex[:8]}")
     sender: str = ""
     recipient: str = ""  # agent name or "*" for broadcast
@@ -74,7 +76,9 @@ class MessageBus:
         self._read_state: Dict[str, Set[str]] = {}  # agent_name -> set of read message ids
         self._subscribers: Dict[str, List[MessageCallback]] = {}  # agent_name -> callbacks
 
-    def send(self, sender: str, recipient: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> Message:
+    def send(
+        self, sender: str, recipient: str, content: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> Message:
         """send a point-to-point message."""
         msg = Message(
             sender=sender,
@@ -92,7 +96,9 @@ class MessageBus:
         self._notify(msg)
         return msg
 
-    def broadcast(self, sender: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> Message:
+    def broadcast(
+        self, sender: str, content: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> Message:
         """broadcast a message to all agents except the sender."""
         return self.send(sender, BROADCAST, content, metadata)
 
@@ -131,7 +137,8 @@ class MessageBus:
     def get_conversation(self, agent_a: str, agent_b: str) -> List[Message]:
         """get all messages between two agents in either direction."""
         return [
-            m for m in self._messages
+            m
+            for m in self._messages
             if (m.sender == agent_a and m.recipient == agent_b)
             or (m.sender == agent_b and m.recipient == agent_a)
         ]
@@ -165,7 +172,9 @@ class MessageBus:
             parts.append(f"### from {sender}")
             for msg in msgs[-5:]:  # last 5 per sender
                 to = "all" if msg.is_broadcast else msg.recipient
-                content = msg.content[:max_chars] + "..." if len(msg.content) > max_chars else msg.content
+                content = (
+                    msg.content[:max_chars] + "..." if len(msg.content) > max_chars else msg.content
+                )
                 parts.append(f"- → {to}: {content}")
 
         return "\n".join(parts)
@@ -200,11 +209,16 @@ class MessageBus:
                     try:
                         cb(msg)
                     except Exception as e:
-                        logger.warning("subscriber callback error", extra={"agent": agent_name, "error": str(e)})
+                        logger.warning(
+                            "subscriber callback error",
+                            extra={"agent": agent_name, "error": str(e)},
+                        )
         else:
             # notify direct recipient
             for cb in self._subscribers.get(msg.recipient, []):
                 try:
                     cb(msg)
                 except Exception as e:
-                    logger.warning("subscriber callback error", extra={"agent": msg.recipient, "error": str(e)})
+                    logger.warning(
+                        "subscriber callback error", extra={"agent": msg.recipient, "error": str(e)}
+                    )

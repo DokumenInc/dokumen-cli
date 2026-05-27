@@ -1,4 +1,5 @@
 """types for coordinator mode."""
+
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -17,6 +18,7 @@ class WorkerStatus(Enum):
 @dataclass
 class WorkerTask:
     """task assigned to a worker agent."""
+
     id: str = field(default_factory=lambda: f"worker-{uuid.uuid4().hex[:8]}")
     name: str = ""
     goal: str = ""  # what the worker should accomplish
@@ -55,6 +57,7 @@ class WorkerTask:
 @dataclass
 class WorkerResult:
     """result from a worker agent."""
+
     task_id: str
     status: WorkerStatus = WorkerStatus.COMPLETED
     output: str = ""
@@ -105,6 +108,7 @@ class CoordinatorPlan:
     split it into worker tasks. this is the sprint contract
     (per anthropic blog) negotiated before execution.
     """
+
     id: str = field(default_factory=lambda: f"plan-{uuid.uuid4().hex[:8]}")
     main_goal: str = ""
     worker_tasks: List[WorkerTask] = field(default_factory=list)

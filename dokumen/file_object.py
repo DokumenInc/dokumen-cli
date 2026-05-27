@@ -4,6 +4,7 @@ File Object module for the Skill Testing Framework.
 Provides abstraction layer for files being tested (documentation, specs, etc.)
 and tracks usage metrics for test coverage reporting.
 """
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
@@ -26,23 +27,25 @@ def normalize_path(path: str) -> str:
     # Normalize OS-specific separators
     normalized = os.path.normpath(path)
     # Convert to forward slashes for consistency
-    normalized = normalized.replace('\\', '/')
+    normalized = normalized.replace("\\", "/")
     # Remove leading ./
-    if normalized.startswith('./'):
+    if normalized.startswith("./"):
         normalized = normalized[2:]
     return normalized
 
 
 class FileStatus(Enum):
     """Status of a file based on test results."""
+
     UNCOVERED = "uncovered"  # No tests reference this file
-    PASSED = "passed"        # All tests that reference this file pass
-    FAILED = "failed"        # At least one test that references this file failed
+    PASSED = "passed"  # All tests that reference this file pass
+    FAILED = "failed"  # At least one test that references this file failed
 
 
 @dataclass
 class IncorrectLine:
     """Information about a line identified as potentially incorrect."""
+
     line_number: int
     reason: str
     test_id: str
@@ -55,10 +58,11 @@ class LineCoverage:
     Tracks which specific lines of a documentation file were exercised
     during test execution, as inferred by the coverage agent.
     """
+
     file_path: str
     total_lines: int
     covered_lines: Set[int] = field(default_factory=set)  # Lines from passing tests
-    failed_lines: Set[int] = field(default_factory=set)   # Lines from failing tests
+    failed_lines: Set[int] = field(default_factory=set)  # Lines from failing tests
     incorrect_lines: List[IncorrectLine] = field(default_factory=list)  # Lines flagged as incorrect
     source_test_ids: Dict[int, Set[str]] = field(default_factory=dict)  # line -> test IDs (passing)
     failed_test_ids: Dict[int, Set[str]] = field(default_factory=dict)  # line -> test IDs (failing)
@@ -101,7 +105,7 @@ class LineCoverage:
             return 0.0
         return (len(self.touched_lines) / self.total_lines) * 100
 
-    def merge(self, other: 'LineCoverage') -> 'LineCoverage':
+    def merge(self, other: "LineCoverage") -> "LineCoverage":
         """Merge with another LineCoverage (union of all lines).
 
         Args:
@@ -147,7 +151,7 @@ class LineCoverage:
             failed_lines=merged_failed,
             incorrect_lines=merged_incorrect,
             source_test_ids=merged_sources,
-            failed_test_ids=merged_failed_sources
+            failed_test_ids=merged_failed_sources,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -162,23 +166,15 @@ class LineCoverage:
             "covered_lines": sorted(list(self.covered_lines)),
             "failed_lines": sorted(list(self.failed_lines)),
             "incorrect_lines": [
-                {
-                    "line_number": il.line_number,
-                    "reason": il.reason,
-                    "test_id": il.test_id
-                }
+                {"line_number": il.line_number, "reason": il.reason, "test_id": il.test_id}
                 for il in self.incorrect_lines
             ],
-            "source_test_ids": {
-                str(k): sorted(list(v)) for k, v in self.source_test_ids.items()
-            },
-            "failed_test_ids": {
-                str(k): sorted(list(v)) for k, v in self.failed_test_ids.items()
-            }
+            "source_test_ids": {str(k): sorted(list(v)) for k, v in self.source_test_ids.items()},
+            "failed_test_ids": {str(k): sorted(list(v)) for k, v in self.failed_test_ids.items()},
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'LineCoverage':
+    def from_dict(cls, data: Dict[str, Any]) -> "LineCoverage":
         """Deserialize from dictionary.
 
         Args:
@@ -188,11 +184,7 @@ class LineCoverage:
             LineCoverage instance
         """
         incorrect_lines = [
-            IncorrectLine(
-                line_number=il["line_number"],
-                reason=il["reason"],
-                test_id=il["test_id"]
-            )
+            IncorrectLine(line_number=il["line_number"], reason=il["reason"], test_id=il["test_id"])
             for il in data.get("incorrect_lines", [])
         ]
         return cls(
@@ -201,20 +193,17 @@ class LineCoverage:
             covered_lines=set(data.get("covered_lines", [])),
             failed_lines=set(data.get("failed_lines", [])),
             incorrect_lines=incorrect_lines,
-            source_test_ids={
-                int(k): set(v) for k, v in data.get("source_test_ids", {}).items()
-            },
-            failed_test_ids={
-                int(k): set(v) for k, v in data.get("failed_test_ids", {}).items()
-            }
+            source_test_ids={int(k): set(v) for k, v in data.get("source_test_ids", {}).items()},
+            failed_test_ids={int(k): set(v) for k, v in data.get("failed_test_ids", {}).items()},
         )
 
 
 @dataclass
 class FileMetrics:
     """Metrics tracked for files."""
-    ref_count: int = 0       # Number of times referenced in test suite
-    pass_count: int = 0      # Number of cached passing results
+
+    ref_count: int = 0  # Number of times referenced in test suite
+    pass_count: int = 0  # Number of cached passing results
     line_coverage: Optional[LineCoverage] = None  # Line-level coverage data
 
     @property
@@ -235,6 +224,7 @@ class FileMetrics:
 @dataclass
 class FileObject:
     """Represents a file in the test framework."""
+
     path: str
     metrics: FileMetrics = field(default_factory=FileMetrics)
     _content_cache: Optional[str] = field(default=None, repr=False)
@@ -252,7 +242,7 @@ class FileObject:
         Raises:
             FileNotFoundError: If the file does not exist
         """
-        async with aiofiles.open(self.path, 'r') as f:
+        async with aiofiles.open(self.path, "r") as f:
             return await f.read()
 
     async def write(self, content: str) -> None:
@@ -264,7 +254,7 @@ class FileObject:
         Raises:
             IOError: If the write operation fails
         """
-        async with aiofiles.open(self.path, 'w') as f:
+        async with aiofiles.open(self.path, "w") as f:
             await f.write(content)
 
     def get_metrics(self) -> FileMetrics:

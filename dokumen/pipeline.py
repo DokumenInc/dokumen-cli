@@ -198,26 +198,37 @@ class TestPipeline:
         Returns:
             The final pipeline context after all stages (or short-circuit).
         """
-        logger.info("pipeline.run.start", test_id=ctx.test_id,
-                     stage_count=len(self.stages))
+        logger.info("pipeline.run.start", test_id=ctx.test_id, stage_count=len(self.stages))
 
         try:
             for stage in self.stages:
                 if ctx.failed:
-                    logger.info("pipeline.stage.skipped", test_id=ctx.test_id,
-                                stage=stage.name, reason="pipeline already failed")
+                    logger.info(
+                        "pipeline.stage.skipped",
+                        test_id=ctx.test_id,
+                        stage=stage.name,
+                        reason="pipeline already failed",
+                    )
                     break
 
-                logger.info("pipeline.stage.start", test_id=ctx.test_id,
-                            stage=stage.name)
+                logger.info("pipeline.stage.start", test_id=ctx.test_id, stage=stage.name)
                 try:
                     ctx = await stage.run(ctx)
-                    logger.info("pipeline.stage.complete", test_id=ctx.test_id,
-                                stage=stage.name, failed=ctx.failed)
+                    logger.info(
+                        "pipeline.stage.complete",
+                        test_id=ctx.test_id,
+                        stage=stage.name,
+                        failed=ctx.failed,
+                    )
                 except Exception as e:
-                    logger.error("pipeline.stage.exception", test_id=ctx.test_id,
-                                 stage=stage.name, error=str(e),
-                                 error_type=type(e).__name__, exc_info=True)
+                    logger.error(
+                        "pipeline.stage.exception",
+                        test_id=ctx.test_id,
+                        stage=stage.name,
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        exc_info=True,
+                    )
                     ctx.fail(f"Stage '{stage.name}' raised {type(e).__name__}: {e}")
                     break
 
@@ -226,11 +237,15 @@ class TestPipeline:
                 try:
                     await callback(ctx)
                 except Exception as e:
-                    logger.error("pipeline.cleanup.error", test_id=ctx.test_id,
-                                 error=str(e), exc_info=True)
+                    logger.error(
+                        "pipeline.cleanup.error", test_id=ctx.test_id, error=str(e), exc_info=True
+                    )
 
-        logger.info("pipeline.run.complete", test_id=ctx.test_id,
-                     failed=ctx.failed,
-                     failure_count=len(ctx.failure_reasons))
+        logger.info(
+            "pipeline.run.complete",
+            test_id=ctx.test_id,
+            failed=ctx.failed,
+            failure_count=len(ctx.failure_reasons),
+        )
 
         return ctx

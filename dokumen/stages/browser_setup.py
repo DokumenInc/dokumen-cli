@@ -67,12 +67,16 @@ class BrowserSetupStage(PipelineStage):
         ctx.output_dir = output_dir
 
         if not _uses_browser_tools(ctx):
-            logger.info("stage.browser_setup.skip", test_id=ctx.test_id,
-                        reason="no browser tools used")
+            logger.info(
+                "stage.browser_setup.skip", test_id=ctx.test_id, reason="no browser tools used"
+            )
             return ctx
 
         recordings_dir = os.path.join(output_dir, "recordings")
         os.makedirs(recordings_dir, exist_ok=True)
-        logger.info("stage.browser_setup.sdk_path", test_id=ctx.test_id,
-                    reason="SDK manages Playwright MCP directly")
+        logger.info(
+            "stage.browser_setup.sdk_path",
+            test_id=ctx.test_id,
+            reason="SDK manages Playwright MCP directly",
+        )
         return ctx

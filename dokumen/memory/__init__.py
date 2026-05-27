@@ -12,3 +12,19 @@ from .mem0_store import Mem0Store
 from .session_memory import SessionMemory, SessionEntry
 from .extractor import MemoryExtractor, ExtractionResult
 from .memdir import MemdirStore, MemdirEntry, MemoryType
+
+__all__ = [
+    "MemoryStore",
+    "Memory",
+    "MemoryOperation",
+    "EmbeddingProvider",
+    "cosine_similarity",
+    "Mem0Store",
+    "SessionMemory",
+    "SessionEntry",
+    "MemoryExtractor",
+    "ExtractionResult",
+    "MemdirStore",
+    "MemdirEntry",
+    "MemoryType",
+]

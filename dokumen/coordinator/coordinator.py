@@ -11,6 +11,7 @@ the coordinator:
 follows the planner -> generator -> evaluator pattern from
 anthropic's harness design research.
 """
+
 import asyncio
 import json
 import logging
@@ -89,13 +90,16 @@ def _parse_task_specs(text: str) -> List[Dict[str, Any]]:
         start = clean.find("[")
         end = clean.rfind("]")
         if start >= 0 and end > start:
-            parsed = json.loads(clean[start:end + 1])
+            parsed = json.loads(clean[start : end + 1])
             if isinstance(parsed, list):
                 return parsed
     except Exception:
         pass
 
-    logger.warning("_parse_task_specs: could not parse tasks", extra={"text_length": len(text), "text_preview": text[:300]})
+    logger.warning(
+        "_parse_task_specs: could not parse tasks",
+        extra={"text_length": len(text), "text_preview": text[:300]},
+    )
     return []
 
 
@@ -178,7 +182,7 @@ class CoordinatorAgent:
         try:
             # call provider for decomposition — short timeout, this is just planning
             # temporarily swap model if decompose_model is set
-            original_model = getattr(self._provider, 'model', None)
+            original_model = getattr(self._provider, "model", None)
             if self._decompose_model:
                 self._provider.model = self._decompose_model
 
@@ -208,11 +212,21 @@ class CoordinatorAgent:
             else:
                 response_text = str(result)
 
-            logger.info("auto_decompose: got response", extra={"response_length": len(response_text), "response_preview": response_text[:200]})
+            logger.info(
+                "auto_decompose: got response",
+                extra={
+                    "response_length": len(response_text),
+                    "response_preview": response_text[:200],
+                },
+            )
 
             # structured output guarantees valid JSON — parse directly
             parsed = json.loads(response_text)
-            specs = parsed.get("tasks", []) if isinstance(parsed, dict) else _parse_task_specs(response_text)
+            specs = (
+                parsed.get("tasks", [])
+                if isinstance(parsed, dict)
+                else _parse_task_specs(response_text)
+            )
 
             if not specs:
                 logger.warning("auto_decompose: failed to parse tasks, using fallback")
@@ -264,7 +278,10 @@ class CoordinatorAgent:
             return plan
 
         except Exception as e:
-            logger.warning("auto_decompose: LLM call failed, using fallback", extra={"error": str(e), "error_type": type(e).__name__})
+            logger.warning(
+                "auto_decompose: LLM call failed, using fallback",
+                extra={"error": str(e), "error_type": type(e).__name__},
+            )
             print(f"  ⚠ auto-decompose failed: {type(e).__name__}: {e}", flush=True)
             return self._fallback_plan(goal, worker_names)
 
@@ -277,11 +294,13 @@ class CoordinatorAgent:
         logger.info("using fallback plan: single worker for full goal")
         return CoordinatorPlan(
             main_goal=goal,
-            worker_tasks=[WorkerTask(
-                name=worker_names[0] if worker_names else "worker-0",
-                goal=goal,
-                timeout=self._default_timeout,
-            )],
+            worker_tasks=[
+                WorkerTask(
+                    name=worker_names[0] if worker_names else "worker-0",
+                    goal=goal,
+                    timeout=self._default_timeout,
+                )
+            ],
             synthesis_strategy=self._synthesis_strategy,
         )
 
@@ -313,7 +332,7 @@ class CoordinatorAgent:
             ready = []
             for tid in list(remaining):
                 task = task_map[tid]
-                deps = getattr(task, 'depends_on', []) or []
+                deps = getattr(task, "depends_on", []) or []
                 if all(d in completed or d not in task_map for d in deps):
                     ready.append(task)
 
@@ -351,7 +370,7 @@ class CoordinatorAgent:
                         self._bus.mark_read(task.name)
 
                     # inject upstream task results for dependencies
-                    deps = getattr(task, 'depends_on', []) or []
+                    deps = getattr(task, "depends_on", []) or []
                     for dep_id in deps:
                         dep_result = self._shared_memory.get_task_result(dep_id)
                         if dep_result:
@@ -363,7 +382,7 @@ class CoordinatorAgent:
                         task.context = (task.context or "") + "\n\n" + "\n".join(context_parts)
 
                     # swap model for workers if worker_model is set
-                    original_model = getattr(self._provider, 'model', None)
+                    original_model = getattr(self._provider, "model", None)
                     if self._worker_model:
                         self._provider.model = self._worker_model
 
@@ -386,7 +405,10 @@ class CoordinatorAgent:
                     if result.success:
                         print(f"  ✓ worker {task.name} completed", flush=True)
                     else:
-                        print(f"  ✗ worker {task.name} failed: {result.error or 'unknown'}", flush=True)
+                        print(
+                            f"  ✗ worker {task.name} failed: {result.error or 'unknown'}",
+                            flush=True,
+                        )
                     return result
 
             wave_tasks = [_run_task(t) for t in ready]
@@ -413,7 +435,7 @@ class CoordinatorAgent:
                     # cascade: mark tasks that depend on this failed task
                     cascade_ids = set()
                     for tid in list(remaining):
-                        deps = getattr(task_map[tid], 'depends_on', []) or []
+                        deps = getattr(task_map[tid], "depends_on", []) or []
                         if task.id in deps:
                             cascade_ids.add(tid)
 
@@ -486,6 +508,7 @@ class CoordinatorAgent:
             return self._synthesize_merge(results)
 
         from collections import Counter
+
         counts = Counter(all_findings)
         ranked = counts.most_common()
 
@@ -524,13 +547,16 @@ class CoordinatorAgent:
         if plan is not None:
             exec_plan = plan
         elif worker_configs:
-            tasks = [WorkerTask(
-                name=wc.get("name", wc.get("id", f"worker-{i}")),
-                goal=wc.get("goal", goal),
-                tools=wc.get("tools", []),
-                context=wc.get("context", ""),
-                timeout=wc.get("timeout", self._default_timeout),
-            ) for i, wc in enumerate(worker_configs)]
+            tasks = [
+                WorkerTask(
+                    name=wc.get("name", wc.get("id", f"worker-{i}")),
+                    goal=wc.get("goal", goal),
+                    tools=wc.get("tools", []),
+                    context=wc.get("context", ""),
+                    timeout=wc.get("timeout", self._default_timeout),
+                )
+                for i, wc in enumerate(worker_configs)
+            ]
             exec_plan = CoordinatorPlan(
                 main_goal=goal,
                 worker_tasks=tasks,

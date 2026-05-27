@@ -1,8 +1,5 @@
 """memory stage — extracts memories from executor conversation after judge completes."""
 
-import logging
-from typing import Any, Optional
-
 from ..logging_config import get_logger
 from ..pipeline import PipelineContext, PipelineStage
 

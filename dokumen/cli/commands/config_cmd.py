@@ -4,6 +4,7 @@ config command — interactive TUI for dokumen.yaml.
 dokumen config          # opens interactive config editor (tabbed: status / config)
 dokumen config init     # create starter dokumen.yaml
 """
+
 import curses
 import logging
 import os
@@ -21,48 +22,114 @@ DEFAULT_CONFIG_PATH = "dokumen.yaml"
 # types: bool, int, float, str, choice:a,b,c
 
 SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
-    ("provider", [
-        ("name", "choice:anthropic", "anthropic", "LLM provider"),
-        ("model", "choice:claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001", "claude-opus-4-6", "default model"),
-    ]),
-    ("compaction", [
-        ("enabled", "bool", True, "auto-compact conversations"),
-        ("token_threshold", "choice:0.7,0.8,0.9,0.95", 0.9, "compact at this % of budget"),
-        ("token_budget", "choice:200000,400000,1000000", 1000000, "max token budget"),
-        ("keep_recent_turns", "choice:5,10,15,20,30", 20, "turns to keep after compaction"),
-        ("micro_compact_enabled", "bool", True, "trim stale tool results"),
-        ("micro_compact_age_seconds", "choice:300,600,1800,3600", 3600, "seconds before trimming tool output"),
-        ("micro_compact_max_chars", "choice:500,1000,2000,5000", 2000, "max chars per trimmed result"),
-    ]),
-    ("coordinator", [
-        ("enabled", "bool", False, "[experimental] multi-agent orchestration"),
-        ("max_workers", "choice:3,5,8,10", 5, "parallel worker agents"),
-        ("synthesis_strategy", "choice:merge,vote,chain", "merge", "merge=concat  vote=majority  chain=sequential"),
-        ("worker_timeout", "choice:900.0,1800.0,3600.0,7200.0", 2700.0, "per-worker timeout (sec)"),
-        ("worker_model", "choice:,claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001", "", "worker model override"),
-        ("decompose_timeout", "choice:10.0,30.0,60.0,120.0,300.0", 60.0, "auto-decompose timeout (sec)"),
-        ("decompose_model", "choice:,claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001", "", "decompose planner model"),
-        ("executor_mode", "choice:api,sdk", "api", "api=direct calls for subagents  sdk=claude code cli (legacy)"),
-    ]),
-    ("tasks", [
-        ("enabled", "bool", False, "agent subtask tracking"),
-        ("persist_to_disk", "bool", True, "save tasks to .dokumen-cache/"),
-        ("max_tasks", "choice:100,200,500", 200, "max subtasks per run"),
-    ]),
-    ("skills", [
-        ("enabled", "bool", True, "prompt-based skill injection"),
-        ("dir", "choice:skills/,./skills,", "skills/", "custom skills folder"),
-        ("include_system", "bool", True, "include system skills (qa-check, etc.)"),
-        ("max_skills_per_prompt", "choice:5,10,15,20", 10, "skills injected per agent turn"),
-    ]),
-    ("execution", [
-        ("timeout", "choice:900,1800,3600,7200", 3600, "executor timeout (sec)"),
-        ("retries", "choice:0,1,2,3", 2, "retry count on failure"),
-    ]),
-    ("explore", [
-        ("enabled", "bool", True, "scan codebase before execution"),
-        ("max_files", "choice:50,100,200,500", 100, "max files to discover"),
-    ]),
+    (
+        "provider",
+        [
+            ("name", "choice:anthropic", "anthropic", "LLM provider"),
+            (
+                "model",
+                "choice:claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001",
+                "claude-opus-4-6",
+                "default model",
+            ),
+        ],
+    ),
+    (
+        "compaction",
+        [
+            ("enabled", "bool", True, "auto-compact conversations"),
+            ("token_threshold", "choice:0.7,0.8,0.9,0.95", 0.9, "compact at this % of budget"),
+            ("token_budget", "choice:200000,400000,1000000", 1000000, "max token budget"),
+            ("keep_recent_turns", "choice:5,10,15,20,30", 20, "turns to keep after compaction"),
+            ("micro_compact_enabled", "bool", True, "trim stale tool results"),
+            (
+                "micro_compact_age_seconds",
+                "choice:300,600,1800,3600",
+                3600,
+                "seconds before trimming tool output",
+            ),
+            (
+                "micro_compact_max_chars",
+                "choice:500,1000,2000,5000",
+                2000,
+                "max chars per trimmed result",
+            ),
+        ],
+    ),
+    (
+        "coordinator",
+        [
+            ("enabled", "bool", False, "[experimental] multi-agent orchestration"),
+            ("max_workers", "choice:3,5,8,10", 5, "parallel worker agents"),
+            (
+                "synthesis_strategy",
+                "choice:merge,vote,chain",
+                "merge",
+                "merge=concat  vote=majority  chain=sequential",
+            ),
+            (
+                "worker_timeout",
+                "choice:900.0,1800.0,3600.0,7200.0",
+                2700.0,
+                "per-worker timeout (sec)",
+            ),
+            (
+                "worker_model",
+                "choice:,claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001",
+                "",
+                "worker model override",
+            ),
+            (
+                "decompose_timeout",
+                "choice:10.0,30.0,60.0,120.0,300.0",
+                60.0,
+                "auto-decompose timeout (sec)",
+            ),
+            (
+                "decompose_model",
+                "choice:,claude-opus-4-6,claude-sonnet-4-6,claude-haiku-4-5-20251001",
+                "",
+                "decompose planner model",
+            ),
+            (
+                "executor_mode",
+                "choice:api,sdk",
+                "api",
+                "api=direct calls for subagents  sdk=claude code cli (legacy)",
+            ),
+        ],
+    ),
+    (
+        "tasks",
+        [
+            ("enabled", "bool", False, "agent subtask tracking"),
+            ("persist_to_disk", "bool", True, "save tasks to .dokumen-cache/"),
+            ("max_tasks", "choice:100,200,500", 200, "max subtasks per run"),
+        ],
+    ),
+    (
+        "skills",
+        [
+            ("enabled", "bool", True, "prompt-based skill injection"),
+            ("dir", "choice:skills/,./skills,", "skills/", "custom skills folder"),
+            ("include_system", "bool", True, "include system skills (qa-check, etc.)"),
+            ("max_skills_per_prompt", "choice:5,10,15,20", 10, "skills injected per agent turn"),
+        ],
+    ),
+    (
+        "execution",
+        [
+            ("timeout", "choice:900,1800,3600,7200", 3600, "executor timeout (sec)"),
+            ("retries", "choice:0,1,2,3", 2, "retry count on failure"),
+        ],
+    ),
+    (
+        "explore",
+        [
+            ("enabled", "bool", True, "scan codebase before execution"),
+            ("max_files", "choice:50,100,200,500", 100, "max files to discover"),
+        ],
+    ),
 ]
 
 # model → max context window
@@ -114,15 +181,17 @@ def _build_items(data: dict) -> List[dict]:
         items.append({"type": "header", "label": section})
         for key, ftype, default, desc in fields:
             value = _get(data, section, key, default)
-            items.append({
-                "type": "field",
-                "section": section,
-                "key": key,
-                "ftype": ftype,
-                "value": value,
-                "default": default,
-                "desc": desc,
-            })
+            items.append(
+                {
+                    "type": "field",
+                    "section": section,
+                    "key": key,
+                    "ftype": ftype,
+                    "value": value,
+                    "default": default,
+                    "desc": desc,
+                }
+            )
     return items
 
 
@@ -350,12 +419,20 @@ def _run_tui(stdscr, config_path: str) -> bool:
                 for item in items:
                     if item["type"] == "header":
                         visible.append(item)
-                    elif search.lower() in item["key"].lower() or search.lower() in item["desc"].lower() or search.lower() in item["section"].lower():
+                    elif (
+                        search.lower() in item["key"].lower()
+                        or search.lower() in item["desc"].lower()
+                        or search.lower() in item["section"].lower()
+                    ):
                         visible.append(item)
                 cleaned = []
                 for i, item in enumerate(visible):
                     if item["type"] == "header":
-                        has_field = any(v["type"] == "field" for v in visible[i+1:i+20] if v.get("type") != "header")
+                        has_field = any(
+                            v["type"] == "field"
+                            for v in visible[i + 1 : i + 20]
+                            if v.get("type") != "header"
+                        )
                         if has_field:
                             cleaned.append(item)
                     else:
@@ -384,7 +461,12 @@ def _run_tui(stdscr, config_path: str) -> bool:
                 if search:
                     stdscr.addstr(search_row + 1, 3, "/ " + search, curses.color_pair(6))
                 else:
-                    stdscr.addstr(search_row + 1, 3, "/ search settings...", curses.color_pair(5) | curses.A_DIM)
+                    stdscr.addstr(
+                        search_row + 1,
+                        3,
+                        "/ search settings...",
+                        curses.color_pair(5) | curses.A_DIM,
+                    )
                 stdscr.addstr(search_row + 1, w - 2, "│", curses.color_pair(7))
             except curses.error:
                 pass
@@ -414,7 +496,11 @@ def _run_tui(stdscr, config_path: str) -> bool:
 
                     # value colors
                     if item["ftype"] == "bool":
-                        val_color = curses.color_pair(3) | curses.A_BOLD if item["value"] else curses.color_pair(4)
+                        val_color = (
+                            curses.color_pair(3) | curses.A_BOLD
+                            if item["value"]
+                            else curses.color_pair(4)
+                        )
                     elif item["key"] in ("model", "worker_model", "name"):
                         val_color = curses.color_pair(7)  # purple for model/provider
                     else:
@@ -424,11 +510,17 @@ def _run_tui(stdscr, config_path: str) -> bool:
                         # inverted text for selection — much more readable
                         try:
                             stdscr.addstr(row, 1, " " * (w - 2), curses.A_REVERSE)
-                            stdscr.addstr(row, 2, f"  {item['desc']}", curses.A_REVERSE | curses.A_BOLD)
+                            stdscr.addstr(
+                                row, 2, f"  {item['desc']}", curses.A_REVERSE | curses.A_BOLD
+                            )
                             if editing:
-                                stdscr.addstr(row, val_col, edit_buf + "▌", curses.A_REVERSE | curses.A_BOLD)
+                                stdscr.addstr(
+                                    row, val_col, edit_buf + "▌", curses.A_REVERSE | curses.A_BOLD
+                                )
                             else:
-                                stdscr.addstr(row, val_col, value_str, curses.A_REVERSE | curses.A_BOLD)
+                                stdscr.addstr(
+                                    row, val_col, value_str, curses.A_REVERSE | curses.A_BOLD
+                                )
                         except curses.error:
                             pass
                     else:
@@ -443,7 +535,9 @@ def _run_tui(stdscr, config_path: str) -> bool:
                 below = len(visible) - scroll_offset - list_height
                 if below > 0:
                     try:
-                        stdscr.addstr(h - 4, 2, f"  ↓ {below} more", curses.color_pair(5) | curses.A_DIM)
+                        stdscr.addstr(
+                            h - 4, 2, f"  ↓ {below} more", curses.color_pair(5) | curses.A_DIM
+                        )
                     except curses.error:
                         pass
 
@@ -456,7 +550,12 @@ def _run_tui(stdscr, config_path: str) -> bool:
                     hint = "  ↑↓ navigate  enter/space=toggle  /=search  s=save  tab=switch  q=quit"
                 stdscr.addstr(footer_row + 1, 1, hint, curses.color_pair(5) | curses.A_DIM)
                 if message:
-                    stdscr.addstr(footer_row + 1, w - len(message) - 3, message, curses.color_pair(3) | curses.A_BOLD)
+                    stdscr.addstr(
+                        footer_row + 1,
+                        w - len(message) - 3,
+                        message,
+                        curses.color_pair(3) | curses.A_BOLD,
+                    )
             except curses.error:
                 pass
 
@@ -522,7 +621,12 @@ def _run_tui(stdscr, config_path: str) -> bool:
                         stdscr.addstr(3, 1, "│", curses.color_pair(7))
                         stdscr.addstr(3, 3, "/ " + search, curses.color_pair(6))
                         stdscr.addstr(3, w2 - 2, "│", curses.color_pair(7))
-                        stdscr.addstr(h2 - 1, 1, "  type to filter  enter=confirm  esc=clear", curses.color_pair(5) | curses.A_DIM)
+                        stdscr.addstr(
+                            h2 - 1,
+                            1,
+                            "  type to filter  enter=confirm  esc=clear",
+                            curses.color_pair(5) | curses.A_DIM,
+                        )
                     except curses.error:
                         pass
                     stdscr.refresh()
@@ -558,7 +662,9 @@ def _run_tui(stdscr, config_path: str) -> bool:
                     item = visible[cursor]
                     if item["ftype"] == "bool" or item["ftype"].startswith("choice:"):
                         new_val = _toggle_value(item)
-                        item["value"] = _coerce_value(item, new_val) if isinstance(new_val, str) else new_val
+                        item["value"] = (
+                            _coerce_value(item, new_val) if isinstance(new_val, str) else new_val
+                        )
                         _set(data, item["section"], item["key"], item["value"])
                         if item["key"] == "model" and item["section"] == "provider":
                             _auto_set_budget(data, items, str(item["value"]))

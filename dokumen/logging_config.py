@@ -66,11 +66,11 @@ class ColoredFormatter(logging.Formatter):
     """Colored console formatter for human readability."""
 
     COLORS = {
-        "DEBUG": "\033[36m",    # Cyan
-        "INFO": "\033[32m",     # Green
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
         "WARNING": "\033[33m",  # Yellow
-        "ERROR": "\033[31m",    # Red
-        "CRITICAL": "\033[35m", # Magenta
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
 
@@ -111,15 +111,20 @@ class ContextLogger(logging.LoggerAdapter):
     """Logger adapter that supports extra fields in log calls."""
 
     # Reserved kwargs that should not be extracted as extra fields
-    RESERVED_KWARGS = frozenset({
-        "exc_info", "stack_info", "stacklevel", "extra",
-        # Prevent conflicts with LoggerAdapter internals
-        "level", "msg", "args",
-    })
+    RESERVED_KWARGS = frozenset(
+        {
+            "exc_info",
+            "stack_info",
+            "stacklevel",
+            "extra",
+            # Prevent conflicts with LoggerAdapter internals
+            "level",
+            "msg",
+            "args",
+        }
+    )
 
-    def process(
-        self, msg: str, kwargs: dict[str, Any]
-    ) -> tuple[str, dict[str, Any]]:
+    def process(self, msg: str, kwargs: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         """Process log message to include extra fields."""
         extra = kwargs.get("extra", {})
 
@@ -206,7 +211,9 @@ def setup_logging_from_env() -> None:
     """
     config = LogConfig(
         level=os.environ.get("DOKUMEN_LOG_LEVEL", "INFO"),
-        log_file=Path(os.environ["DOKUMEN_LOG_FILE"]) if os.environ.get("DOKUMEN_LOG_FILE") else None,
+        log_file=(
+            Path(os.environ["DOKUMEN_LOG_FILE"]) if os.environ.get("DOKUMEN_LOG_FILE") else None
+        ),
         json_format=os.environ.get("DOKUMEN_LOG_JSON", "").lower() == "true",
     )
     setup_logging(config)
@@ -266,6 +273,7 @@ def log_timing(logger: ContextLogger, event: str) -> Callable[[F], F]:
                 raise
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper  # type: ignore
         return sync_wrapper  # type: ignore

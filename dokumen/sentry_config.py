@@ -1,4 +1,5 @@
 """Sentry SDK initialization for the Dokumen CLI."""
+
 import os
 import logging
 
@@ -12,6 +13,7 @@ def _get_cli_version() -> str:
     """Get the CLI version from dokumen.__version__ (read from VERSION file)."""
     try:
         from dokumen import __version__
+
         return __version__
     except Exception:
         return "unknown"
@@ -33,8 +35,8 @@ def init_sentry() -> None:
 
     try:
         sentry_logging = LoggingIntegration(
-            level=logging.WARNING,       # Breadcrumbs from WARNING+
-            event_level=logging.ERROR,   # Events from ERROR+
+            level=logging.WARNING,  # Breadcrumbs from WARNING+
+            event_level=logging.ERROR,  # Events from ERROR+
         )
 
         sentry_sdk.init(
@@ -44,7 +46,10 @@ def init_sentry() -> None:
             release=release,
             environment=environment,
         )
-        logger.info("Sentry initialized", extra={"dsn_prefix": dsn[:20] + "...", "release": release})
+        logger.info(
+            "Sentry initialized", extra={"dsn_prefix": dsn[:20] + "...", "release": release}
+        )
     except Exception as e:
-        logger.warning("Failed to initialize Sentry, continuing without it",
-                       extra={"error": str(e)})
+        logger.warning(
+            "Failed to initialize Sentry, continuing without it", extra={"error": str(e)}
+        )

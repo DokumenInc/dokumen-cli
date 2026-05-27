@@ -8,6 +8,7 @@ Usage:
 
     api_key = get_anthropic_key()  # Returns key from 1Password or env var
 """
+
 import asyncio
 import logging
 import os
@@ -153,7 +154,10 @@ def get_anthropic_key() -> str:
         manager = _get_cli_secrets_manager()
         try:
             key = manager.get_secret(f"Dokumen-{env}", "Anthropic API", "api_key")
-            logger.info("Secret resolved", extra={"source": "1password", "vault": f"Dokumen-{env}", "item": "Anthropic API"})
+            logger.info(
+                "Secret resolved",
+                extra={"source": "1password", "vault": f"Dokumen-{env}", "item": "Anthropic API"},
+            )
             return key
         except ValueError as e:
             logger.warning(f"Failed to load from 1Password: {e}, falling back to env var")
@@ -161,7 +165,13 @@ def get_anthropic_key() -> str:
     # Fallback to environment variable
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key:
-        logger.error("Secret resolution failed", extra={"item": "Anthropic API", "sources_tried": "1password,env_var" if _use_1password() else "env_var"})
+        logger.error(
+            "Secret resolution failed",
+            extra={
+                "item": "Anthropic API",
+                "sources_tried": "1password,env_var" if _use_1password() else "env_var",
+            },
+        )
         raise ValueError(
             "No Anthropic API key found. Set ANTHROPIC_API_KEY environment variable "
             "or enable 1Password with USE_1PASSWORD=true"
@@ -183,7 +193,14 @@ def get_gitlab_token() -> Optional[str]:
         manager = _get_cli_secrets_manager()
         try:
             token = manager.get_secret(f"Dokumen-{env}", "GitLab Service Account", "token")
-            logger.info("Secret resolved", extra={"source": "1password", "vault": f"Dokumen-{env}", "item": "GitLab Service Account"})
+            logger.info(
+                "Secret resolved",
+                extra={
+                    "source": "1password",
+                    "vault": f"Dokumen-{env}",
+                    "item": "GitLab Service Account",
+                },
+            )
             return token
         except ValueError:
             logger.debug("GitLab token not in 1Password, falling back to env var")

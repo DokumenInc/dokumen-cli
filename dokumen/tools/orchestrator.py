@@ -7,6 +7,7 @@ one at a time. this prevents lost updates while maximizing throughput.
 
 inspired by claude code's tool orchestration architecture.
 """
+
 import asyncio
 import logging
 import time
@@ -22,44 +23,49 @@ DEFAULT_MAX_CONCURRENT = 10
 
 class ToolConcurrencyMode(Enum):
     """whether a tool is safe to run concurrently."""
-    READ_ONLY = "read_only"    # safe to batch with other read-only tools
-    WRITE = "write"            # must run serially
-    UNKNOWN = "unknown"        # treat as write (safe default)
+
+    READ_ONLY = "read_only"  # safe to batch with other read-only tools
+    WRITE = "write"  # must run serially
+    UNKNOWN = "unknown"  # treat as write (safe default)
 
 
 # known read-only tools — these never modify state
-READ_ONLY_TOOLS = frozenset({
-    "read_file",
-    "list_directory",
-    "list_files",
-    "glob",
-    "search_file_content",
-    "search_files",
-    "web_fetch",
-    "web_search",
-    "anthropic_web_search",
-    # browser observation tools
-    "browser_snapshot",
-    "browser_screenshot",
-    "browser_take_screenshot",
-    "browser_console_messages",
-    "browser_network_requests",
-})
+READ_ONLY_TOOLS = frozenset(
+    {
+        "read_file",
+        "list_directory",
+        "list_files",
+        "glob",
+        "search_file_content",
+        "search_files",
+        "web_fetch",
+        "web_search",
+        "anthropic_web_search",
+        # browser observation tools
+        "browser_snapshot",
+        "browser_screenshot",
+        "browser_take_screenshot",
+        "browser_console_messages",
+        "browser_network_requests",
+    }
+)
 
 # known write tools — these modify state
-WRITE_TOOLS = frozenset({
-    "run_shell_command",
-    "write_file",
-    "delete_file",
-    "create_test",
-    # browser action tools
-    "browser_navigate",
-    "browser_click",
-    "browser_type",
-    "browser_evaluate",
-    "browser_wait",
-    "browser_close",
-})
+WRITE_TOOLS = frozenset(
+    {
+        "run_shell_command",
+        "write_file",
+        "delete_file",
+        "create_test",
+        # browser action tools
+        "browser_navigate",
+        "browser_click",
+        "browser_type",
+        "browser_evaluate",
+        "browser_wait",
+        "browser_close",
+    }
+)
 
 
 def classify_tool(tool_name: str) -> ToolConcurrencyMode:
@@ -78,6 +84,7 @@ def classify_tool(tool_name: str) -> ToolConcurrencyMode:
 @dataclass
 class ToolCall:
     """a pending tool call."""
+
     tool_name: str
     args: Dict[str, Any]
     call_id: str = ""
@@ -90,6 +97,7 @@ class ToolCall:
 @dataclass
 class ToolResult:
     """result from executing a tool."""
+
     call_id: str
     tool_name: str
     output: str
@@ -111,6 +119,7 @@ class ToolResult:
 @dataclass
 class ToolBatch:
     """a batch of tool calls to execute together."""
+
     calls: List[ToolCall] = field(default_factory=list)
     concurrent: bool = False
 
@@ -208,7 +217,9 @@ class ToolOrchestrator:
         returns results in the same order as input calls.
         """
         if self._executor is None:
-            raise ValueError("no executor provided — pass executor to __init__ or use partition() only")
+            raise ValueError(
+                "no executor provided — pass executor to __init__ or use partition() only"
+            )
 
         batches = self.partition(calls)
         all_results: List[ToolResult] = []

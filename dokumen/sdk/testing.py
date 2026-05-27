@@ -101,9 +101,7 @@ def make_executor_simple(final_text: str) -> List[Any]:
     return [make_init(), make_assistant(final_text), make_result(final_text)]
 
 
-def make_executor_with_tools(
-    tool_sequence: List[tuple], final_text: str
-) -> List[Any]:
+def make_executor_with_tools(tool_sequence: List[tuple], final_text: str) -> List[Any]:
     """Create an executor message sequence with tool calls.
 
     Args:

@@ -9,10 +9,11 @@ from typing import Any, Dict, List, Optional
 
 class SkillCategory(Enum):
     """categories of learned skills."""
-    EXECUTOR = "executor"       # tips for executor agents
-    JUDGE = "judge"             # tips for judge agents
-    TOOL_USE = "tool_use"       # tips about tool usage patterns
-    DOMAIN = "domain"           # domain-specific knowledge
+
+    EXECUTOR = "executor"  # tips for executor agents
+    JUDGE = "judge"  # tips for judge agents
+    TOOL_USE = "tool_use"  # tips about tool usage patterns
+    DOMAIN = "domain"  # domain-specific knowledge
     ERROR_RECOVERY = "error_recovery"  # how to recover from common errors
 
 

@@ -1,16 +1,17 @@
 """
 Retry utilities with exponential backoff for API rate limiting.
 """
+
 import asyncio
 import random
 import logging
 import time
 from functools import wraps
-from typing import Callable, Optional, TypeVar, Any
+from typing import Callable, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 # Default retry configuration
 DEFAULT_MAX_RETRIES = 5
@@ -55,12 +56,12 @@ def is_rate_limit_error(exception: Exception) -> bool:
     error_str = str(exception).lower()
 
     # Check for common rate limit indicators
-    if '429' in str(exception) or 'rate_limit' in error_str or 'rate limit' in error_str:
+    if "429" in str(exception) or "rate_limit" in error_str or "rate limit" in error_str:
         return True
 
     # Check for specific exception types
     exception_type = type(exception).__name__.lower()
-    if 'ratelimit' in exception_type:
+    if "ratelimit" in exception_type:
         return True
 
     return False
@@ -74,23 +75,25 @@ def is_retryable_error(exception: Exception) -> bool:
     error_str = str(exception).lower()
 
     # Also retry on temporary server errors (5xx)
-    if '500' in error_str or '502' in error_str or '503' in error_str or '504' in error_str:
+    if "500" in error_str or "502" in error_str or "503" in error_str or "504" in error_str:
         return True
 
     # Check for overloaded errors
-    if 'overloaded' in error_str:
+    if "overloaded" in error_str:
         return True
 
     # Check for timeout errors (network timeouts, API timeouts)
-    if 'timed out' in error_str or 'timeout' in error_str:
+    if "timed out" in error_str or "timeout" in error_str:
         return True
 
     # Check for connection errors that are usually temporary
-    if 'connection' in error_str and ('reset' in error_str or 'refused' in error_str or 'aborted' in error_str):
+    if "connection" in error_str and (
+        "reset" in error_str or "refused" in error_str or "aborted" in error_str
+    ):
         return True
 
     # Check for interrupted requests
-    if 'interrupted' in error_str:
+    if "interrupted" in error_str:
         return True
 
     return False
@@ -105,7 +108,7 @@ async def retry_with_exponential_backoff(
     exponential_base: float = DEFAULT_EXPONENTIAL_BASE,
     jitter: bool = True,
     deadline: Optional[float] = None,
-    **kwargs
+    **kwargs,
 ) -> T:
     """
     Execute an async function with exponential backoff on rate limit errors.
@@ -153,9 +156,9 @@ async def retry_with_exponential_backoff(
             if is_rate_limit_error(e):
                 error_class = "rate_limit"
                 rate_limit_hits += 1
-            elif 'timeout' in str(e).lower() or 'timed out' in str(e).lower():
+            elif "timeout" in str(e).lower() or "timed out" in str(e).lower():
                 error_class = "timeout"
-            elif any(code in str(e) for code in ('500', '502', '503', '504')):
+            elif any(code in str(e) for code in ("500", "502", "503", "504")):
                 error_class = "server_error"
             else:
                 error_class = "other"
@@ -174,7 +177,7 @@ async def retry_with_exponential_backoff(
                 raise
 
             # Calculate delay with exponential backoff
-            delay = min(base_delay * (exponential_base ** attempt), max_delay)
+            delay = min(base_delay * (exponential_base**attempt), max_delay)
 
             # Add jitter to prevent thundering herd
             if jitter:
@@ -192,7 +195,7 @@ async def retry_with_exponential_backoff(
                             "attempts_made": attempt + 1,
                             "rate_limit_hits": rate_limit_hits,
                             "total_sleep_time": total_sleep_time,
-                        }
+                        },
                     )
                     raise RetryBudgetExhausted(
                         attempts_made=attempt + 1,
@@ -226,7 +229,7 @@ def with_retry(
     base_delay: float = DEFAULT_BASE_DELAY,
     max_delay: float = DEFAULT_MAX_DELAY,
     exponential_base: float = DEFAULT_EXPONENTIAL_BASE,
-    jitter: bool = True
+    jitter: bool = True,
 ):
     """
     Decorator to add exponential backoff retry to an async function.
@@ -236,6 +239,7 @@ def with_retry(
         async def my_api_call():
             ...
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> T:
@@ -247,7 +251,9 @@ def with_retry(
                 max_delay=max_delay,
                 exponential_base=exponential_base,
                 jitter=jitter,
-                **kwargs
+                **kwargs,
             )
+
         return wrapper
+
     return decorator

@@ -25,7 +25,9 @@ class CompactionStage(PipelineStage):
 
     async def run(self, ctx: PipelineContext) -> PipelineContext:
         if self._config is None or not self._config.enabled:
-            logger.debug("stage.compaction.skipped", extra={"test_id": ctx.test_id, "reason": "disabled"})
+            logger.debug(
+                "stage.compaction.skipped", extra={"test_id": ctx.test_id, "reason": "disabled"}
+            )
             return ctx
 
         start = time.time()
@@ -43,12 +45,12 @@ class CompactionStage(PipelineStage):
                 )
 
                 # extract tool results from executor conversation log
-                conv_log = getattr(ctx.executor_output, 'conversation_log', None) or []
+                conv_log = getattr(ctx.executor_output, "conversation_log", None) or []
                 for entry in conv_log:
-                    if isinstance(entry, dict) and entry.get('role') == 'tool':
+                    if isinstance(entry, dict) and entry.get("role") == "tool":
                         micro.track(
-                            tool_name=entry.get('tool_name', 'unknown'),
-                            result_text=entry.get('content', ''),
+                            tool_name=entry.get("tool_name", "unknown"),
+                            result_text=entry.get("content", ""),
                         )
 
                 micro_result = micro.compact()
@@ -63,7 +65,7 @@ class CompactionStage(PipelineStage):
                     )
 
             # full compaction check based on token usage
-            executor_tokens = getattr(ctx.executor_output, 'total_tokens', 0) or 0
+            executor_tokens = getattr(ctx.executor_output, "total_tokens", 0) or 0
             if executor_tokens > self._config.token_budget * self._config.token_threshold:
                 compactor = ContextCompactor(
                     token_budget=self._config.token_budget,
@@ -72,11 +74,11 @@ class CompactionStage(PipelineStage):
                 )
 
                 # feed conversation turns
-                for entry in (getattr(ctx.executor_output, 'conversation_log', None) or []):
+                for entry in getattr(ctx.executor_output, "conversation_log", None) or []:
                     if isinstance(entry, dict):
                         compactor.add_turn(
-                            role=entry.get('role', 'unknown'),
-                            content=entry.get('content', ''),
+                            role=entry.get("role", "unknown"),
+                            content=entry.get("content", ""),
                         )
 
                 if compactor.needs_compaction:
@@ -92,10 +94,15 @@ class CompactionStage(PipelineStage):
                     )
 
             duration = time.time() - start
-            logger.info("stage.compaction.complete", extra={"test_id": ctx.test_id, "duration_ms": int(duration * 1000)})
+            logger.info(
+                "stage.compaction.complete",
+                extra={"test_id": ctx.test_id, "duration_ms": int(duration * 1000)},
+            )
 
         except Exception as e:
             # compaction is best-effort — don't fail the pipeline
-            logger.warning("stage.compaction.error", extra={"test_id": ctx.test_id, "error": str(e)})
+            logger.warning(
+                "stage.compaction.error", extra={"test_id": ctx.test_id, "error": str(e)}
+            )
 
         return ctx

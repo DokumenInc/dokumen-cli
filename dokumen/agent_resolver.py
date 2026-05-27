@@ -5,6 +5,7 @@ Handles loading agent definitions from YAML files, merging agent defaults
 with scaffold overrides, skills collection and formatting, and
 auto-injection of research judges.
 """
+
 from typing import Any, List, Optional, Tuple
 from pathlib import Path
 import hashlib
@@ -137,7 +138,7 @@ def resolve_executor_agent(
     Raises:
         ValueError: If specified agent is not found
     """
-    scaffold_agent = executor_data.get('agent')
+    scaffold_agent = executor_data.get("agent")
     if not scaffold_agent:
         return None
 
@@ -149,9 +150,7 @@ def resolve_executor_agent(
             f"or as a built-in agent."
         )
 
-    _prompt_hash = hashlib.sha256(
-        (agent_def.system_prompt or "").encode()
-    ).hexdigest()[:12]
+    _prompt_hash = hashlib.sha256((agent_def.system_prompt or "").encode()).hexdigest()[:12]
     logger.info(
         "agent.definition.loaded",
         agent_name=agent_def.name,
@@ -162,8 +161,8 @@ def resolve_executor_agent(
     )
 
     # Use agent's system_prompt as default (scaffold can override)
-    if not executor_data.get('system_prompt') and agent_def.system_prompt:
-        executor_data['system_prompt'] = agent_def.system_prompt
+    if not executor_data.get("system_prompt") and agent_def.system_prompt:
+        executor_data["system_prompt"] = agent_def.system_prompt
         logger.info(
             "loader.agent_default.system_prompt",
             scaffold=scaffold_name,
@@ -171,8 +170,8 @@ def resolve_executor_agent(
         )
 
     # Use agent's tools as default (scaffold can override)
-    if not executor_data.get('tools') and agent_def.tools:
-        executor_data['tools'] = list(agent_def.tools)
+    if not executor_data.get("tools") and agent_def.tools:
+        executor_data["tools"] = list(agent_def.tools)
         logger.info(
             "loader.agent_default.tools",
             scaffold=scaffold_name,
@@ -182,10 +181,10 @@ def resolve_executor_agent(
 
     # Merge agent skills with scaffold skills
     agent_skills_list = agent_def.skills or []
-    scaffold_skills_list = executor_data.get('skills') or []
+    scaffold_skills_list = executor_data.get("skills") or []
     merged_executor_skills = list(set(agent_skills_list + scaffold_skills_list))
     if merged_executor_skills:
-        executor_data['skills'] = merged_executor_skills
+        executor_data["skills"] = merged_executor_skills
         logger.info(
             "loader.agent_default.skills",
             scaffold=scaffold_name,
@@ -194,8 +193,8 @@ def resolve_executor_agent(
         )
 
     # Use agent's browser config as default (scaffold can override)
-    if not scaffold_data.get('browser') and agent_def.browser:
-        scaffold_data['browser'] = agent_def.browser.model_dump(exclude_none=True)
+    if not scaffold_data.get("browser") and agent_def.browser:
+        scaffold_data["browser"] = agent_def.browser.model_dump(exclude_none=True)
         logger.info(
             "loader.agent_default.browser_config",
             scaffold=scaffold_name,
@@ -203,8 +202,8 @@ def resolve_executor_agent(
         )
 
     # Use agent's research config as default (scaffold can override)
-    if not scaffold_data.get('research') and agent_def.research:
-        scaffold_data['research'] = agent_def.research.model_dump(exclude_none=True)
+    if not scaffold_data.get("research") and agent_def.research:
+        scaffold_data["research"] = agent_def.research.model_dump(exclude_none=True)
         logger.info(
             "loader.agent_default.research_config",
             scaffold=scaffold_name,
@@ -234,27 +233,25 @@ def resolve_judge_agent(
     Raises:
         ValueError: If specified agent is not found
     """
-    judge_agent_name = judge_data.get('agent')
+    judge_agent_name = judge_data.get("agent")
     if not judge_agent_name:
         return None
 
     judge_agent_def = _load_agent_def(judge_agent_name, user_dirs=user_dirs)
     if not judge_agent_def:
-        raise ValueError(
-            f"Judge '{judge_name}' references unknown agent: '{judge_agent_name}'"
-        )
+        raise ValueError(f"Judge '{judge_name}' references unknown agent: '{judge_agent_name}'")
 
     # Inject agent defaults (scaffold overrides)
-    if not judge_data.get('system_prompt') and judge_agent_def.system_prompt:
-        judge_data['system_prompt'] = judge_agent_def.system_prompt
+    if not judge_data.get("system_prompt") and judge_agent_def.system_prompt:
+        judge_data["system_prompt"] = judge_agent_def.system_prompt
         logger.info(
             "loader.judge_agent_default.system_prompt",
             scaffold=scaffold_name,
             judge=judge_name,
             agent=judge_agent_name,
         )
-    if not judge_data.get('tools') and judge_agent_def.tools:
-        judge_data['tools'] = list(judge_agent_def.tools)
+    if not judge_data.get("tools") and judge_agent_def.tools:
+        judge_data["tools"] = list(judge_agent_def.tools)
         logger.info(
             "loader.judge_agent_default.tools",
             scaffold=scaffold_name,
@@ -264,10 +261,10 @@ def resolve_judge_agent(
         )
     # Merge skills
     agent_skills = judge_agent_def.skills or []
-    scaffold_skills = judge_data.get('skills') or []
+    scaffold_skills = judge_data.get("skills") or []
     merged_skills = list(set(agent_skills + scaffold_skills))
     if merged_skills:
-        judge_data['skills'] = merged_skills
+        judge_data["skills"] = merged_skills
 
     return judge_agent_def
 
@@ -321,9 +318,7 @@ def format_skills_for_prompt(
 
     sections = []
     for name, content, source in skills:
-        sections.append(
-            f"### {name} (source: {source})\n\n{content}"
-        )
+        sections.append(f"### {name} (source: {source})\n\n{content}")
 
     body = "\n\n---\n\n".join(sections)
     return f"\n\n## Available Skills\n\n{body}"
@@ -401,6 +396,7 @@ def collect_skills(
     # these are auto-injected unless the scaffold already specified them
     try:
         from .skills.loader import get_all_skills, ExecutionMode
+
         system = get_all_skills(include_system=True)
         for skill in system:
             if skill.name in seen_names:

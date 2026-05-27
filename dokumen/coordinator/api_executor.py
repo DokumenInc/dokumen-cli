@@ -9,6 +9,7 @@ from tools_object.py but drives the agent loop ourselves:
 
 this avoids the exit code 1 crash from the bundled CLI message reader.
 """
+
 import asyncio
 import logging
 import os
@@ -63,7 +64,7 @@ async def _handle_tool_call(tool_name: str, tool_input: Dict[str, Any], base_dir
             return "\n".join(rel) if rel else "no matches"
 
         elif tool_name == "search_file_content":
-            import subprocess
+
             pattern = tool_input.get("pattern", "")
             search_path = tool_input.get("path", ".")
             if not os.path.isabs(search_path):
@@ -111,6 +112,7 @@ async def _handle_tool_call(tool_name: str, tool_input: Dict[str, Any], base_dir
 def _shell_quote(s: str) -> str:
     """simple shell quoting."""
     import shlex
+
     return shlex.quote(s)
 
 
@@ -134,7 +136,10 @@ def _tools_to_anthropic_format(tool_names: List[str]) -> List[Dict[str, Any]]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "path": {"type": "string", "description": "directory path (default: current dir)"},
+                    "path": {
+                        "type": "string",
+                        "description": "directory path (default: current dir)",
+                    },
                 },
                 "required": [],
             },
@@ -188,8 +193,14 @@ def _tools_to_anthropic_format(tool_names: List[str]) -> List[Dict[str, Any]]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "goal": {"type": "string", "description": "clear description of what the worker should accomplish"},
-                    "context": {"type": "string", "description": "relevant context the worker needs (blueprint excerpts, file paths, etc.)"},
+                    "goal": {
+                        "type": "string",
+                        "description": "clear description of what the worker should accomplish",
+                    },
+                    "context": {
+                        "type": "string",
+                        "description": "relevant context the worker needs (blueprint excerpts, file paths, etc.)",
+                    },
                 },
                 "required": ["goal"],
             },
@@ -263,7 +274,9 @@ async def run_api_executor(
                 "output_tokens": total_output,
             }
         except Exception as e:
-            logger.error("api_executor: provider call failed", extra={"turn": turn, "error": str(e)})
+            logger.error(
+                "api_executor: provider call failed", extra={"turn": turn, "error": str(e)}
+            )
             return {
                 "success": False,
                 "output": "",
@@ -299,12 +312,14 @@ async def run_api_executor(
         if content:
             assistant_content.append({"type": "text", "text": content})
         for tc in tool_calls:
-            assistant_content.append({
-                "type": "tool_use",
-                "id": tc["id"],
-                "name": tc["name"],
-                "input": tc["input"],
-            })
+            assistant_content.append(
+                {
+                    "type": "tool_use",
+                    "id": tc["id"],
+                    "name": tc["name"],
+                    "input": tc["input"],
+                }
+            )
         messages.append({"role": "assistant", "content": assistant_content})
 
         # execute tools and build tool_result message
@@ -339,18 +354,24 @@ async def run_api_executor(
                 total_output += worker_result.get("output_tokens", 0)
 
                 if worker_result["success"]:
-                    tool_output = f"worker completed successfully:\n{worker_result.get('output', '')}"
+                    tool_output = (
+                        f"worker completed successfully:\n{worker_result.get('output', '')}"
+                    )
                 else:
                     tool_output = f"worker failed: {worker_result.get('error', 'unknown error')}"
-                print(f"  ✓ worker done: {'ok' if worker_result['success'] else 'failed'}", flush=True)
+                print(
+                    f"  ✓ worker done: {'ok' if worker_result['success'] else 'failed'}", flush=True
+                )
             else:
                 tool_output = await _handle_tool_call(tc["name"], tc["input"], base_dir)
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tc["id"],
-                "content": tool_output,
-            })
+            tool_results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tc["id"],
+                    "content": tool_output,
+                }
+            )
             tool_counts[tc["name"]] = tool_counts.get(tc["name"], 0) + 1
 
         messages.append({"role": "user", "content": tool_results})

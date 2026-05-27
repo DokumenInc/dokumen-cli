@@ -1,6 +1,7 @@
 """
 Shared helper utilities for CLI commands.
 """
+
 import asyncio
 import fnmatch
 import logging
@@ -10,9 +11,10 @@ from typing import Optional, List, Dict, Any
 
 import yaml
 
-logger = logging.getLogger(__name__)
-
 from dokumen.config import DEFAULT_FAST_MODEL, _preprocess_yaml
+from ..file_object import normalize_path
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Exit Codes
@@ -29,6 +31,7 @@ EXIT_INVALID_ARGS = 4
 # Async Bridge
 # =============================================================================
 
+
 def run_async(coro):
     """Run async coroutine in sync context."""
     return asyncio.run(coro)
@@ -41,34 +44,27 @@ def run_async(coro):
 DEFAULT_CONFIG = {
     "version": "1.0",
     "provider": {"name": "anthropic", "model": DEFAULT_FAST_MODEL},
-    "coverage": {
-        "include": ["docs/**/*.md", "README.md"],
-        "exclude": [],
-        "min_threshold": 80
-    },
+    "coverage": {"include": ["docs/**/*.md", "README.md"], "exclude": [], "min_threshold": 80},
     "execution": {"timeout": 60, "retries": 0, "parallel": False, "max_workers": 4},
     "cache": {"enabled": True, "path": ".dokumen-cache"},
     "analyzers": {
         "enabled": True,
         "output_path": ".dokumen-analysis",
-        "agents": []  # Empty means use built-in analyzers
+        "agents": [],  # Empty means use built-in analyzers
     },
     "sandbox": {
         "type": "whitelist",  # none, whitelist, subprocess, docker, virtual_fs
         "allowed_commands": ["dokumen"],
         "timeout": 30,
         "max_memory_mb": 512,
-        "docker_image": "python:3.11-slim"
+        "docker_image": "python:3.11-slim",
     },
-    "history": {
-        "enabled": True,
-        "path": ".history"
-    },
+    "history": {"enabled": True, "path": ".history"},
     "scaffold_prompts": {
         "enabled": True,
         "base_path": "prompts/scaffold-generator",
-        "categories": {}
-    }
+        "categories": {},
+    },
 }
 
 
@@ -85,7 +81,9 @@ def load_config(config_path: Optional[str] = None) -> dict:
         except IOError as e:
             logger.error("Config file read failed", extra={"path": str(path), "error": str(e)})
         except yaml.YAMLError as e:
-            logger.error("Config file YAML parse failed", extra={"path": str(path), "error": str(e)})
+            logger.error(
+                "Config file YAML parse failed", extra={"path": str(path), "error": str(e)}
+            )
 
     return config
 
@@ -104,10 +102,6 @@ def deep_merge(base: dict, override: dict) -> dict:
 # =============================================================================
 # Path Normalization
 # =============================================================================
-
-# Import normalize_path from file_object for cross-platform path consistency
-from ..file_object import normalize_path
-
 
 # =============================================================================
 # Folder Path Helpers (for test folder filtering)
@@ -227,14 +221,13 @@ def is_in_folder(test_folder_path: str, target_folder: str) -> bool:
         return True  # Root folder = all tests
     if target_folder == ".":
         return test_folder_path == ""  # Root-level only
-    return test_folder_path == target_folder or test_folder_path.startswith(
-        target_folder + "/"
-    )
+    return test_folder_path == target_folder or test_folder_path.startswith(target_folder + "/")
 
 
 # =============================================================================
 # Coverage Statistics
 # =============================================================================
+
 
 def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
     """
@@ -247,8 +240,6 @@ def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
         - covered_files, failed_files, uncovered_files
         - files_detail: {file_path: {test_count, test_ids, status, line_coverage_pct}}
     """
-    from ..scaffold import discover_scaffolds
-
     config = config or {}
 
     # Get all doc files from config patterns
@@ -261,12 +252,12 @@ def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
     test_ids_map = get_test_ids_per_file(tests_dir)
 
     # Load file status from cache
-    cache_path = config.get('cache', {}).get('path', '.dokumen-cache')
+    cache_path = config.get("cache", {}).get("path", ".dokumen-cache")
     file_status = get_file_status_from_cache(cache_path)
 
     # Load basic line coverage for per-file percentages (without by_state)
     basic_line_stats = get_line_coverage_stats(cache_path)
-    line_files = basic_line_stats.get('files', {})
+    line_files = basic_line_stats.get("files", {})
 
     # Categorize files into 3 states
     covered_files = []
@@ -281,7 +272,7 @@ def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
         # Get line coverage percentage if available
         line_pct = None
         if file_path in line_files:
-            line_pct = line_files[file_path].get('percentage', 0.0)
+            line_pct = line_files[file_path].get("percentage", 0.0)
 
         # Determine state: passed/failed from cache, otherwise uncovered
         if cache_status == "passed":
@@ -298,14 +289,14 @@ def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
             "test_count": file_test_count,
             "test_ids": test_ids_map.get(file_path, []),
             "status": state,
-            "line_coverage_pct": line_pct
+            "line_coverage_pct": line_pct,
         }
 
     total = len(all_doc_files)
     by_state = {
         "passed": len(covered_files),
         "failed": len(failed_files),
-        "uncovered": len(uncovered_files)
+        "uncovered": len(uncovered_files),
     }
 
     # Legacy percentage (covered / total)
@@ -322,11 +313,13 @@ def get_coverage_stats(tests_dir: str = "tests", config: dict = None) -> dict:
         "covered_files": covered_files,
         "failed_files": failed_files,
         "uncovered_files": uncovered_files,
-        "files_detail": files_detail
+        "files_detail": files_detail,
     }
 
 
-def get_file_status_from_cache(cache_path: str = ".dokumen-cache", tests_dir: str = "tests") -> Dict[str, str]:
+def get_file_status_from_cache(
+    cache_path: str = ".dokumen-cache", tests_dir: str = "tests"
+) -> Dict[str, str]:
     """
     Get file status from cache.
 
@@ -349,7 +342,7 @@ def get_file_status_from_cache(cache_path: str = ".dokumen-cache", tests_dir: st
         return {}
 
     try:
-        with open(cache_file, 'r', encoding='utf-8') as f:
+        with open(cache_file, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # First try to get file_status directly from cache
@@ -364,6 +357,7 @@ def get_file_status_from_cache(cache_path: str = ".dokumen-cache", tests_dir: st
 
         # Load test scaffolds to map tests to files
         from ..scaffold import discover_scaffolds, load_scaffold_yaml
+
         scaffold_paths = discover_scaffolds(tests_dir)
         test_to_files = {}
         for scaffold_path in scaffold_paths:
@@ -371,7 +365,9 @@ def get_file_status_from_cache(cache_path: str = ".dokumen-cache", tests_dir: st
                 scaffold_data = load_scaffold_yaml(scaffold_path)
                 test_name = scaffold_data.get("name", "")
                 files = scaffold_data.get("files", [])
-                test_to_files[test_name] = [normalize_path(f.get("path", "") if isinstance(f, dict) else f) for f in files]
+                test_to_files[test_name] = [
+                    normalize_path(f.get("path", "") if isinstance(f, dict) else f) for f in files
+                ]
             except Exception:
                 continue  # Skip invalid scaffolds
 
@@ -425,7 +421,7 @@ def discover_doc_files(config: dict) -> List[str]:
 def get_uncovered_files(config: dict = None) -> List[str]:
     """Get list of uncovered files."""
     stats = get_coverage_stats(config=config)
-    return stats.get('uncovered_files', [])
+    return stats.get("uncovered_files", [])
 
 
 def filter_stats_by_path(stats: dict, path: str) -> dict:
@@ -446,11 +442,11 @@ def filter_stats_by_path(stats: dict, path: str) -> dict:
     path = path.replace("\\", "/")
 
     # Filter files_detail to only include matching files
-    files_detail = stats.get('files_detail', {})
+    files_detail = stats.get("files_detail", {})
     filtered_detail = {}
     for file_path, detail in files_detail.items():
         # Match exact path or directory prefix
-        if file_path == path or file_path.startswith(path.rstrip('/') + '/'):
+        if file_path == path or file_path.startswith(path.rstrip("/") + "/"):
             filtered_detail[file_path] = detail
 
     if not filtered_detail:
@@ -465,7 +461,7 @@ def filter_stats_by_path(stats: dict, path: str) -> dict:
             "covered_files": [],
             "failed_files": [],
             "uncovered_files": [],
-            "files_detail": {}
+            "files_detail": {},
         }
 
     # Recalculate stats from filtered files
@@ -475,14 +471,14 @@ def filter_stats_by_path(stats: dict, path: str) -> dict:
     test_counts = {}
 
     for file_path, detail in filtered_detail.items():
-        status = detail.get('status', 'uncovered')
-        test_count = detail.get('test_count', 0)
+        status = detail.get("status", "uncovered")
+        test_count = detail.get("test_count", 0)
         if test_count > 0:
             test_counts[file_path] = test_count
 
-        if status == 'passed':
+        if status == "passed":
             covered_files.append(file_path)
-        elif status == 'failed':
+        elif status == "failed":
             failed_files.append(file_path)
         else:
             uncovered_files.append(file_path)
@@ -499,13 +495,13 @@ def filter_stats_by_path(stats: dict, path: str) -> dict:
         "by_state": {
             "passed": covered_count,
             "failed": len(failed_files),
-            "uncovered": len(uncovered_files)
+            "uncovered": len(uncovered_files),
         },
         "test_counts": test_counts,
         "covered_files": covered_files,
         "failed_files": failed_files,
         "uncovered_files": uncovered_files,
-        "files_detail": filtered_detail
+        "files_detail": filtered_detail,
     }
 
 
@@ -527,10 +523,10 @@ def filter_line_stats_by_path(line_stats: dict, path: str) -> dict:
     path = path.replace("\\", "/")
 
     # Filter files
-    files = line_stats.get('files', {})
+    files = line_stats.get("files", {})
     filtered_files = {}
     for file_path, data in files.items():
-        if file_path == path or file_path.startswith(path.rstrip('/') + '/'):
+        if file_path == path or file_path.startswith(path.rstrip("/") + "/"):
             filtered_files[file_path] = data
 
     if not filtered_files:
@@ -540,7 +536,7 @@ def filter_line_stats_by_path(line_stats: dict, path: str) -> dict:
             "failed_lines": 0,
             "percentage": 0.0,
             "by_state": {"passed": 0, "failed": 0, "uncovered": 0},
-            "files": {}
+            "files": {},
         }
 
     # Recalculate totals from filtered files
@@ -550,10 +546,10 @@ def filter_line_stats_by_path(line_stats: dict, path: str) -> dict:
     lines_by_state = {"passed": 0, "failed": 0, "uncovered": 0}
 
     for file_path, data in filtered_files.items():
-        file_total = data.get('total_lines', 0)
-        file_covered = len(data.get('covered_lines', []))
-        file_failed = len(data.get('failed_lines', []))
-        status = data.get('status', 'uncovered')
+        file_total = data.get("total_lines", 0)
+        file_covered = len(data.get("covered_lines", []))
+        file_failed = len(data.get("failed_lines", []))
+        status = data.get("status", "uncovered")
 
         total_lines += file_total
         covered_lines += file_covered
@@ -576,7 +572,7 @@ def filter_line_stats_by_path(line_stats: dict, path: str) -> dict:
         "percentage": (covered_lines / total_lines * 100) if total_lines > 0 else 0.0,
         "by_state": lines_by_state,
         "files": filtered_files,
-        "failure_analysis": line_stats.get('failure_analysis', {})
+        "failure_analysis": line_stats.get("failure_analysis", {}),
     }
 
 
@@ -704,16 +700,18 @@ def get_failure_analysis_from_cache(cache_path: str = ".dokumen-cache") -> Dict[
         return {}
 
     try:
-        with open(cache_file, 'r') as f:
+        with open(cache_file, "r") as f:
             data = json.load(f)
         return data.get("failure_analysis", {})
     except (json.JSONDecodeError, IOError):
         return {}
 
 
-def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
-                            file_states: Dict[str, str] = None,
-                            all_doc_files: List[str] = None) -> Dict[str, Any]:
+def get_line_coverage_stats(
+    cache_path: str = ".dokumen-cache",
+    file_states: Dict[str, str] = None,
+    all_doc_files: List[str] = None,
+) -> Dict[str, Any]:
     """
     Get line-level coverage statistics from cache, including failure information.
 
@@ -755,20 +753,11 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
 
     cache_file = os.path.join(cache_path, "cache.json")
 
-    empty_result = {
-        "total_lines": 0,
-        "covered_lines": 0,
-        "failed_lines": 0,
-        "percentage": 0.0,
-        "by_state": {"passed": 0, "failed": 0, "uncovered": 0},
-        "files": {}
-    }
-
     # Try to load cache
     cache_data = {}
     if os.path.exists(cache_file):
         try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 cache_data = json.load(f)
         except (json.JSONDecodeError, IOError):
             pass
@@ -779,7 +768,9 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
     raw_file_status = cache_data.get("file_status", {})
     cached_file_status = {normalize_path(path): status for path, status in raw_file_status.items()}
     raw_failure_analysis = cache_data.get("failure_analysis", {})
-    failure_analysis = {normalize_path(path): analysis for path, analysis in raw_failure_analysis.items()}
+    failure_analysis = {
+        normalize_path(path): analysis for path, analysis in raw_failure_analysis.items()
+    }
     # Files where coverage inference was attempted (even if it failed)
     coverage_attempted = set(normalize_path(p) for p in cache_data.get("coverage_attempted", []))
 
@@ -834,7 +825,7 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
             "percentage": (file_covered_count / file_total * 100) if file_total > 0 else 0.0,
             "source_tests": coverage.get("source_test_ids", {}),
             "failed_tests": coverage.get("failed_test_ids", {}),
-            "status": status
+            "status": status,
         }
 
     # Process files not in cache but in all_doc_files
@@ -859,7 +850,7 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
                         "percentage": 0.0,
                         "source_tests": {},
                         "failed_tests": {},
-                        "status": status
+                        "status": status,
                     }
 
     # Incorporate failure_analysis data into files_data
@@ -883,7 +874,7 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
                     "percentage": 0.0,
                     "source_tests": {},
                     "failed_tests": {},
-                    "status": cached_file_status.get(file_path, "failed")
+                    "status": cached_file_status.get(file_path, "failed"),
                 }
 
         if file_path in files_data:
@@ -900,7 +891,9 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
                 incorrect = analysis.get("incorrect_lines", [])
                 for item in incorrect:
                     # Avoid duplicates by line number
-                    if not any(i.get("line_number") == item.get("line_number") for i in all_incorrect):
+                    if not any(
+                        i.get("line_number") == item.get("line_number") for i in all_incorrect
+                    ):
                         all_incorrect.append(item)
 
             files_data[file_path]["failed_lines"] = sorted(all_referenced)
@@ -952,14 +945,14 @@ def get_line_coverage_stats(cache_path: str = ".dokumen-cache",
         "percentage": (covered_lines / total_lines * 100) if total_lines > 0 else 0.0,
         "by_state": lines_by_state,
         "files": files_data,
-        "failure_analysis": failure_analysis
+        "failure_analysis": failure_analysis,
     }
 
 
 def _count_file_lines(file_path: str) -> int:
     """Count lines in a file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             return sum(1 for _ in f)
     except (IOError, UnicodeDecodeError):
         return 0
@@ -968,6 +961,7 @@ def _count_file_lines(file_path: str) -> int:
 # =============================================================================
 # Test Filtering
 # =============================================================================
+
 
 def filter_tests(all_tests, test_ids=None, grep=None, for_file=None, folder=None):
     """Filter tests based on criteria.
@@ -998,7 +992,7 @@ def filter_tests(all_tests, test_ids=None, grep=None, for_file=None, folder=None
         filtered = []
         for t in result:
             # Get source_path from test object
-            source_path = getattr(t, 'source_path', None)
+            source_path = getattr(t, "source_path", None)
             if source_path:
                 try:
                     test_folder = normalize_folder_path(source_path)
@@ -1017,9 +1011,7 @@ def filter_tests(all_tests, test_ids=None, grep=None, for_file=None, folder=None
 
 
 def filter_scaffold_paths(
-    scaffold_paths: List[str],
-    test_names: List[str],
-    grep_pattern: Optional[str]
+    scaffold_paths: List[str], test_names: List[str], grep_pattern: Optional[str]
 ) -> List[str]:
     """
     Filter scaffold paths by test name or grep pattern.

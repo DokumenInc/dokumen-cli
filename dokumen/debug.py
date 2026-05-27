@@ -1,6 +1,7 @@
 """
 Debug utilities for dokumen.
 """
+
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Global debug flag
 _debug_enabled = False
-_debug_session: Optional['DebugSession'] = None
+_debug_session: Optional["DebugSession"] = None
 
 # Truncation limits for debug trace output to prevent oversized artifacts
 MAX_DEBUG_TOOL_RESULT_CHARS = 2000
@@ -41,6 +42,7 @@ def debug(message: str) -> None:
 @dataclass
 class DebugSession:
     """Tracks a debug session with file output."""
+
     command: str
     output_dir: str = ".dokumen-cache/debug-traces"
     started_at: datetime = field(default_factory=datetime.now)
@@ -52,8 +54,9 @@ class DebugSession:
     _current_executor: Optional[Dict[str, Any]] = field(default=None, repr=False)
     _current_judge: Optional[Dict[str, Any]] = field(default=None, repr=False)
     _current_analyzer: Optional[Dict[str, Any]] = field(default=None, repr=False)
-    _session_id: str = field(default_factory=lambda: ''.join(
-        random.choices(string.ascii_lowercase + string.digits, k=6)))
+    _session_id: str = field(
+        default_factory=lambda: "".join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    )
 
     def get_output_path(self) -> Path:
         """Generate unique output file path using session ID."""
@@ -72,7 +75,7 @@ class DebugSession:
             "started_at": datetime.now().isoformat(),
             "executor": {"iterations": [], "output": None},
             "judges": [],
-            "result": None
+            "result": None,
         }
 
     def start_executor(self) -> None:
@@ -80,17 +83,20 @@ class DebugSession:
         if self._current_test:
             self._current_executor = self._current_test["executor"]
 
-    def add_executor_iteration(self, iteration: int, messages: List,
-                                response: Any, tool_calls: List) -> None:
+    def add_executor_iteration(
+        self, iteration: int, messages: List, response: Any, tool_calls: List
+    ) -> None:
         """Record an executor iteration with truncated content for size control."""
         if self._current_executor is not None:
             serialized_messages = _truncate_message_content(_serialize_messages(messages))
-            self._current_executor["iterations"].append({
-                "iteration": iteration,
-                "messages_sent": serialized_messages,
-                "response": _serialize_response(response),
-                "tool_calls": _truncate_tool_calls_for_debug(tool_calls)
-            })
+            self._current_executor["iterations"].append(
+                {
+                    "iteration": iteration,
+                    "messages_sent": serialized_messages,
+                    "response": _serialize_response(response),
+                    "tool_calls": _truncate_tool_calls_for_debug(tool_calls),
+                }
+            )
 
     def finish_executor(self, output: Dict) -> None:
         """Record executor output."""
@@ -100,23 +106,22 @@ class DebugSession:
 
     def start_judge(self, judge_id: str) -> None:
         """Start tracking a judge."""
-        self._current_judge = {
-            "judge_id": judge_id,
-            "iterations": [],
-            "result": None
-        }
+        self._current_judge = {"judge_id": judge_id, "iterations": [], "result": None}
 
-    def add_judge_iteration(self, iteration: int, messages: List,
-                            response: Any, tool_calls: List) -> None:
+    def add_judge_iteration(
+        self, iteration: int, messages: List, response: Any, tool_calls: List
+    ) -> None:
         """Record a judge iteration with truncated content for size control."""
         if self._current_judge:
             serialized_messages = _truncate_message_content(_serialize_messages(messages))
-            self._current_judge["iterations"].append({
-                "iteration": iteration,
-                "messages_sent": serialized_messages,
-                "response": _serialize_response(response),
-                "tool_calls": _truncate_tool_calls_for_debug(tool_calls)
-            })
+            self._current_judge["iterations"].append(
+                {
+                    "iteration": iteration,
+                    "messages_sent": serialized_messages,
+                    "response": _serialize_response(response),
+                    "tool_calls": _truncate_tool_calls_for_debug(tool_calls),
+                }
+            )
 
     def finish_judge(self, result: Dict) -> None:
         """Record judge result."""
@@ -152,17 +157,17 @@ class DebugSession:
 
         # Load existing or create new
         if debug_file.exists():
-            with open(debug_file, 'r') as f:
+            with open(debug_file, "r") as f:
                 data = json.load(f)
         else:
             data = {
                 "meta": {
                     "command": self.command,
                     "started_at": self.started_at.isoformat(),
-                    **self.meta
+                    **self.meta,
                 },
                 "tests": [],
-                "analyzers": []
+                "analyzers": [],
             }
 
         # Find the just-completed test and append if not already present
@@ -172,7 +177,7 @@ class DebugSession:
                 data["tests"].append(test)
                 break
 
-        with open(debug_file, 'w') as f:
+        with open(debug_file, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
     # ==========================================================================
@@ -186,20 +191,23 @@ class DebugSession:
             "started_at": datetime.now().isoformat(),
             "iterations": [],
             "problems": [],
-            "result": None
+            "result": None,
         }
 
-    def add_analyzer_iteration(self, iteration: int, messages: List,
-                                response: Any, tool_calls: List) -> None:
+    def add_analyzer_iteration(
+        self, iteration: int, messages: List, response: Any, tool_calls: List
+    ) -> None:
         """Record an analyzer iteration with truncated content for size control."""
         if self._current_analyzer:
             serialized_messages = _truncate_message_content(_serialize_messages(messages))
-            self._current_analyzer["iterations"].append({
-                "iteration": iteration,
-                "messages_sent": serialized_messages,
-                "response": _serialize_response(response),
-                "tool_calls": _truncate_tool_calls_for_debug(tool_calls)
-            })
+            self._current_analyzer["iterations"].append(
+                {
+                    "iteration": iteration,
+                    "messages_sent": serialized_messages,
+                    "response": _serialize_response(response),
+                    "tool_calls": _truncate_tool_calls_for_debug(tool_calls),
+                }
+            )
 
     def add_analyzer_problem(self, problem: Dict) -> None:
         """Record a problem found by analyzer."""
@@ -225,20 +233,23 @@ class DebugSession:
             "name": name,
             "started_at": datetime.now().isoformat(),
             "iterations": [],
-            "result": None
+            "result": None,
         }
 
-    def add_scaffold_iteration(self, iteration: int, messages: List,
-                                response: Any, tool_calls: List) -> None:
+    def add_scaffold_iteration(
+        self, iteration: int, messages: List, response: Any, tool_calls: List
+    ) -> None:
         """Record a scaffold generation iteration with truncated content for size control."""
         if self.scaffold_generation:
             serialized_messages = _truncate_message_content(_serialize_messages(messages))
-            self.scaffold_generation["iterations"].append({
-                "iteration": iteration,
-                "messages_sent": serialized_messages,
-                "response": _serialize_response(response),
-                "tool_calls": _truncate_tool_calls_for_debug(tool_calls)
-            })
+            self.scaffold_generation["iterations"].append(
+                {
+                    "iteration": iteration,
+                    "messages_sent": serialized_messages,
+                    "response": _serialize_response(response),
+                    "tool_calls": _truncate_tool_calls_for_debug(tool_calls),
+                }
+            )
 
     def finish_scaffold_generation(self, result: Optional[Dict] = None) -> None:
         """Finish tracking scaffold generation."""
@@ -260,17 +271,17 @@ class DebugSession:
                 "command": self.command,
                 "started_at": self.started_at.isoformat(),
                 "completed_at": datetime.now().isoformat(),
-                **self.meta
+                **self.meta,
             },
             "tests": self.tests if self.tests else None,
             "analyzers": self.analyzers if self.analyzers else None,
-            "scaffold_generation": self.scaffold_generation
+            "scaffold_generation": self.scaffold_generation,
         }
 
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
         return output_path
@@ -292,8 +303,19 @@ def _truncate_tool_calls_for_debug(tool_calls: List) -> List:
             continue
         result = tc["result"]
         if isinstance(result, str) and len(result) > MAX_DEBUG_TOOL_RESULT_CHARS:
-            tc_copy = {**tc, "result": result[:MAX_DEBUG_TOOL_RESULT_CHARS] + f"... [truncated from {len(result)} chars]"}
-            logger.debug("Truncated tool result for debug trace", extra={"tool": tc.get("name"), "original_len": len(result), "truncated_to": MAX_DEBUG_TOOL_RESULT_CHARS})
+            tc_copy = {
+                **tc,
+                "result": result[:MAX_DEBUG_TOOL_RESULT_CHARS]
+                + f"... [truncated from {len(result)} chars]",
+            }
+            logger.debug(
+                "Truncated tool result for debug trace",
+                extra={
+                    "tool": tc.get("name"),
+                    "original_len": len(result),
+                    "truncated_to": MAX_DEBUG_TOOL_RESULT_CHARS,
+                },
+            )
             truncated.append(tc_copy)
         else:
             truncated.append(tc)
@@ -316,7 +338,11 @@ def _truncate_message_content(messages: List) -> List:
             continue
         content = msg["content"]
         if isinstance(content, str) and len(content) > MAX_DEBUG_MESSAGE_CONTENT_CHARS:
-            msg_copy = {**msg, "content": content[:MAX_DEBUG_MESSAGE_CONTENT_CHARS] + f"... [truncated from {len(content)} chars]"}
+            msg_copy = {
+                **msg,
+                "content": content[:MAX_DEBUG_MESSAGE_CONTENT_CHARS]
+                + f"... [truncated from {len(content)} chars]",
+            }
             truncated.append(msg_copy)
         else:
             truncated.append(msg)
@@ -329,9 +355,9 @@ def _serialize_messages(messages: List) -> List[Dict]:
     for msg in messages:
         if isinstance(msg, dict):
             result.append(msg)
-        elif hasattr(msg, 'to_dict'):
+        elif hasattr(msg, "to_dict"):
             result.append(msg.to_dict())
-        elif hasattr(msg, '__dict__'):
+        elif hasattr(msg, "__dict__"):
             result.append(msg.__dict__)
         else:
             result.append({"content": str(msg)})
@@ -344,9 +370,9 @@ def _serialize_response(response: Any) -> Any:
         return None
     if isinstance(response, dict):
         return response
-    if hasattr(response, 'to_dict'):
+    if hasattr(response, "to_dict"):
         return response.to_dict()
-    if hasattr(response, '__dict__'):
+    if hasattr(response, "__dict__"):
         return response.__dict__
     return str(response)
 
@@ -354,6 +380,7 @@ def _serialize_response(response: Any) -> Any:
 # =============================================================================
 # Session management functions
 # =============================================================================
+
 
 def start_debug_session(command: str, meta: Dict[str, Any] = None) -> DebugSession:
     """Start a new debug session."""

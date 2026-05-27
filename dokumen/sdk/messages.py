@@ -114,9 +114,7 @@ def build_conversation_log(messages: List[Any]) -> List[Dict[str, Any]]:
                         if isinstance(result_content, list):
                             # Extract text from content blocks
                             result_content = " ".join(
-                                b.get("text", str(b))
-                                for b in result_content
-                                if isinstance(b, dict)
+                                b.get("text", str(b)) for b in result_content if isinstance(b, dict)
                             )
                         tool_results.append(
                             {

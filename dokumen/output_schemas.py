@@ -6,18 +6,20 @@ These models define the structure of output files written to .dokumen-cache/:
 - coverage.json - File-level coverage metrics
 - debug traces - Per-test conversation logs
 """
+
 import os
 from typing import List, Literal, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
-
 # =============================================================================
 # Results JSON Schema (results.json)
 # =============================================================================
 
+
 class TokenUsage(BaseModel):
     """Token usage statistics for an AI call."""
+
     input_tokens: int = 0
     output_tokens: int = 0
     cache_creation_tokens: int = 0
@@ -26,6 +28,7 @@ class TokenUsage(BaseModel):
 
 class AssertionResult(BaseModel):
     """Individual assertion result from a judge."""
+
     assertion: str
     passed: bool
     reasoning: str
@@ -34,6 +37,7 @@ class AssertionResult(BaseModel):
 
 class ExploreToolCall(BaseModel):
     """Tool call made during exploration phase."""
+
     tool: str
     command: str
     output: str
@@ -41,6 +45,7 @@ class ExploreToolCall(BaseModel):
 
 class JudgePromptInfo(BaseModel):
     """Prompt information for a judge."""
+
     name: str
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
@@ -48,6 +53,7 @@ class JudgePromptInfo(BaseModel):
 
 class OutputArtifact(BaseModel):
     """Unified output artifact — base for all test deliverables."""
+
     filename: str
     path: str  # Relative to output/{test-id}/
     size_bytes: Optional[int] = None  # None for backward compat
@@ -59,12 +65,14 @@ class OutputArtifact(BaseModel):
 
 class BrowserArtifact(OutputArtifact):
     """Browser artifact (backward compat subclass)."""
+
     type: Literal["video", "screenshot"] = "screenshot"
     source: Optional[str] = "browser"
 
 
 class ReportArtifact(OutputArtifact):
     """Report artifact (backward compat subclass)."""
+
     type: Literal["report"] = "report"
     source: Optional[str] = "report"
     content: Optional[str] = None  # Markdown content (stored in DB)
@@ -72,6 +80,7 @@ class ReportArtifact(OutputArtifact):
 
 class ConversationToolCall(BaseModel):
     """A tool call within a conversation iteration."""
+
     tool: str
     input: Dict[str, Any] = Field(default_factory=dict)
     output: str
@@ -79,6 +88,7 @@ class ConversationToolCall(BaseModel):
 
 class ConversationIteration(BaseModel):
     """A single iteration in an executor or judge conversation."""
+
     iteration: int
     response_content: Optional[str] = None
     tool_calls: List[ConversationToolCall] = Field(default_factory=list)
@@ -86,12 +96,14 @@ class ConversationIteration(BaseModel):
 
 class ExecutorConversationLog(BaseModel):
     """Conversation log for the executor phase."""
+
     iterations: List[ConversationIteration] = Field(default_factory=list)
     total_iterations: int = 0
 
 
 class JudgeConversationLog(BaseModel):
     """Conversation log for a single judge."""
+
     judge_name: str
     iterations: List[ConversationIteration] = Field(default_factory=list)
     total_iterations: int = 0
@@ -99,43 +111,56 @@ class JudgeConversationLog(BaseModel):
 
 # MIME inference for legacy artifacts (BrowserArtifact/ReportArtifact lack content_type)
 _MIME_MAP: Dict[str, str] = {
-    '.webm': 'video/webm', '.mp4': 'video/mp4',
-    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif', '.webp': 'image/webp',
-    '.md': 'text/markdown', '.txt': 'text/plain', '.py': 'text/x-python',
-    '.csv': 'text/csv', '.json': 'application/json',
-    '.yaml': 'text/yaml', '.yml': 'text/yaml',
+    ".webm": "video/webm",
+    ".mp4": "video/mp4",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".md": "text/markdown",
+    ".txt": "text/plain",
+    ".py": "text/x-python",
+    ".csv": "text/csv",
+    ".json": "application/json",
+    ".yaml": "text/yaml",
+    ".yml": "text/yaml",
 }
 
 
 def _infer_content_type(filename: str) -> str:
     ext = os.path.splitext(filename)[1].lower()
-    return _MIME_MAP.get(ext, 'application/octet-stream')
+    return _MIME_MAP.get(ext, "application/octet-stream")
 
 
 def _to_unified(artifact, source_hint: str) -> OutputArtifact:
     """Convert a legacy BrowserArtifact/ReportArtifact/dict to OutputArtifact."""
-    if isinstance(artifact, OutputArtifact) and artifact.content_type != 'application/octet-stream':
+    if isinstance(artifact, OutputArtifact) and artifact.content_type != "application/octet-stream":
         if artifact.source is None:
             artifact.source = source_hint
         return artifact  # Already unified with real content_type
     # Extract fields from Pydantic model or dict
-    fn = artifact.filename if hasattr(artifact, 'filename') else artifact.get('filename', '')
-    path = artifact.path if hasattr(artifact, 'path') else artifact.get('path', '')
-    size = artifact.size_bytes if hasattr(artifact, 'size_bytes') else artifact.get('size_bytes')
-    content = artifact.content if hasattr(artifact, 'content') else artifact.get('content')
+    fn = artifact.filename if hasattr(artifact, "filename") else artifact.get("filename", "")
+    path = artifact.path if hasattr(artifact, "path") else artifact.get("path", "")
+    size = artifact.size_bytes if hasattr(artifact, "size_bytes") else artifact.get("size_bytes")
+    content = artifact.content if hasattr(artifact, "content") else artifact.get("content")
     ct = _infer_content_type(fn)
     # For reports, always use text/markdown
-    if source_hint == 'report':
-        ct = 'text/markdown'
+    if source_hint == "report":
+        ct = "text/markdown"
     return OutputArtifact(
-        filename=fn, path=path, size_bytes=size,
-        content_type=ct, content=content, source=source_hint,
+        filename=fn,
+        path=path,
+        size_bytes=size,
+        content_type=ct,
+        content=content,
+        source=source_hint,
     )
 
 
 class TestOutputResult(BaseModel):
     """Individual test result in spec format."""
+
     name: str
     status: Literal["passed", "failed", "error"]
     duration_ms: int
@@ -177,7 +202,7 @@ class TestOutputResult(BaseModel):
         """Single merged view with dedup and MIME-typed OutputArtifact instances."""
         # New format detection: output_artifacts contain 'source' field
         if self.output_artifacts and any(
-            (a.source if isinstance(a, OutputArtifact) else a.get('source'))
+            (a.source if isinstance(a, OutputArtifact) else a.get("source"))
             for a in self.output_artifacts
         ):
             return list(self.output_artifacts)
@@ -186,28 +211,29 @@ class TestOutputResult(BaseModel):
         seen: set = set()
         merged: List[OutputArtifact] = []
         # Browser artifacts -> source='browser' with inferred MIME
-        for a in (self.browser_artifacts or []):
-            path = a.path if hasattr(a, 'path') else a.get('path', '')
+        for a in self.browser_artifacts or []:
+            path = a.path if hasattr(a, "path") else a.get("path", "")
             if path not in seen:
                 seen.add(path)
-                merged.append(_to_unified(a, 'browser'))
+                merged.append(_to_unified(a, "browser"))
         # Report artifacts -> source='report' with text/markdown
-        for a in (self.report_artifacts or []):
-            path = a.path if hasattr(a, 'path') else a.get('path', '')
+        for a in self.report_artifacts or []:
+            path = a.path if hasattr(a, "path") else a.get("path", "")
             if path not in seen:
                 seen.add(path)
-                merged.append(_to_unified(a, 'report'))
+                merged.append(_to_unified(a, "report"))
         # Output artifacts -> source='output' with stored or inferred content_type
-        for a in (self.output_artifacts or []):
-            path = a.path if hasattr(a, 'path') else a.get('path', '')
+        for a in self.output_artifacts or []:
+            path = a.path if hasattr(a, "path") else a.get("path", "")
             if path not in seen:
                 seen.add(path)
-                merged.append(_to_unified(a, 'output'))
+                merged.append(_to_unified(a, "output"))
         return merged
 
 
 class ResultsSummary(BaseModel):
     """Summary statistics for test run."""
+
     total: int
     passed: int
     failed: int
@@ -221,6 +247,7 @@ class CoverageSection(BaseModel):
     Contains all files in the documentation scope (from dokumen.yaml coverage patterns),
     not just files covered by tests. This allows the backend to know about ALL files.
     """
+
     total_files: int
     covered_files: int
     percentage: float
@@ -229,6 +256,7 @@ class CoverageSection(BaseModel):
 
 class ResultsJsonOutput(BaseModel):
     """Schema for .dokumen-cache/results.json per Phase 0 spec."""
+
     timestamp: str  # ISO 8601 format with Z suffix
     duration_ms: int
     tests: List[TestOutputResult]
@@ -245,8 +273,10 @@ class ResultsJsonOutput(BaseModel):
 # Coverage JSON Schema (coverage.json)
 # =============================================================================
 
+
 class CoverageFile(BaseModel):
     """Coverage data for a single file."""
+
     path: str
     covered: bool
     tests: List[str] = Field(default_factory=list)
@@ -254,6 +284,7 @@ class CoverageFile(BaseModel):
 
 class CoverageSummary(BaseModel):
     """Summary of coverage metrics."""
+
     total_files: int
     covered_files: int
     percentage: float
@@ -261,6 +292,7 @@ class CoverageSummary(BaseModel):
 
 class CoverageJsonOutput(BaseModel):
     """Schema for .dokumen-cache/coverage.json per Phase 0 spec."""
+
     timestamp: str  # ISO 8601 format with Z suffix
     summary: CoverageSummary
     files: List[CoverageFile]
@@ -270,8 +302,10 @@ class CoverageJsonOutput(BaseModel):
 # Debug Trace Schema (debug/{test-name}-{timestamp}.json)
 # =============================================================================
 
+
 class DebugToolCall(BaseModel):
     """Record of a tool call during execution."""
+
     tool: str
     input: Dict[str, Any]
     output: str
@@ -279,6 +313,7 @@ class DebugToolCall(BaseModel):
 
 class DebugMessage(BaseModel):
     """A message in the conversation trace."""
+
     role: str
     content: str
     tool_calls: Optional[List[DebugToolCall]] = None
@@ -286,6 +321,7 @@ class DebugMessage(BaseModel):
 
 class DebugExecutor(BaseModel):
     """Executor trace data."""
+
     system_prompt: str
     user_prompt: str
     messages: List[DebugMessage] = Field(default_factory=list)
@@ -294,17 +330,20 @@ class DebugExecutor(BaseModel):
 
 class DebugJudgeAssertion(BaseModel):
     """Judge assertion evaluation."""
+
     assertion: str
     evaluation: AssertionResult
 
 
 class DebugJudge(BaseModel):
     """Judge trace data."""
+
     assertions: List[DebugJudgeAssertion] = Field(default_factory=list)
 
 
 class DebugTraceOutput(BaseModel):
     """Schema for .dokumen-cache/debug/{test-name}-{timestamp}.json."""
+
     test_name: str
     started_at: str  # ISO 8601 format
     completed_at: str  # ISO 8601 format

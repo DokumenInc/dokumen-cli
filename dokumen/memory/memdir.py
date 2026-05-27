@@ -8,6 +8,7 @@ maintains an index file (MEMORY.md) for quick lookup.
 inspired by file-based memory architectures — but built from scratch
 for dokumen's needs.
 """
+
 import logging
 import os
 import re
@@ -15,11 +16,10 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import yaml
 
-from .base import MemoryStore
 from .schemas import Memory
 
 logger = logging.getLogger(__name__)
@@ -27,15 +27,17 @@ logger = logging.getLogger(__name__)
 
 class MemoryType(Enum):
     """types of persistent memories."""
-    USER = "user"           # about the user/client
-    FEEDBACK = "feedback"   # corrections and confirmations
-    PROJECT = "project"     # ongoing work, goals, deadlines
-    REFERENCE = "reference" # pointers to external resources
+
+    USER = "user"  # about the user/client
+    FEEDBACK = "feedback"  # corrections and confirmations
+    PROJECT = "project"  # ongoing work, goals, deadlines
+    REFERENCE = "reference"  # pointers to external resources
 
 
 @dataclass
 class MemdirEntry:
     """a single memdir entry with frontmatter metadata."""
+
     id: str
     name: str
     description: str
@@ -161,7 +163,9 @@ class MemdirStore:
             text = filepath.read_text(encoding="utf-8")
             return MemdirEntry.from_markdown(text, filename)
         except (IOError, OSError) as e:
-            logger.warning("failed to load memdir entry", extra={"filename": filename, "error": str(e)})
+            logger.warning(
+                "failed to load memdir entry", extra={"filename": filename, "error": str(e)}
+            )
             return None
 
     def load_all(self) -> List[MemdirEntry]:
@@ -275,5 +279,7 @@ class MemdirStore:
         """embedding search — requires external embedding provider."""
         # for memdir, text search is the fallback
         # full embedding search should be done at a higher level
-        logger.warning("memdir search called with embeddings — use text search or wrap with embedding provider")
+        logger.warning(
+            "memdir search called with embeddings — use text search or wrap with embedding provider"
+        )
         return []

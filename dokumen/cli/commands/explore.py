@@ -3,6 +3,7 @@ Explore command for dokumen CLI.
 
 Discovers relevant source files using an AI agent via the Claude Agent SDK.
 """
+
 import json
 import logging
 import os
@@ -42,6 +43,7 @@ async def _run_explore(
         ExploreResult with discovered files
     """
     from dokumen.explore_agent import ExploreAgent
+
     logger.info(f"[EXPLORE_CLI] Starting exploration for topic: {topic!r}")
     logger.info(f"[EXPLORE_CLI] Parameters: max_files={max_files}, timeout={timeout}")
     logger.debug(f"[EXPLORE_CLI] Working directory: {os.getcwd()}")
@@ -93,7 +95,9 @@ async def _run_explore(
 
     elapsed = time.time() - start_time
     logger.info(f"[EXPLORE_CLI] Exploration completed in {elapsed:.2f}s")
-    logger.info(f"[EXPLORE_CLI] Result: success={result.success}, files_count={len(result.files) if hasattr(result, 'files') else 0}, tool_calls={result.tool_calls_count}")
+    logger.info(
+        f"[EXPLORE_CLI] Result: success={result.success}, files_count={len(result.files) if hasattr(result, 'files') else 0}, tool_calls={result.tool_calls_count}"
+    )
     if result.summary:
         logger.info(f"[EXPLORE_CLI] Summary preview: {result.summary[:200]}...")
 
@@ -186,7 +190,9 @@ def explore(ctx, topic: str, output: str, max_files: int, timeout: int):
 
         dokumen explore "user guide" --max-files 10 --timeout 30
     """
-    logger.info(f"[EXPLORE_CMD] Command invoked: topic={topic!r}, output={output}, max_files={max_files}, timeout={timeout}")
+    logger.info(
+        f"[EXPLORE_CMD] Command invoked: topic={topic!r}, output={output}, max_files={max_files}, timeout={timeout}"
+    )
 
     # Load config if available
     config = None

@@ -4,6 +4,7 @@ Test builder for the Skill Testing Framework.
 Handles creating LLM providers, constructing SDK executor/judge agents,
 building TestObject instances, and provider configuration from environment/config.
 """
+
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 import os
@@ -15,12 +16,7 @@ from .logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def create_provider(
-    name: str,
-    api_key: str = None,
-    model: str = None,
-    **kwargs
-):
+def create_provider(name: str, api_key: str = None, model: str = None, **kwargs):
     """
     Create a provider instance by name.
 
@@ -39,18 +35,24 @@ def create_provider(
     name = name.lower()
 
     # native anthropic provider (battle-tested, keeps working as before)
-    if name == 'anthropic' and not kwargs.get('force_dokurouter'):
+    if name == "anthropic" and not kwargs.get("force_dokurouter"):
         from .providers.anthropic import AnthropicProvider
+
         return AnthropicProvider(api_key=api_key, model=model)
 
     # everything else goes through dokurouter (our in-house gateway)
     from .providers.dokurouter import DokuRouter
+
     return DokuRouter(
         model=model,
         provider_name=name,
         api_key=api_key,
-        api_base=kwargs.get('api_base') or kwargs.get('base_url'),
-        **{k: v for k, v in kwargs.items() if k not in ('api_base', 'base_url', 'force_dokurouter', 'enable_thinking')},
+        api_base=kwargs.get("api_base") or kwargs.get("base_url"),
+        **{
+            k: v
+            for k, v in kwargs.items()
+            if k not in ("api_base", "base_url", "force_dokurouter", "enable_thinking")
+        },
     )
 
 
@@ -72,9 +74,7 @@ def find_config_file(config_path: str = None) -> Optional[str]:
 
 
 def get_configured_provider(
-    config_path: str = None,
-    env_prefix: str = "DOKUMEN",
-    model_override: str = None
+    config_path: str = None, env_prefix: str = "DOKUMEN", model_override: str = None
 ):
     """
     Get the configured LLM provider.
@@ -99,18 +99,17 @@ def get_configured_provider(
         try:
             with open(config_path) as f:
                 config = yaml.safe_load(_preprocess_yaml(f.read()))
-                if config and 'provider' in config:
-                    provider_config = config['provider']
-                    prov_name = provider_config.get('name')
+                if config and "provider" in config:
+                    provider_config = config["provider"]
+                    prov_name = provider_config.get("name")
 
                     return create_provider(
                         prov_name,
-                        provider_config.get('api_key') or os.environ.get(
-                            f"{prov_name.upper()}_API_KEY"
-                        ),
-                        model_override or provider_config.get('model'),
-                        base_url=provider_config.get('base_url'),
-                        enable_thinking=provider_config.get('enable_thinking')
+                        provider_config.get("api_key")
+                        or os.environ.get(f"{prov_name.upper()}_API_KEY"),
+                        model_override or provider_config.get("model"),
+                        base_url=provider_config.get("base_url"),
+                        enable_thinking=provider_config.get("enable_thinking"),
                     )
         except (IOError, yaml.YAMLError):
             pass
@@ -119,8 +118,7 @@ def get_configured_provider(
 
 
 def get_configured_providers(
-    config_path: str = None,
-    env_prefix: str = "DOKUMEN"
+    config_path: str = None, env_prefix: str = "DOKUMEN"
 ) -> Dict[str, Any]:
     """
     Get configured LLM providers for executor and judge.
@@ -146,33 +144,31 @@ def get_configured_providers(
         except (IOError, yaml.YAMLError):
             pass
 
-    if config and 'provider' in config:
-        provider_config = config['provider']
-        provider_name = provider_name or provider_config.get('name')
-        api_key = api_key or provider_config.get('api_key') or os.environ.get(
-            f"{provider_config.get('name', '').upper()}_API_KEY"
+    if config and "provider" in config:
+        provider_config = config["provider"]
+        provider_name = provider_name or provider_config.get("name")
+        api_key = (
+            api_key
+            or provider_config.get("api_key")
+            or os.environ.get(f"{provider_config.get('name', '').upper()}_API_KEY")
         )
-        default_model = default_model or provider_config.get('model')
+        default_model = default_model or provider_config.get("model")
 
     if not provider_name or not api_key:
-        return {'executor': None, 'judge': None, 'default': None}
+        return {"executor": None, "judge": None, "default": None}
 
     executor_model = default_model
     judge_model = default_model
 
     if config:
-        executor_model = config.get('executor_model') or default_model
-        judge_model = config.get('judge_model') or default_model
+        executor_model = config.get("executor_model") or default_model
+        judge_model = config.get("judge_model") or default_model
 
     default_provider = create_provider(provider_name, api_key, default_model)
     executor_provider = create_provider(provider_name, api_key, executor_model)
     judge_provider = create_provider(provider_name, api_key, judge_model)
 
-    return {
-        'executor': executor_provider,
-        'judge': judge_provider,
-        'default': default_provider
-    }
+    return {"executor": executor_provider, "judge": judge_provider, "default": default_provider}
 
 
 def build_sdk_executor(
@@ -213,15 +209,15 @@ def build_sdk_executor(
             user_dirs=user_dirs,
             tools_config=tools_config,
             base_dir=base_dir or ".",
-            timeout=float(data.get('timeout', 120.0)),
+            timeout=float(data.get("timeout", 120.0)),
             is_subagent=False,
         )
 
-    browser_data = data.get('browser') or {}
+    browser_data = data.get("browser") or {}
     resolved = resolve_sdk_tools(
         executor_tool_names,
         tools_config,
-        test_name=data.get('name'),
+        test_name=data.get("name"),
         browser_config=browser_data if browser_data else None,
         agent_context=agent_context,
         dokumen_tool_definitions=executor_tools,
@@ -242,7 +238,7 @@ def build_sdk_executor(
             sdk_agents = None
             logger.info(
                 "No agents found for delegation",
-                extra={"test": data.get('name')},
+                extra={"test": data.get("name")},
             )
 
     # Playwright browser tools: use native McpStdioServerConfig
@@ -252,19 +248,19 @@ def build_sdk_executor(
         playwright_tool_names = list(resolved.playwright_tool_names)
 
     sdk_executor_model = None
-    if actual_executor_provider and hasattr(actual_executor_provider, 'model'):
+    if actual_executor_provider and hasattr(actual_executor_provider, "model"):
         sdk_executor_model = actual_executor_provider.model
 
     sdk_executor = ExecutorAgent(
         id=f"{data['name']}-executor",
         system_prompt=executor_system_prompt,
-        user_prompt=data['executor'].get('user_prompt', ''),
+        user_prompt=data["executor"].get("user_prompt", ""),
         sdk_tools=sdk_tool_names,
         mcp_tools=mcp_tools if mcp_tools else None,
         mcp_servers=mcp_servers if mcp_servers else None,
         playwright_tool_names=playwright_tool_names if playwright_tool_names else None,
         max_turns=executor_max_iterations,
-        timeout=float(data.get('timeout', 60.0)),
+        timeout=float(data.get("timeout", 60.0)),
         tools_config=tools_config,
         model=sdk_executor_model,
         agents=sdk_agents,
@@ -272,7 +268,7 @@ def build_sdk_executor(
     executor = SdkExecutorWrapper(
         sdk_executor,
         system_prompt=executor_system_prompt,
-        user_prompt=data['executor'].get('user_prompt', ''),
+        user_prompt=data["executor"].get("user_prompt", ""),
     )
     return executor
 
@@ -305,7 +301,7 @@ def build_sdk_judge(
     from .sdk.agent_wrapper import SdkJudgeWrapper
 
     sdk_judge_model = None
-    if judge_provider and hasattr(judge_provider, 'model'):
+    if judge_provider and hasattr(judge_provider, "model"):
         sdk_judge_model = judge_provider.model
 
     judge_tool_names_for_sdk = [t.name for t in judge_tools]
@@ -316,22 +312,22 @@ def build_sdk_judge(
     )
 
     sdk_judge = JudgeAgent(
-        id=judge_data['name'],
+        id=judge_data["name"],
         system_prompt=judge_system_prompt,
-        user_prompt=judge_data.get('user_prompt', ''),
-        include_executor_output=judge_data.get('include_executor_output', True),
+        user_prompt=judge_data.get("user_prompt", ""),
+        include_executor_output=judge_data.get("include_executor_output", True),
         sdk_tools=judge_resolved.sdk_tool_names,
         mcp_tools=judge_resolved.dokumen_mcp_tools if judge_resolved.dokumen_mcp_tools else None,
         max_turns=judge_max_iterations or 3,
         timeout=float(judge_timeout_override) if judge_timeout_override else 120.0,
         tools_config=tools_config,
         model=sdk_judge_model,
-        decomposed=judge_data.get('decomposed', False),
-        decomposed_threshold=float(judge_data.get('decomposed_threshold', 0.5)),
+        decomposed=judge_data.get("decomposed", False),
+        decomposed_threshold=float(judge_data.get("decomposed_threshold", 0.5)),
     )
     judge = SdkJudgeWrapper(
         sdk_judge,
-        assertion_text=judge_data.get('name', ''),
+        assertion_text=judge_data.get("name", ""),
         system_prompt=judge_system_prompt,
     )
     return judge
@@ -358,7 +354,7 @@ def build_research_judge(
     from .sdk.agent_wrapper import SdkJudgeWrapper
 
     sdk_model = None
-    if judge_provider and hasattr(judge_provider, 'model'):
+    if judge_provider and hasattr(judge_provider, "model"):
         sdk_model = judge_provider.model
 
     sdk_judge = JudgeAgent(

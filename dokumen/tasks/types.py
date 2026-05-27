@@ -1,4 +1,5 @@
 """types for the task system."""
+
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -8,8 +9,9 @@ from typing import Any, Dict, List, Optional
 
 class TaskStatus(Enum):
     """task lifecycle states."""
-    BLOCKED = "blocked"        # waiting on dependencies
-    PENDING = "pending"        # ready to run
+
+    BLOCKED = "blocked"  # waiting on dependencies
+    PENDING = "pending"  # ready to run
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -19,6 +21,7 @@ class TaskStatus(Enum):
 @dataclass
 class TaskOutput:
     """output from a task execution step."""
+
     content: str
     timestamp: float = field(default_factory=time.time)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -46,6 +49,7 @@ class Task:
     tasks go through a lifecycle: pending -> in_progress -> completed/failed/cancelled.
     each task can have multiple output entries tracking progress.
     """
+
     id: str = field(default_factory=lambda: f"task-{uuid.uuid4().hex[:8]}")
     name: str = ""
     description: str = ""

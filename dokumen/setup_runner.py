@@ -7,7 +7,7 @@ begins. This avoids wasting LLM tokens on deterministic build steps.
 import asyncio
 import os
 import signal
-from typing import List, Optional
+from typing import Optional
 
 import httpx
 
@@ -59,9 +59,7 @@ class SetupRunner:
                 env=env,
                 cwd=cwd,
             )
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=step.timeout
-            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=step.timeout)
         except asyncio.TimeoutError:
             proc.kill()
             await proc.communicate()
@@ -116,13 +114,9 @@ class SetupRunner:
         )
 
         if step.ready_url:
-            await self._wait_for_ready(
-                step.name, step.ready_url, step.ready_timeout
-            )
+            await self._wait_for_ready(step.name, step.ready_url, step.ready_timeout)
 
-    async def _wait_for_ready(
-        self, step_name: str, url: str, timeout: float
-    ) -> None:
+    async def _wait_for_ready(self, step_name: str, url: str, timeout: float) -> None:
         """Poll URL every 1s until HTTP 200 or timeout."""
         logger.info(
             "setup.ready_poll.start",

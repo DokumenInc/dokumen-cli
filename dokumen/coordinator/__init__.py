@@ -6,6 +6,7 @@ workers report back via structured results. coordinator synthesizes findings.
 
 inspired by anthropic's harness design: planner -> generator -> evaluator.
 """
+
 from .types import WorkerTask, WorkerResult, CoordinatorPlan
 from .coordinator import CoordinatorAgent
 from .worker import WorkerAgent

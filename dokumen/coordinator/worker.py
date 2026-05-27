@@ -4,10 +4,11 @@ worker agent — executes a scoped task for the coordinator.
 workers run with isolated tool contexts and a focused goal.
 they report findings back as structured WorkerResult.
 """
+
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from .types import WorkerTask, WorkerResult, WorkerStatus
 
@@ -119,7 +120,13 @@ class WorkerAgent:
         """execute via direct provider.complete() loop — no bundled CLI."""
         from .api_executor import run_api_executor
 
-        tool_names = task.tools or ["read_file", "list_directory", "glob", "search_file_content", "write_file"]
+        tool_names = task.tools or [
+            "read_file",
+            "list_directory",
+            "glob",
+            "search_file_content",
+            "write_file",
+        ]
         system_prompt = (
             "you are a worker agent with access to filesystem tools. "
             "use the provided tools to explore the codebase and complete your task. "
@@ -169,6 +176,7 @@ class WorkerAgent:
         )
 
         from ..sdk.agent_wrapper import SdkExecutorWrapper
+
         wrapper = SdkExecutorWrapper(
             executor,
             system_prompt=executor.system_prompt,

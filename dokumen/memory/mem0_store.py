@@ -100,9 +100,7 @@ class Mem0Store:
             extra={"memory_id": memory.id, "content_preview": memory.content[:80]},
         )
 
-    def update(
-        self, memory_id: str, content: str, embedding: Optional[List[float]] = None
-    ) -> None:
+    def update(self, memory_id: str, content: str, embedding: Optional[List[float]] = None) -> None:
         """update an existing memory's content."""
         for m in self._memories:
             if m.id == memory_id:

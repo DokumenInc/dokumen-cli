@@ -28,14 +28,12 @@ class SetupStage(PipelineStage):
             Updated context (with setup_runner set for cleanup).
         """
         if not ctx.setup_steps:
-            logger.info("stage.setup.skip", test_id=ctx.test_id,
-                        reason="no setup steps configured")
+            logger.info("stage.setup.skip", test_id=ctx.test_id, reason="no setup steps configured")
             return ctx
 
         from ..setup_runner import SetupRunner, SetupError
 
-        logger.info("stage.setup.start", test_id=ctx.test_id,
-                     step_count=len(ctx.setup_steps))
+        logger.info("stage.setup.start", test_id=ctx.test_id, step_count=len(ctx.setup_steps))
         env = {**os.environ}
         setup_runner = SetupRunner(env=env)
         ctx.setup_runner = setup_runner
@@ -44,8 +42,9 @@ class SetupStage(PipelineStage):
             await setup_runner.run_steps(ctx.setup_steps)
             logger.info("stage.setup.complete", test_id=ctx.test_id)
         except SetupError as e:
-            logger.error("stage.setup.failed", test_id=ctx.test_id,
-                         step_name=e.step_name, error=str(e))
+            logger.error(
+                "stage.setup.failed", test_id=ctx.test_id, step_name=e.step_name, error=str(e)
+            )
             ctx.fail(f"Setup failed: {e}")
 
         return ctx

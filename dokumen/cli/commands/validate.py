@@ -3,7 +3,7 @@ Validate command for dokumen CLI.
 
 Validates configuration and test scaffold files without executing tests.
 """
-import glob as glob_mod
+
 import json
 import os
 from pathlib import Path
@@ -40,7 +40,7 @@ def extract_yaml_snippet(file_path: str, search_term: str, context_lines: int = 
             return None
 
         content = path.read_text()
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         # Find line containing the search term
         match_idx = None
@@ -62,7 +62,7 @@ def extract_yaml_snippet(file_path: str, search_term: str, context_lines: int = 
             marker = "→ " if idx == match_idx else "  "
             snippet_lines.append(f"  {line_num:3d} {marker}{lines[idx]}")
 
-        return '\n'.join(snippet_lines)
+        return "\n".join(snippet_lines)
     except Exception:
         return None
 
@@ -102,31 +102,24 @@ def validate_pdf_constraints(scaffold_path: str, base_dir: Path) -> List[str]:
                     size_mb = size / 1024 / 1024
 
                     if size > 4.5 * 1024 * 1024:
-                        warnings.append(
-                            f"PDF exceeds 4.5MB limit: {path} ({size_mb:.1f}MB)"
+                        warnings.append(f"PDF exceeds 4.5MB limit: {path} ({size_mb:.1f}MB)")
+                        logger.warning(
+                            "PDF validation: oversized file",
+                            extra={"file": path, "size_mb": size_mb, "limit_mb": 4.5},
                         )
-                        logger.warning(f"PDF validation: oversized file", extra={
-                            "file": path,
-                            "size_mb": size_mb,
-                            "limit_mb": 4.5
-                        })
 
         # Check count
         if len(pdf_files) > 5:
-            warnings.append(
-                f"Test references {len(pdf_files)} PDF files (limit: 5 per test)"
+            warnings.append(f"Test references {len(pdf_files)} PDF files (limit: 5 per test)")
+            logger.warning(
+                "PDF validation: too many PDFs",
+                extra={"count": len(pdf_files), "limit": 5, "scaffold": scaffold_path},
             )
-            logger.warning(f"PDF validation: too many PDFs", extra={
-                "count": len(pdf_files),
-                "limit": 5,
-                "scaffold": scaffold_path
-            })
 
     except Exception as e:
-        logger.debug(f"PDF validation error (non-fatal)", extra={
-            "scaffold": scaffold_path,
-            "error": str(e)
-        })
+        logger.debug(
+            "PDF validation error (non-fatal)", extra={"scaffold": scaffold_path, "error": str(e)}
+        )
         # Don't fail validation if PDF check fails - just skip it
 
     return warnings
@@ -137,9 +130,13 @@ def validate_pdf_constraints(scaffold_path: str, base_dir: Path) -> List[str]:
 @click.option("--grep", "-g", help="Filter tests by pattern")
 @click.option("--config-only", is_flag=True, help="Validate configuration only, skip test files")
 @click.option("--json", "json_output", is_flag=True, help="Output results as JSON")
-@click.option("--verbose", "-v", is_flag=True, help="Show detailed error context and suggested fixes")
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Show detailed error context and suggested fixes"
+)
 @click.pass_context
-def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_output: bool, verbose: bool):
+def validate(
+    ctx, tests: tuple, grep: Optional[str], config_only: bool, json_output: bool, verbose: bool
+):
     """Validate configuration and test scaffolds.
 
     Checks that dokumen.yaml is valid and all test scaffold files
@@ -168,11 +165,13 @@ def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_out
     validated_files: List[str] = []
 
     # Read DOKUMEN_TESTS env var (CLI args override env vars)
-    env_tests = os.environ.get('DOKUMEN_TESTS', '')
+    env_tests = os.environ.get("DOKUMEN_TESTS", "")
     if env_tests and not tests:  # Only use env var if no CLI tests specified
-        tests = tuple(t.strip() for t in env_tests.split(',') if t.strip())
+        tests = tuple(t.strip() for t in env_tests.split(",") if t.strip())
         click.echo(f"Filtering by DOKUMEN_TESTS: {len(tests)} test(s) selected")
-        logger.info("DOKUMEN_TESTS filtering active", extra={"tests": list(tests), "count": len(tests)})
+        logger.info(
+            "DOKUMEN_TESTS filtering active", extra={"tests": list(tests), "count": len(tests)}
+        )
 
     # Step 1: Validate config
     try:
@@ -199,7 +198,7 @@ def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_out
     file_paths = []
     test_names = []
     for t in tests:
-        if '/' in t or '\\' in t or t.endswith('.yaml') or t.endswith('.yml'):
+        if "/" in t or "\\" in t or t.endswith(".yaml") or t.endswith(".yml"):
             file_paths.append(t)
         else:
             test_names.append(t)
@@ -252,11 +251,13 @@ def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_out
     for scaffold_path in scaffold_paths:
         # Check if file exists
         if not Path(scaffold_path).exists():
-            errors.append({
-                "message": f"File not found: {scaffold_path}",
-                "file": scaffold_path,
-                "suggestion": "Verify the file path or create the missing test scaffold.",
-            })
+            errors.append(
+                {
+                    "message": f"File not found: {scaffold_path}",
+                    "file": scaffold_path,
+                    "suggestion": "Verify the file path or create the missing test scaffold.",
+                }
+            )
             continue
 
         validated_files.append(scaffold_path)
@@ -317,11 +318,14 @@ def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_out
                 allowed_tools=config.tools.allowed,
                 existing_files=existing_files,
             )
-            logger.info("CI compat check", extra={
-                "scaffold": scaffold_path,
-                "ci_compatible": ci_result.ci_compatible,
-                "ci_error_count": len(ci_result.ci_errors),
-            })
+            logger.info(
+                "CI compat check",
+                extra={
+                    "scaffold": scaffold_path,
+                    "ci_compatible": ci_result.ci_compatible,
+                    "ci_error_count": len(ci_result.ci_errors),
+                },
+            )
 
             for ci_err in ci_result.ci_errors:
                 error_msg = f"{scaffold_path}: [CI] {ci_err}"
@@ -336,10 +340,13 @@ def validate(ctx, tests: tuple, grep: Optional[str], config_only: bool, json_out
             for ci_warn in ci_result.ci_warnings:
                 warnings.append(f"{scaffold_path}: [CI] {ci_warn}")
         except Exception as e:
-            logger.debug("CI compat check failed (non-fatal)", extra={
-                "scaffold": scaffold_path,
-                "error": str(e),
-            })
+            logger.debug(
+                "CI compat check failed (non-fatal)",
+                extra={
+                    "scaffold": scaffold_path,
+                    "error": str(e),
+                },
+            )
 
     # Output results
     has_errors = len(errors) > 0
@@ -367,7 +374,7 @@ def _gather_existing_files() -> List[str]:
                 try:
                     rel = str(path.relative_to(cwd))
                     # Skip hidden dirs and common non-content paths
-                    if not any(part.startswith('.') for part in Path(rel).parts):
+                    if not any(part.startswith(".") for part in Path(rel).parts):
                         existing.append(rel)
                 except ValueError:
                     continue
@@ -383,7 +390,7 @@ def _output_results(
     valid: bool,
     errors: List[Dict[str, Any]],
     warnings: List[str],
-    validated_files: List[str]
+    validated_files: List[str],
 ):
     """Output validation results in text or JSON format.
 
@@ -402,7 +409,7 @@ def _output_results(
                 "valid": valid,
                 "errors": errors,  # Keep full structure
                 "warnings": warnings,
-                "files_validated": validated_files
+                "files_validated": validated_files,
             }
         else:
             # Simpler format for non-verbose JSON
@@ -410,7 +417,7 @@ def _output_results(
                 "valid": valid,
                 "errors": [e["message"] for e in errors],
                 "warnings": warnings,
-                "files_validated": validated_files
+                "files_validated": validated_files,
             }
         click.echo(json.dumps(result, indent=2))
     else:
@@ -439,7 +446,7 @@ def _output_results(
 
                 # Show suggestion in verbose mode
                 if verbose and err.get("suggestion"):
-                    click.echo(click.style(f"\n    💡 Fix: ", fg="yellow") + err["suggestion"])
+                    click.echo(click.style("\n    💡 Fix: ", fg="yellow") + err["suggestion"])
 
         if warnings:
             click.echo("\nWarnings:")

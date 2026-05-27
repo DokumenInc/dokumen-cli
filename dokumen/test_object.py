@@ -3,6 +3,7 @@ Test Object module for the Skill Testing Framework.
 
 Represents a single test case that orchestrates executor and judge agents.
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from datetime import datetime
@@ -86,9 +87,9 @@ def collect_browser_artifacts(output_dir: str) -> List[Dict[str, Any]]:
             rel_path = os.path.relpath(full_path, output_dir)
 
             artifact_type = None
-            if f.lower().endswith(('.webm', '.mp4')):
+            if f.lower().endswith((".webm", ".mp4")):
                 artifact_type = "video"
-            elif f.lower().endswith(('.png', '.jpg', '.jpeg')):
+            elif f.lower().endswith((".png", ".jpg", ".jpeg")):
                 artifact_type = "screenshot"
 
             if artifact_type:
@@ -97,22 +98,23 @@ def collect_browser_artifacts(output_dir: str) -> List[Dict[str, Any]]:
                 except OSError:
                     size = 0
 
-                artifacts.append({
-                    "type": artifact_type,
-                    "path": rel_path,
-                    "filename": f,
-                    "size_bytes": size
-                })
-                logger.info("browser.artifact.collected",
-                           type=artifact_type, path=rel_path, size=size)
+                artifacts.append(
+                    {"type": artifact_type, "path": rel_path, "filename": f, "size_bytes": size}
+                )
+                logger.info(
+                    "browser.artifact.collected", type=artifact_type, path=rel_path, size=size
+                )
 
     return artifacts
 
+
 # Internal files written by Playwright MCP - only excluded within browser dirs
-_BROWSER_INTERNAL_FILES = {'click-indicator.js'}
+_BROWSER_INTERNAL_FILES = {"click-indicator.js"}
 
 
-def collect_output_artifacts(output_dir: str, skip_inline_dirs: Optional[set] = None) -> List[Dict[str, Any]]:
+def collect_output_artifacts(
+    output_dir: str, skip_inline_dirs: Optional[set] = None
+) -> List[Dict[str, Any]]:
     """Collect all files from the test output directory.
 
     Scans the output directory for deliverables written by the executor or judge.
@@ -132,28 +134,27 @@ def collect_output_artifacts(output_dir: str, skip_inline_dirs: Optional[set] = 
         return artifacts
 
     CONTENT_TYPE_MAP = {
-        '.py': 'text/x-python',
-        '.md': 'text/markdown',
-        '.txt': 'text/plain',
-        '.csv': 'text/csv',
-        '.json': 'application/json',
-        '.yaml': 'text/yaml',
-        '.yml': 'text/yaml',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.webm': 'video/webm',
-        '.mp4': 'video/mp4',
+        ".py": "text/x-python",
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+        ".csv": "text/csv",
+        ".json": "application/json",
+        ".yaml": "text/yaml",
+        ".yml": "text/yaml",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".webm": "video/webm",
+        ".mp4": "video/mp4",
     }
     MAX_INLINE_SIZE = 100 * 1024  # 100KB
 
     for root, _, files in os.walk(output_dir):
         rel_dir = os.path.relpath(root, output_dir)
         in_skip_dir = skip_inline_dirs and any(
-            rel_dir == d or rel_dir.startswith(d + os.sep)
-            for d in skip_inline_dirs
+            rel_dir == d or rel_dir.startswith(d + os.sep) for d in skip_inline_dirs
         )
 
         for f in files:
@@ -174,36 +175,43 @@ def collect_output_artifacts(output_dir: str, skip_inline_dirs: Optional[set] = 
                 continue
 
             ext = os.path.splitext(f)[1].lower()
-            content_type = CONTENT_TYPE_MAP.get(ext, 'application/octet-stream')
+            content_type = CONTENT_TYPE_MAP.get(ext, "application/octet-stream")
 
             # Inline content for small text files (skip for browser dirs)
             content = None
             if not in_skip_dir:
-                if content_type.startswith('text/') or content_type == 'application/json':
+                if content_type.startswith("text/") or content_type == "application/json":
                     if size <= MAX_INLINE_SIZE:
                         try:
-                            with open(full_path, 'r', encoding='utf-8') as fh:
+                            with open(full_path, "r", encoding="utf-8") as fh:
                                 content = fh.read()
                         except (UnicodeDecodeError, OSError):
                             pass
                 # Inline small images as base64 for UI preview
-                elif content_type.startswith('image/') and size <= MAX_INLINE_SIZE:
+                elif content_type.startswith("image/") and size <= MAX_INLINE_SIZE:
                     try:
                         import base64
-                        with open(full_path, 'rb') as fh:
-                            content = base64.b64encode(fh.read()).decode('ascii')
-                        logger.info("test.output_artifact.image_inlined",
-                                   filename=f, size=size, content_type=content_type)
+
+                        with open(full_path, "rb") as fh:
+                            content = base64.b64encode(fh.read()).decode("ascii")
+                        logger.info(
+                            "test.output_artifact.image_inlined",
+                            filename=f,
+                            size=size,
+                            content_type=content_type,
+                        )
                     except OSError:
                         pass
 
-            artifacts.append({
-                'filename': f,
-                'path': rel_path,
-                'size_bytes': size,
-                'content_type': content_type,
-                'content': content,
-            })
+            artifacts.append(
+                {
+                    "filename": f,
+                    "path": rel_path,
+                    "size_bytes": size,
+                    "content_type": content_type,
+                    "content": content,
+                }
+            )
             logger.info("test.output_artifact.collected", filename=f, path=rel_path, size=size)
 
     return artifacts
@@ -237,12 +245,12 @@ def _extract_report_markdown(response: Optional[str]) -> str:
     matches = list(re.finditer(pattern, response, re.DOTALL))
     if matches:
         last_match = matches[-1]
-        report = response[:last_match.start()].rstrip()
+        report = response[: last_match.start()].rstrip()
         logger.debug("report.extract.json_fence", report_length=len(report))
         return report
 
     # Strategy 2: Find last '{' that parses as JSON with "verdict" key
-    last_brace = response.rfind('{')
+    last_brace = response.rfind("{")
     while last_brace >= 0:
         try:
             candidate = response[last_brace:]
@@ -253,11 +261,12 @@ def _extract_report_markdown(response: Optional[str]) -> str:
                 return report
         except (json.JSONDecodeError, ValueError):
             pass
-        last_brace = response.rfind('{', 0, last_brace)
+        last_brace = response.rfind("{", 0, last_brace)
 
     # Strategy 3: No JSON verdict found, return full response
     logger.debug("report.extract.no_json", response_length=len(response))
     return response
+
 
 DEFAULT_BROWSER_VIEWPORT = os.environ.get("DOKUMEN_BROWSER_VIEWPORT", "1512x982")
 DEFAULT_BROWSER_VIDEO_SIZE = os.environ.get("DOKUMEN_BROWSER_VIDEO_SIZE", DEFAULT_BROWSER_VIEWPORT)
@@ -296,6 +305,7 @@ def resolve_browser_headless(config_headless: Optional[bool] = None) -> bool:
     # Priority 4: Default (headful for local development)
     return DEFAULT_BROWSER_HEADLESS
 
+
 if TYPE_CHECKING:
     from .config import ExploreConfig
     from .coverage_agent import CoverageAgent
@@ -308,6 +318,7 @@ if TYPE_CHECKING:
 @dataclass
 class FailureAnalysis:
     """Analysis of a test failure identifying potentially incorrect documentation."""
+
     file_path: str
     referenced_lines: List[int]
     incorrect_lines: List[IncorrectLine]
@@ -319,20 +330,17 @@ class FailureAnalysis:
             "file_path": self.file_path,
             "referenced_lines": self.referenced_lines,
             "incorrect_lines": [
-                {
-                    "line_number": il.line_number,
-                    "reason": il.reason,
-                    "test_id": il.test_id
-                }
+                {"line_number": il.line_number, "reason": il.reason, "test_id": il.test_id}
                 for il in self.incorrect_lines
             ],
-            "analysis": self.analysis
+            "analysis": self.analysis,
         }
 
 
 @dataclass
 class TestResult:
     """Complete result of running a test."""
+
     __test__ = False  # Tell pytest this is not a test class
     test_id: str
     passed: bool
@@ -343,8 +351,12 @@ class TestResult:
     timestamp: datetime
     files: List[str] = field(default_factory=list)  # files covered by this test
     failure_reasons: List[str] = field(default_factory=list)
-    line_coverage: Dict[str, LineCoverage] = field(default_factory=dict)  # file_path -> LineCoverage
-    failure_analysis: Dict[str, FailureAnalysis] = field(default_factory=dict)  # file_path -> FailureAnalysis
+    line_coverage: Dict[str, LineCoverage] = field(
+        default_factory=dict
+    )  # file_path -> LineCoverage
+    failure_analysis: Dict[str, FailureAnalysis] = field(
+        default_factory=dict
+    )  # file_path -> FailureAnalysis
     explore_output: Optional[str] = None  # Natural language summary from explore phase
     explore_tool_calls: Optional[List[Dict[str, Any]]] = None  # Tool calls made during explore
     executor_model: Optional[str] = None  # Model used for executor
@@ -395,12 +407,8 @@ class TestResult:
             "failure_reasons": self.failure_reasons,
             "executor_output": self.executor_output.to_dict() if self.executor_output else None,
             "judge_results": [jr.to_dict() for jr in self.judge_results],
-            "line_coverage": {
-                path: cov.to_dict() for path, cov in self.line_coverage.items()
-            },
-            "failure_analysis": {
-                path: fa.to_dict() for path, fa in self.failure_analysis.items()
-            },
+            "line_coverage": {path: cov.to_dict() for path, cov in self.line_coverage.items()},
+            "failure_analysis": {path: fa.to_dict() for path, fa in self.failure_analysis.items()},
             "explore_output": self.explore_output,
             "explore_tool_calls": self.explore_tool_calls,
             "executor_model": self.executor_model,
@@ -431,6 +439,7 @@ class TestResult:
 @dataclass
 class TestConfig:
     """Configuration for a test object."""
+
     id: str
     reason: str
     executor: Any
@@ -442,6 +451,7 @@ class TestConfig:
 @dataclass
 class BrowserConfig:
     """Browser configuration for Playwright MCP sessions."""
+
     headless: Optional[bool] = None
     save_video: Optional[str] = None
     viewport_size: Optional[str] = None
@@ -454,6 +464,7 @@ class TestObject:
     Orchestrates the execution of an executor agent to perform a task,
     then evaluates the results using one or more judge agents.
     """
+
     __test__ = False  # Prevent pytest from collecting this as a test class
 
     def __init__(
@@ -464,14 +475,14 @@ class TestObject:
         judges: List[Any],
         timeout: float = 60.0,
         retries: int = 0,
-        sandbox_config: Optional['SandboxConfig'] = None,
+        sandbox_config: Optional["SandboxConfig"] = None,
         source_path: Optional[str] = None,
         files: Optional[List[str]] = None,
-        explore_config: Optional['ExploreConfig'] = None,
+        explore_config: Optional["ExploreConfig"] = None,
         browser_config: Optional[BrowserConfig] = None,
         test_type: Optional[str] = None,
-        tool_overrides: Optional['ToolOverridesResult'] = None,
-        tool_provenance: Optional['ToolProvenance'] = None,
+        tool_overrides: Optional["ToolOverridesResult"] = None,
+        tool_provenance: Optional["ToolProvenance"] = None,
         setup_steps: Optional[List] = None,
         agent: Optional[str] = None,
         outputs: Optional[List[str]] = None,
@@ -513,10 +524,10 @@ class TestObject:
         self.judges = judges
         self.timeout = timeout
         self.retries = retries
-        self.sandbox_config: Optional['SandboxConfig'] = sandbox_config
+        self.sandbox_config: Optional["SandboxConfig"] = sandbox_config
         self.source_path = source_path
         self.files: List[str] = files or []
-        self.explore_config: Optional['ExploreConfig'] = explore_config
+        self.explore_config: Optional["ExploreConfig"] = explore_config
         self.browser_config: Optional[BrowserConfig] = browser_config
         self.test_type: Optional[str] = test_type
         self.tool_overrides = tool_overrides
@@ -533,13 +544,13 @@ class TestObject:
 
     async def run(
         self,
-        coverage_agent: Optional['CoverageAgent'] = None,
-        sandbox: Optional['Sandbox'] = None,
+        coverage_agent: Optional["CoverageAgent"] = None,
+        sandbox: Optional["Sandbox"] = None,
         on_tool_call=None,
         on_conversation_message=None,
         on_executor_complete=None,
         on_judge_complete=None,
-        on_explore_event=None
+        on_explore_event=None,
     ) -> TestResult:
         """
         Execute the test by running executor and all judges.
@@ -583,7 +594,9 @@ class TestObject:
         )
 
         start_time = time.time()
-        logger.info("test.run.start", test_id=self.id, timeout=self.timeout, files_count=len(self.files))
+        logger.info(
+            "test.run.start", test_id=self.id, timeout=self.timeout, files_count=len(self.files)
+        )
 
         # Write resolved agent definition to .dokumen-cache/agents/ for CI observability
         if self.agent:
@@ -605,7 +618,9 @@ class TestObject:
                 if judge.tools:
                     original_judge_tools[judge.id] = judge.tools
                     judge.tools = self._resolve_tools_with_sandbox(sandbox, judge.tools)
-                    debug(f"[DEBUG TEST] Judge '{judge.id}' tools resolved: {[t.name for t in judge.tools]}")
+                    debug(
+                        f"[DEBUG TEST] Judge '{judge.id}' tools resolved: {[t.name for t in judge.tools]}"
+                    )
 
         # Build the pipeline context
         ctx = PipelineContext(
@@ -635,9 +650,8 @@ class TestObject:
         )
 
         # Build stage list — coordinator replaces executor when enabled
-        use_coordinator = (
-            self.coordinator_config is not None
-            and getattr(self.coordinator_config, 'enabled', False)
+        use_coordinator = self.coordinator_config is not None and getattr(
+            self.coordinator_config, "enabled", False
         )
 
         stages = [
@@ -654,11 +668,13 @@ class TestObject:
         # compaction runs after executor/coordinator, before judges
         stages.append(CompactionStage(compaction_config=self.compaction_config))
 
-        stages.extend([
-            JudgeStage(),
-            MemoryStage(),
-            ArtifactStage(),
-        ])
+        stages.extend(
+            [
+                JudgeStage(),
+                MemoryStage(),
+                ArtifactStage(),
+            ]
+        )
 
         # Cleanup callbacks — always run regardless of success/failure
         async def _cleanup(ctx):
@@ -668,8 +684,7 @@ class TestObject:
                 try:
                     await ctx.setup_runner.cleanup()
                 except Exception as e:
-                    logger.error("test.setup.cleanup_error",
-                                 test_id=ctx.test_id, error=str(e))
+                    logger.error("test.setup.cleanup_error", test_id=ctx.test_id, error=str(e))
 
             # Restore original tools if we modified them
             if original_executor_tools is not None:
@@ -691,11 +706,11 @@ class TestObject:
 
     def _build_result(
         self,
-        ctx: 'PipelineContext',
+        ctx: "PipelineContext",
         start_time: float,
         original_executor_tools: Optional[List],
         original_judge_tools: Dict[str, Any],
-    ) -> 'TestResult':
+    ) -> "TestResult":
         """Assemble a TestResult from the completed PipelineContext.
 
         Extracts model info, token usage, conversation logs, artifacts,
@@ -714,19 +729,17 @@ class TestObject:
 
         # Extract model names from providers
         executor_model = None
-        if self.executor.provider and hasattr(self.executor.provider, 'model'):
+        if self.executor.provider and hasattr(self.executor.provider, "model"):
             executor_model = self.executor.provider.model
 
         judge_models_map: Dict[str, str] = {}
         for j in self.judges:
-            if j.provider and hasattr(j.provider, 'model'):
+            if j.provider and hasattr(j.provider, "model"):
                 judge_models_map[j.id] = j.provider.model
         judge_model = next(iter(judge_models_map.values()), None)
 
         # Determine executor_passed — True only if executor ran successfully
-        executor_passed = bool(
-            ctx.executor_output and ctx.executor_output.success
-        )
+        executor_passed = bool(ctx.executor_output and ctx.executor_output.success)
 
         # Collect executor token usage
         executor_input_tokens = 0
@@ -738,11 +751,9 @@ class TestObject:
             executor_input_tokens = ctx.executor_output.input_tokens
             executor_output_tokens = ctx.executor_output.output_tokens
             executor_cache_creation_tokens = getattr(
-                ctx.executor_output, 'cache_creation_tokens', 0
+                ctx.executor_output, "cache_creation_tokens", 0
             )
-            executor_cache_read_tokens = getattr(
-                ctx.executor_output, 'cache_read_tokens', 0
-            )
+            executor_cache_read_tokens = getattr(ctx.executor_output, "cache_read_tokens", 0)
             if ctx.executor_output.conversation_log:
                 executor_conversation_log = ctx.executor_output.conversation_log
 
@@ -754,15 +765,15 @@ class TestObject:
         for jr in ctx.judge_results:
             judge_input_tokens += jr.input_tokens
             judge_output_tokens += jr.output_tokens
-            judge_cache_creation_tokens += getattr(jr, 'cache_creation_tokens', 0)
-            judge_cache_read_tokens += getattr(jr, 'cache_read_tokens', 0)
+            judge_cache_creation_tokens += getattr(jr, "cache_creation_tokens", 0)
+            judge_cache_read_tokens += getattr(jr, "cache_read_tokens", 0)
 
         # Extract judge prompts for display
         judge_prompts = [
             {
-                'name': judge.id,
-                'system_prompt': judge.system_prompt,
-                'user_prompt': getattr(judge, 'user_prompt', None) or None,
+                "name": judge.id,
+                "system_prompt": judge.system_prompt,
+                "user_prompt": getattr(judge, "user_prompt", None) or None,
             }
             for judge in self.judges
         ]
@@ -772,10 +783,12 @@ class TestObject:
         judge_conv_list = []
         for judge, jr in zip(self.judges, ctx.judge_results):
             if jr.conversation_log:
-                judge_conv_list.append({
-                    'judge_name': judge.id,
-                    'iterations': jr.conversation_log,
-                })
+                judge_conv_list.append(
+                    {
+                        "judge_name": judge.id,
+                        "iterations": jr.conversation_log,
+                    }
+                )
         if judge_conv_list:
             judge_conversation_logs = judge_conv_list
 
@@ -793,39 +806,40 @@ class TestObject:
         if output_artifacts:
             browser_artifacts = [
                 {
-                    'type': (
-                        'video' if a.get('content_type', '').startswith('video/')
-                        else 'screenshot'
+                    "type": (
+                        "video" if a.get("content_type", "").startswith("video/") else "screenshot"
                     ),
-                    'path': a['path'],
-                    'filename': a['filename'],
-                    'size_bytes': a['size_bytes'],
+                    "path": a["path"],
+                    "filename": a["filename"],
+                    "size_bytes": a["size_bytes"],
                 }
-                for a in output_artifacts if a.get('source') == 'browser'
+                for a in output_artifacts
+                if a.get("source") == "browser"
             ]
             report_artifacts = [
                 {
-                    'type': 'report',
-                    'path': a['path'],
-                    'filename': a['filename'],
-                    'size_bytes': a['size_bytes'],
-                    'content': a.get('content'),
+                    "type": "report",
+                    "path": a["path"],
+                    "filename": a["filename"],
+                    "size_bytes": a["size_bytes"],
+                    "content": a.get("content"),
                 }
-                for a in output_artifacts if a.get('source') == 'report'
+                for a in output_artifacts
+                if a.get("source") == "report"
             ]
 
         # Determine final pass/fail/error status
-        has_judge_error = any(
-            getattr(jr, 'error', False) for jr in ctx.judge_results
-        )
+        has_judge_error = any(getattr(jr, "error", False) for jr in ctx.judge_results)
         if has_judge_error:
             passed = False
             status = "error"
-            logger.info("test.result.judge_error_detected", test_id=self.id,
-                        error_judges=[
-                            jr.judge_id for jr in ctx.judge_results
-                            if getattr(jr, 'error', False)
-                        ])
+            logger.info(
+                "test.result.judge_error_detected",
+                test_id=self.id,
+                error_judges=[
+                    jr.judge_id for jr in ctx.judge_results if getattr(jr, "error", False)
+                ],
+            )
         elif ctx.failed:
             passed = False
             status = "failed"
@@ -882,11 +896,15 @@ class TestObject:
             status=status,
         )
 
-        logger.info("test.run.complete", test_id=self.id, passed=result.passed,
-                     duration_ms=int(result.duration * 1000),
-                     judges_passed=sum(1 for jr in result.judge_results if jr.passed),
-                     judges_total=len(result.judge_results),
-                     status=status)
+        logger.info(
+            "test.run.complete",
+            test_id=self.id,
+            passed=result.passed,
+            duration_ms=int(result.duration * 1000),
+            judges_passed=sum(1 for jr in result.judge_results if jr.passed),
+            judges_total=len(result.judge_results),
+            status=status,
+        )
 
         return result
 
@@ -930,7 +948,9 @@ class TestObject:
                 # Use project-root .dokumen-cache/ (consistent with other artifacts)
                 agents_dir = Path(".dokumen-cache") / "agents"
                 agents_dir.mkdir(parents=True, exist_ok=True)
-                filename = f"{prefix}{agent_name}.agent.yaml" if prefix else f"{agent_name}.agent.yaml"
+                filename = (
+                    f"{prefix}{agent_name}.agent.yaml" if prefix else f"{agent_name}.agent.yaml"
+                )
                 agent_path = agents_dir / filename
                 agent_path.write_text(
                     yaml.dump(agent_def.model_dump(), default_flow_style=False, sort_keys=False)
@@ -947,7 +967,7 @@ class TestObject:
 
             # Write judge agents
             for judge in self.judges:
-                judge_agent = getattr(judge, 'agent_name', None)
+                judge_agent = getattr(judge, "agent_name", None)
                 if judge_agent:
                     _write_single_agent(judge_agent, prefix=f"judge-{judge.id}-")
         except Exception as e:
@@ -964,6 +984,7 @@ class TestObject:
         were available to the executor and judges.
         """
         from pathlib import Path
+
         try:
             skills_dir = Path(".dokumen-cache") / "skills" / self.id
             skills_dir.mkdir(parents=True, exist_ok=True)
@@ -997,7 +1018,7 @@ class TestObject:
                 error=str(e),
             )
 
-    def _resolve_tools_with_sandbox(self, sandbox: 'Sandbox', tools: List = None) -> List:
+    def _resolve_tools_with_sandbox(self, sandbox: "Sandbox", tools: List = None) -> List:
         """
         Re-resolve tools with sandbox context.
 
@@ -1031,7 +1052,7 @@ class TestObject:
             base_dir=base_dir,
             sandbox=sandbox,
             provider=self.executor.provider,
-            parent_tools=source_tools
+            parent_tools=source_tools,
         )
 
     def is_stale(self) -> bool:
@@ -1069,13 +1090,22 @@ class TestObject:
             "judge_ids": [j.id for j in self.judges],
             "judge_prompts": [j.system_prompt for j in self.judges],
             "timeout": self.timeout,
-            "setup_steps": [
-                {"name": s.name, "command": s.command,
-                 "working_dir": s.working_dir, "timeout": s.timeout,
-                 "background": s.background, "ready_url": s.ready_url,
-                 "ready_timeout": s.ready_timeout}
-                for s in self.setup_steps
-            ] if self.setup_steps else None,
+            "setup_steps": (
+                [
+                    {
+                        "name": s.name,
+                        "command": s.command,
+                        "working_dir": s.working_dir,
+                        "timeout": s.timeout,
+                        "background": s.background,
+                        "ready_url": s.ready_url,
+                        "ready_timeout": s.ready_timeout,
+                    }
+                    for s in self.setup_steps
+                ]
+                if self.setup_steps
+                else None
+            ),
         }
         hash_str = json.dumps(hash_data, sort_keys=True)
         return hashlib.sha256(hash_str.encode()).hexdigest()
@@ -1107,6 +1137,7 @@ class TestObject:
         if not explore_config and self.files:
             # Import here to avoid circular dependency
             from .config import ExploreConfig
+
             explore_config = ExploreConfig()  # Use defaults
             if is_debug():
                 debug("[TEST] Created default ExploreConfig for test with required files")
@@ -1162,7 +1193,9 @@ class TestObject:
             # Prepend context to user_prompt
             self.executor.user_prompt = f"{context_block}\n\n---\n\n{self.executor.user_prompt}"
 
-    def _check_files_on_disk(self, missing_files: List[str], explore_result: ExploreResult) -> List[str]:
+    def _check_files_on_disk(
+        self, missing_files: List[str], explore_result: ExploreResult
+    ) -> List[str]:
         """
         Deterministic fallback: check filesystem directly for files the explore AI missed.
 
@@ -1187,9 +1220,12 @@ class TestObject:
             normalized = os.path.normpath(full_path)
 
             if os.path.isfile(normalized):
-                logger.info("test.explore.deterministic_recovery",
-                            test_id=self.id, file_path=file_path,
-                            message="File exists on disk but was missed by explore agent")
+                logger.info(
+                    "test.explore.deterministic_recovery",
+                    test_id=self.id,
+                    file_path=file_path,
+                    message="File exists on disk but was missed by explore agent",
+                )
                 explore_result.files.append(
                     FileDiscovery(
                         path=file_path,
@@ -1198,17 +1234,22 @@ class TestObject:
                     )
                 )
             else:
-                logger.info("test.explore.deterministic_confirmed_missing",
-                            test_id=self.id, file_path=file_path,
-                            message="File confirmed missing from disk")
+                logger.info(
+                    "test.explore.deterministic_confirmed_missing",
+                    test_id=self.id,
+                    file_path=file_path,
+                    message="File confirmed missing from disk",
+                )
                 still_missing.append(file_path)
 
         if len(still_missing) < len(missing_files):
             recovered_count = len(missing_files) - len(still_missing)
-            logger.info("test.explore.deterministic_recovery_summary",
-                        test_id=self.id,
-                        recovered=recovered_count,
-                        still_missing=len(still_missing))
+            logger.info(
+                "test.explore.deterministic_recovery_summary",
+                test_id=self.id,
+                recovered=recovered_count,
+                still_missing=len(still_missing),
+            )
 
         return still_missing
 
@@ -1234,23 +1275,27 @@ class TestObject:
         if explore_result.files:
             for f in explore_result.files:
                 found_paths.add(f.path)
-                normalized = os.path.normpath(f.path).lstrip('./')
+                normalized = os.path.normpath(f.path).lstrip("./")
                 found_paths_normalized.add(normalized)
 
         for file_path in self.files:
-            normalized_required = os.path.normpath(file_path).lstrip('./')
+            normalized_required = os.path.normpath(file_path).lstrip("./")
             # Check raw and normalized paths in both summary and files list
-            if (file_path not in summary and normalized_required not in summary
-                    and file_path not in found_paths and normalized_required not in found_paths_normalized):
-                logger.info(f"[VERIFY] Missing file: {file_path!r}, normalized: {normalized_required!r}, found_normalized: {found_paths_normalized}")
+            if (
+                file_path not in summary
+                and normalized_required not in summary
+                and file_path not in found_paths
+                and normalized_required not in found_paths_normalized
+            ):
+                logger.info(
+                    f"[VERIFY] Missing file: {file_path!r}, normalized: {normalized_required!r}, found_normalized: {found_paths_normalized}"
+                )
                 missing.append(file_path)
 
         return missing
 
     def _fail_with_missing_files_error(
-        self,
-        missing_files: List[str],
-        explore_result: ExploreResult
+        self, missing_files: List[str], explore_result: ExploreResult
     ) -> TestResult:
         """
         Create detailed failure result for missing required files.
@@ -1273,18 +1318,20 @@ class TestObject:
             error_lines.append(f"  [{status}] {f}")
 
         # Add diagnostic information for debugging
-        error_lines.extend([
-            "",
-            "Explore diagnostics:",
-            f"  success: {explore_result.success}",
-            f"  error: {explore_result.error or '(none)'}",
-            f"  tool_calls_count: {explore_result.tool_calls_count}",
-            f"  files_found: {len(explore_result.files)}",
-            "",
-            "Explore summary:",
-            explore_result.summary if explore_result.summary else "(no summary)",
-            "",
-        ])
+        error_lines.extend(
+            [
+                "",
+                "Explore diagnostics:",
+                f"  success: {explore_result.success}",
+                f"  error: {explore_result.error or '(none)'}",
+                f"  tool_calls_count: {explore_result.tool_calls_count}",
+                f"  files_found: {len(explore_result.files)}",
+                "",
+                "Explore summary:",
+                explore_result.summary if explore_result.summary else "(no summary)",
+                "",
+            ]
+        )
 
         # Include file paths if any were found
         if explore_result.files:
@@ -1297,17 +1344,19 @@ class TestObject:
         if explore_result.tool_history:
             error_lines.append(f"Tool calls ({len(explore_result.tool_history)} total):")
             for tc in explore_result.tool_history[:5]:  # Show first 5
-                tool_name = tc.get('tool', 'unknown')
-                command = str(tc.get('command', ''))[:50]
+                tool_name = tc.get("tool", "unknown")
+                command = str(tc.get("command", ""))[:50]
                 error_lines.append(f"  - {tool_name}: {command}")
             if len(explore_result.tool_history) > 5:
                 error_lines.append(f"  ... and {len(explore_result.tool_history) - 5} more")
             error_lines.append("")
 
-        error_lines.extend([
-            "The explore agent must discover the required files from docs/.",
-            "Ensure the files exist and the explore agent's search finds them.",
-        ])
+        error_lines.extend(
+            [
+                "The explore agent must discover the required files from docs/.",
+                "Ensure the files exist and the explore agent's search finds them.",
+            ]
+        )
 
         return TestResult(
             test_id=self.id,
@@ -1334,8 +1383,10 @@ class TestObject:
         """
         if self.source_path:
             import os
+
             # Search upward from source_path to find project root (dokumen.yaml)
             from .loader import find_project_root
+
             try:
                 return find_project_root(self.source_path)
             except FileNotFoundError:

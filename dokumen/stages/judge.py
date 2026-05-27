@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ..logging_config import get_logger
 from ..pipeline import PipelineContext, PipelineStage
@@ -47,8 +47,7 @@ def _extract_report_markdown(response: Optional[str]) -> str:
             parsed = json.loads(candidate)
             if isinstance(parsed, dict) and "verdict" in parsed:
                 report = response[:last_brace].rstrip()
-                logger.debug("report.extract.inline_json",
-                             report_length=len(report))
+                logger.debug("report.extract.inline_json", report_length=len(report))
                 return report
         except (json.JSONDecodeError, ValueError):
             pass
@@ -83,13 +82,11 @@ class JudgeStage(PipelineStage):
         Returns:
             Updated context with judge_results populated.
         """
-        logger.info("stage.judge.start", test_id=ctx.test_id,
-                     judge_count=len(ctx.judges))
+        logger.info("stage.judge.start", test_id=ctx.test_id, judge_count=len(ctx.judges))
 
         async def run_single_judge(judge: Any) -> JudgeVerdict:
             """Run a single judge and handle exceptions."""
-            logger.debug("stage.judge.run_one", test_id=ctx.test_id,
-                         judge_id=judge.id)
+            logger.debug("stage.judge.run_one", test_id=ctx.test_id, judge_id=judge.id)
             try:
                 if ctx.executor_output and not getattr(ctx.executor_output, "final_response", None):
                     conversation_log = getattr(ctx.executor_output, "conversation_log", None) or []
@@ -114,13 +111,22 @@ class JudgeStage(PipelineStage):
                     executor_system_prompt=ctx.executor.system_prompt,
                     executor_user_prompt=ctx.executor.user_prompt,
                 )
-                logger.info("stage.judge.complete_one", test_id=ctx.test_id,
-                            judge_id=judge.id, passed=judge_result.passed)
+                logger.info(
+                    "stage.judge.complete_one",
+                    test_id=ctx.test_id,
+                    judge_id=judge.id,
+                    passed=judge_result.passed,
+                )
                 return judge_result
             except Exception as e:
-                logger.error("stage.judge.error", test_id=ctx.test_id,
-                             judge_id=judge.id, error=str(e),
-                             error_type=type(e).__name__, exc_info=True)
+                logger.error(
+                    "stage.judge.error",
+                    test_id=ctx.test_id,
+                    judge_id=judge.id,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    exc_info=True,
+                )
                 return JudgeVerdict(
                     judge_id=judge.id,
                     passed=False,
@@ -141,9 +147,12 @@ class JudgeStage(PipelineStage):
                 ctx.on_judge_complete(judge_result)
 
             if not judge_result.passed:
-                logger.debug("stage.judge.failed", test_id=ctx.test_id,
-                             judge_id=judge.id,
-                             reason=judge_result.failure_reason)
+                logger.debug(
+                    "stage.judge.failed",
+                    test_id=ctx.test_id,
+                    judge_id=judge.id,
+                    reason=judge_result.failure_reason,
+                )
                 ctx.failure_reasons.append(
                     f"Judge {judge.id} failed: {judge_result.failure_reason}"
                 )
@@ -151,17 +160,19 @@ class JudgeStage(PipelineStage):
         # Summary
         passed_count = sum(1 for jr in ctx.judge_results if jr.passed)
         failed_count = len(ctx.judge_results) - passed_count
-        logger.info("stage.judge.summary", test_id=ctx.test_id,
-                     total=len(ctx.judge_results),
-                     passed=passed_count, failed=failed_count)
+        logger.info(
+            "stage.judge.summary",
+            test_id=ctx.test_id,
+            total=len(ctx.judge_results),
+            passed=passed_count,
+            failed=failed_count,
+        )
 
         # Extract research reports from verdict judge
         if ctx.test_type == "research":
             for judge, judge_result in zip(ctx.judges, judge_results_list):
                 if judge.id == "verdict" and judge_result.response:
-                    report_markdown = _extract_report_markdown(
-                        judge_result.response
-                    )
+                    report_markdown = _extract_report_markdown(judge_result.response)
                     if report_markdown:
                         report_path = os.path.join(
                             ".dokumen-cache", "output", ctx.test_id, "report.md"
@@ -170,11 +181,14 @@ class JudgeStage(PipelineStage):
                         with open(report_path, "w") as f:
                             f.write(report_markdown)
                         ctx.research_report_rel_path = "report.md"
-                        logger.info("stage.judge.report_saved",
-                                    test_id=ctx.test_id,
-                                    report_path=report_path,
-                                    size_bytes=len(report_markdown.encode("utf-8")))
+                        logger.info(
+                            "stage.judge.report_saved",
+                            test_id=ctx.test_id,
+                            report_path=report_path,
+                            size_bytes=len(report_markdown.encode("utf-8")),
+                        )
 
-        logger.info("stage.judge.complete", test_id=ctx.test_id,
-                     passed=passed_count, failed=failed_count)
+        logger.info(
+            "stage.judge.complete", test_id=ctx.test_id, passed=passed_count, failed=failed_count
+        )
         return ctx

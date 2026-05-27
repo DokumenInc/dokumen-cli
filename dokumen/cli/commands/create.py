@@ -12,6 +12,7 @@ Stdin mode reads JSON input and outputs NDJSON events:
   Input: {"goal": "...", "files": [...], "existing_tests": [...]}
   Output: {"event": "create_start", ...}, {"event": "done", "scaffold": {...}}
 """
+
 import json
 import logging
 import sys
@@ -198,7 +199,9 @@ async def _run_stdin_session(
     # Read and validate test type
     test_type = params.get("type", "standard")
     if test_type not in ("standard", "browser"):
-        _emit_event("error", {"message": f"Invalid type: '{test_type}'. Must be 'standard' or 'browser'"})
+        _emit_event(
+            "error", {"message": f"Invalid type: '{test_type}'. Must be 'standard' or 'browser'"}
+        )
         return
 
     # Run create with streaming
@@ -213,16 +216,19 @@ async def _run_stdin_session(
     )
 
     # Emit final result
-    _emit_event("done", {
-        "success": result.success,
-        "name": result.name,
-        "scaffold_yaml": result.scaffold_yaml,
-        "scaffold_dict": result.scaffold_dict,
-        "discovered_files": result.discovered_files,
-        "duration": result.duration,
-        "error": result.error,
-        "test_type": result.test_type,
-    })
+    _emit_event(
+        "done",
+        {
+            "success": result.success,
+            "name": result.name,
+            "scaffold_yaml": result.scaffold_yaml,
+            "scaffold_dict": result.scaffold_dict,
+            "discovered_files": result.discovered_files,
+            "duration": result.duration,
+            "error": result.error,
+            "test_type": result.test_type,
+        },
+    )
 
 
 @click.command()
@@ -323,7 +329,9 @@ def create(
         # Backend integration (stdin mode)
         echo '{"goal": "Verify policy"}' | dokumen create --stdin
     """
-    logger.info(f"[CREATE_CMD] Command invoked: goal={goal[:50] if goal else None!r}, type={test_type}, stdin={stdin_mode}")
+    logger.info(
+        f"[CREATE_CMD] Command invoked: goal={goal[:50] if goal else None!r}, type={test_type}, stdin={stdin_mode}"
+    )
 
     # Load config
     config = None
