@@ -42,8 +42,8 @@ jobs:
       - name: Validate Dokumen scaffolds
         run: dokumen validate
 
-      - name: Validate skill-use example
+      - name: Validate business SOP example
         run: |
-          cd examples/skill-use
+          cd examples/business-sop
           dokumen validate
-          dokumen run --dry-run
+          dokumen run refund-escalation --dry-run
