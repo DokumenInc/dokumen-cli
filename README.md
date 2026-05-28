@@ -1,5 +1,15 @@
 # Dokumen CLI
 
+```text
+    ____        __
+   / __ \____  / /____  ______ ___  ___  ____
+  / / / / __ \/ //_/ / / / __ `__ \/ _ \/ __ \
+ / /_/ / /_/ / ,< / /_/ / / / / / /  __/ / / /
+/_____/\____/_/|_|\__,_/_/ /_/ /_/\___/_/ /_/
+
+       Claude Code Skill Test CLI
+```
+
 Dokumen is a CLI for testing Claude Code-style skills with LLM judges. You
 define a task, the tools the agent may use, and the success criteria. Dokumen
 runs the skill attempt and then asks judge agents whether the result passed.
