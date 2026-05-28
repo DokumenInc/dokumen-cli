@@ -1,13 +1,13 @@
 """Coordinator stage, used only when coordinator mode is explicitly enabled."""
 
-import logging
 import time
 
+from ..logging_config import get_logger
 from ..pipeline import PipelineContext, PipelineStage
 from ..sdk.types import ExecutorResult
-from .executor import _prompt_hash
+from .prompting import prepare_agent_prompts
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CoordinatorStage(PipelineStage):
@@ -24,52 +24,6 @@ class CoordinatorStage(PipelineStage):
     @property
     def name(self) -> str:
         return "coordinator"
-
-    def _prepare_prompts(self, ctx: PipelineContext) -> None:
-        """Mirror ExecutorStage prompt preparation for coordinator runs."""
-        if not ctx.original_user_prompt:
-            ctx.original_user_prompt = ctx.executor.user_prompt
-
-        output_folder_instruction = (
-            f"\n\n---\nOUTPUT FOLDER: {ctx.output_dir}\n"
-            "Write any deliverables, calculations, scripts, or evidence "
-            "files to this folder.\n"
-            "Files here will be visible to the user after the test completes."
-        )
-        ctx.executor.user_prompt = ctx.executor.user_prompt + output_folder_instruction
-
-        judge_output_instruction = (
-            f"\n\nOUTPUT FOLDER: {ctx.output_dir}\n"
-            "You may write analysis or evidence files here. "
-            "Files will be visible to the user."
-        )
-        for judge in ctx.judges:
-            ctx.original_judge_prompts[judge.id] = judge.system_prompt
-            judge.system_prompt = judge.system_prompt + judge_output_instruction
-
-        exec_sys = (
-            ctx.executor.system_prompt if isinstance(ctx.executor.system_prompt, str) else None
-        )
-        exec_usr = ctx.executor.user_prompt if isinstance(ctx.executor.user_prompt, str) else None
-        logger.info(
-            "agent.prompt_applied",
-            test_id=ctx.test_id,
-            role="coordinator",
-            system_prompt_hash=_prompt_hash(exec_sys),
-            user_prompt_hash=_prompt_hash(exec_usr),
-            system_prompt_len=len(exec_sys) if exec_sys else 0,
-            user_prompt_len=len(exec_usr) if exec_usr else 0,
-        )
-        for judge in ctx.judges:
-            judge_sys = judge.system_prompt if isinstance(judge.system_prompt, str) else None
-            logger.info(
-                "agent.prompt_applied",
-                test_id=ctx.test_id,
-                role="judge",
-                judge_name=judge.id,
-                system_prompt_hash=_prompt_hash(judge_sys),
-                system_prompt_len=len(judge_sys) if judge_sys else 0,
-            )
 
     def _build_executor_result(
         self,
@@ -127,7 +81,7 @@ class CoordinatorStage(PipelineStage):
             from ..coordinator.coordinator import CoordinatorAgent
 
             system_prompt = getattr(ctx.executor, "system_prompt", "") or ""
-            self._prepare_prompts(ctx)
+            prepare_agent_prompts(ctx, executor_role="coordinator", logger=logger)
             user_prompt = getattr(ctx.executor, "user_prompt", "") or ""
 
             coordinator = CoordinatorAgent(
