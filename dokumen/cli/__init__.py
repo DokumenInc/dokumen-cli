@@ -164,7 +164,7 @@ class DokumenGroup(click.Group):
 @click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
-    default="INFO",
+    default="WARNING",
     help="Logging level",
 )
 @click.option("--log-file", type=click.Path(), help="Log file path for persistent logging")

@@ -39,6 +39,67 @@ async def _unused_handler(params):
     return ToolResult(success=True, output="")
 
 
+def _write_minimal_sop_project(root: Path) -> None:
+    (root / "docs").mkdir()
+    (root / "sops").mkdir()
+    (root / "tests").mkdir()
+
+    (root / "dokumen.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "version": "1.0",
+                "provider": {
+                    "name": "anthropic",
+                    "model": "claude-haiku-4-5-20251001",
+                },
+                "execution": {"timeout": 600},
+                "explore": {"enabled": False},
+                "compaction": {"enabled": False},
+                "coordinator": {"enabled": False},
+                "tasks": {"enabled": False},
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    (root / "docs" / "customer-ticket.md").write_text(
+        "Northstar Logistics is on an Enterprise plan and requests a $1,200 refund.\n",
+        encoding="utf-8",
+    )
+    (root / "sops" / "refund-escalation-sop.md").write_text(
+        "# Refund Escalation SOP\n\n"
+        "Escalate to Finance when the amount is over $500 or the customer is on "
+        "an enterprise plan.\n",
+        encoding="utf-8",
+    )
+    (root / "tests" / "refund-escalation.test.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "name": "refund-escalation",
+                "reason": "Verify that the executor follows the refund escalation SOP.",
+                "files": [{"path": "docs/customer-ticket.md"}],
+                "executor": {
+                    "sops": ["refund-escalation-sop"],
+                    "tools": ["read_file"],
+                    "user_prompt": "Follow the refund-escalation-sop for the ticket.",
+                },
+                "judges": [
+                    {
+                        "name": "sop-success-criteria",
+                        "include_executor_output": True,
+                        "system_prompt": (
+                            "Pass only if the executor followed the SOP. Return JSON: "
+                            '{"verdict": "PASS" or "FAIL", "reason": "..."}'
+                        ),
+                    }
+                ],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_removed_tools_are_not_public():
     public_tools = set(get_all_tool_names()) | set(VALID_EXECUTOR_TOOLS)
 
@@ -145,6 +206,26 @@ def test_cli_help_groups_commands_and_keeps_create_removed():
     missing = runner.invoke(cli, ["create", "--help"])
     assert missing.exit_code != 0
     assert "No such command 'create'" in missing.output
+
+
+def test_default_cli_output_suppresses_internal_info_logs(tmp_path, monkeypatch):
+    _write_minimal_sop_project(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    validate_result = runner.invoke(cli, ["validate"])
+    assert validate_result.exit_code == 0
+    assert "Validation passed" in validate_result.output
+    assert "[INFO" not in validate_result.output
+    assert "cli.start" not in validate_result.output
+    assert "CI compat check" not in validate_result.output
+
+    dry_run_result = runner.invoke(cli, ["run", "refund-escalation", "--dry-run"])
+    assert dry_run_result.exit_code == 0
+    assert "Would run 1 test(s):" in dry_run_result.output
+    assert "refund-escalation" in dry_run_result.output
+    assert "[INFO" not in dry_run_result.output
+    assert "loader.instruction" not in dry_run_result.output
 
 
 def test_distribution_metadata_shares_only_the_public_cli_surface():
