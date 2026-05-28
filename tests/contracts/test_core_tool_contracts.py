@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,6 +17,7 @@ from dokumen.config import (
 from dokumen.coordinator.types import WorkerStatus, WorkerTask
 from dokumen.coordinator.worker import WorkerAgent
 from dokumen.loader import load_scaffold
+from dokumen.logging_config import get_logger
 from dokumen.output_schemas import AssertionResult
 from dokumen.pipeline import PipelineContext
 from dokumen.playwright_tools import get_browser_tool_names
@@ -23,6 +25,11 @@ from dokumen.sdk.judge import parse_verdict
 from dokumen.sdk.tools import resolve_sdk_tools
 from dokumen.sdk.types import ExecutorResult, JudgeVerdict
 from dokumen.stages.coordinator import CoordinatorStage
+from dokumen.stages.prompting import (
+    ensure_final_response_from_conversation,
+    prepare_agent_prompts,
+    prompt_hash,
+)
 from dokumen.tools.types import ToolDefinition, ToolResult
 from dokumen.tools_object import get_all_tool_names
 from dokumen_schema.constants import BROWSER_TOOLS, VALID_EXECUTOR_TOOLS
@@ -125,9 +132,46 @@ def test_cli_help_groups_commands_and_keeps_create_removed():
     assert run_help.exit_code == 0
     assert "Run skill tests." in run_help.output
 
+    nested_help = runner.invoke(cli, ["help", "list", "tests"])
+    assert nested_help.exit_code == 0
+    assert "List all test scaffolds." in nested_help.output
+
+    unknown_help = runner.invoke(cli, ["help", "missing"])
+    assert unknown_help.exit_code != 0
+    assert "No such command: missing" in unknown_help.output
+
     missing = runner.invoke(cli, ["create", "--help"])
     assert missing.exit_code != 0
     assert "No such command 'create'" in missing.output
+
+
+def test_distribution_metadata_shares_only_the_public_cli_surface():
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    project = pyproject["project"]
+
+    assert project["description"] == "CLI for testing Claude Code-style skills with LLM judges"
+    assert project["urls"]["Repository"] == "https://github.com/DokumenInc/dokumen-cli"
+    assert project["urls"]["Documentation"].endswith("#readme")
+    assert "claude-code" in project["keywords"]
+    assert "Topic :: Software Development :: Testing" in project["classifiers"]
+    assert project["scripts"] == {"dokumen": "dokumen.cli:cli"}
+
+    dependencies = "\n".join(project["dependencies"])
+    assert "onepassword-sdk" not in dependencies
+    assert "sentry-sdk" not in dependencies
+    assert "onepassword-sdk>=0.3.0" in project["optional-dependencies"]["integrations"]
+    assert "sentry-sdk>=1.40.0" in project["optional-dependencies"]["integrations"]
+
+
+def test_manifest_includes_docs_examples_and_packaged_authoring_skill():
+    manifest = Path("MANIFEST.in").read_text(encoding="utf-8")
+
+    assert "include README.md" in manifest
+    assert "include LICENSE" in manifest
+    assert "include .claude/skills/dokumen-test-author/SKILL.md" in manifest
+    assert "recursive-include docs *.md" in manifest
+    assert "recursive-include examples/skill-use *.md *.yaml *.txt" in manifest
+    assert "recursive-include tests *.py *.yaml *.txt *.html" in manifest
 
 
 def test_packaged_authoring_skill_has_valid_frontmatter():
@@ -216,6 +260,65 @@ async def test_coordinator_sdk_worker_mode_maps_executor_result(monkeypatch):
     assert result.tool_calls == [{"tool_name": "Read", "parameters": {"file_path": "README.md"}}]
     assert result.input_tokens == 7
     assert result.output_tokens == 11
+
+
+def test_shared_prompt_preparation_updates_executor_and_judges(tmp_path):
+    executor = SimpleNamespace(
+        system_prompt="You are testing a skill.",
+        user_prompt="Use the release-note-review skill.",
+    )
+    judge = SimpleNamespace(id="success-criteria", system_prompt="Judge the executor output.")
+    ctx = PipelineContext(
+        test_id="prompt-contract",
+        reason="Validate shared prompt preparation.",
+        executor=executor,
+        judges=[judge],
+        files=[],
+        timeout=60.0,
+        retries=0,
+        output_dir=str(tmp_path),
+    )
+
+    prepare_agent_prompts(ctx, "executor", get_logger("tests.prompting"))
+
+    assert ctx.original_user_prompt == "Use the release-note-review skill."
+    assert f"OUTPUT FOLDER: {tmp_path}" in ctx.executor.user_prompt
+    assert f"OUTPUT FOLDER: {tmp_path}" in judge.system_prompt
+    assert ctx.original_judge_prompts == {"success-criteria": "Judge the executor output."}
+    assert len(prompt_hash(ctx.executor.user_prompt)) == 12
+    assert prompt_hash(ctx.executor.user_prompt) == prompt_hash(ctx.executor.user_prompt)
+    assert prompt_hash(None) == "none"
+
+
+def test_final_response_reconstruction_uses_assistant_conversation_chunks():
+    result = ExecutorResult(
+        success=False,
+        final_response="",
+        conversation_log=[
+            {"role": "user", "content": "ignore the user's prompt"},
+            {"role": "assistant", "content": "First assistant chunk."},
+            {"role": "assistant", "content": "Second assistant chunk."},
+            {"role": "assistant", "content": "   "},
+            {"role": "tool", "content": "ignore tool output"},
+        ],
+    )
+
+    changed = ensure_final_response_from_conversation(
+        result,
+        get_logger("tests.prompting"),
+        "executor-output-contract",
+    )
+
+    assert changed is True
+    assert result.final_response == "First assistant chunk.\n\nSecond assistant chunk."
+    assert (
+        ensure_final_response_from_conversation(
+            result,
+            get_logger("tests.prompting"),
+            "executor-output-contract",
+        )
+        is False
+    )
 
 
 def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):
