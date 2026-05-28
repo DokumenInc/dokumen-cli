@@ -93,8 +93,8 @@ class ToolCall:
 class Provider(ABC):
     """Abstract base class for LLM providers.
 
-    Still used by create_agent.py.
-    Will be removed when those are migrated to the SDK path (issue #604).
+    Retained for direct provider adapters and older public imports. The primary
+    executor and judge path runs through the Claude Agent SDK.
     """
 
     @abstractmethod

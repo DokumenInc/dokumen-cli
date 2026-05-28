@@ -20,7 +20,6 @@ from ..logging_config import LogConfig, setup_logging, get_logger
 from ..sentry_config import init_sentry
 from .commands import run, coverage, status, list_cmd, validate
 from .commands.config_cmd import config
-from .commands.create import create
 from .commands.explore import explore
 from .commands.run import _run_tests as _run_tests
 from .commands.summarize import summarize
@@ -83,7 +82,6 @@ class DokumenGroup(click.Group):
         "coverage",
         "status",
         "explore",
-        "create",
         "summarize",
         "config",
     }
@@ -208,7 +206,6 @@ cli.add_command(list_cmd)
 cli.add_command(coverage)
 cli.add_command(status)
 cli.add_command(explore)
-cli.add_command(create)
 cli.add_command(summarize)
 cli.add_command(config)
 

@@ -1,13 +1,17 @@
+from types import SimpleNamespace
+
 import pytest
 import yaml
 
 from dokumen.config import CoordinatorConfig, TasksConfig, load_config
 from dokumen.loader import load_scaffold
 from dokumen.output_schemas import AssertionResult
+from dokumen.pipeline import PipelineContext
 from dokumen.playwright_tools import get_browser_tool_names
 from dokumen.sdk.judge import parse_verdict
 from dokumen.sdk.tools import resolve_sdk_tools
-from dokumen.sdk.types import JudgeVerdict
+from dokumen.sdk.types import ExecutorResult, JudgeVerdict
+from dokumen.stages.coordinator import CoordinatorStage
 from dokumen.tools.types import ToolDefinition, ToolResult
 from dokumen.tools_object import get_all_tool_names
 from dokumen_schema.constants import BROWSER_TOOLS, VALID_EXECUTOR_TOOLS
@@ -72,6 +76,7 @@ def test_sdk_resolver_rejects_unresolved_dokumen_tools():
 
 def test_advanced_runtime_features_default_off():
     assert CoordinatorConfig().enabled is False
+    assert CoordinatorConfig().executor_mode == "sdk"
     assert TasksConfig().enabled is False
 
 
@@ -80,6 +85,47 @@ def test_checked_in_config_keeps_coordinator_off_by_default():
 
     assert config.coordinator.enabled is False
     assert config.tasks.enabled is False
+
+
+async def test_coordinator_stage_returns_canonical_executor_result(tmp_path):
+    executor = SimpleNamespace(
+        system_prompt="You are testing a skill.",
+        user_prompt="Use the release-note-review skill and report the key findings.",
+        tools=[SimpleNamespace(name="read_file")],
+        provider=None,
+    )
+    judge = SimpleNamespace(id="success-criteria", system_prompt="Judge the result.")
+    ctx = PipelineContext(
+        test_id="coordinator-contract",
+        reason="Validate coordinator result contract",
+        executor=executor,
+        judges=[judge],
+        files=[],
+        timeout=60.0,
+        retries=0,
+        output_dir=str(tmp_path),
+    )
+
+    stage = CoordinatorStage(
+        CoordinatorConfig(
+            enabled=True,
+            max_workers=1,
+            worker_timeout=10.0,
+            executor_mode="api",
+        )
+    )
+
+    result_ctx = await stage.run(ctx)
+
+    assert result_ctx.failed is False
+    assert isinstance(result_ctx.executor_output, ExecutorResult)
+    assert result_ctx.executor_output.success is True
+    assert "[stub] would execute:" in result_ctx.executor_output.final_response
+    assert result_ctx.executor_output.original_user_prompt == (
+        "Use the release-note-review skill and report the key findings."
+    )
+    assert f"OUTPUT FOLDER: {tmp_path}" in result_ctx.executor_output.user_prompt
+    assert f"OUTPUT FOLDER: {tmp_path}" in judge.system_prompt
 
 
 def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):

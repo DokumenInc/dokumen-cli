@@ -132,7 +132,7 @@ class CoordinatorAgent:
         synthesis_strategy: str = "merge",
         decompose_timeout: float = 60.0,
         decompose_model: Optional[str] = None,
-        executor_mode: str = "api",
+        executor_mode: str = "sdk",
         base_dir: str = ".",
         worker_model: Optional[str] = None,
     ):

@@ -19,11 +19,11 @@ class WorkerAgent:
     """executes a single worker task.
 
     supports two execution modes:
-    - "api": direct provider.complete() loop (default, reliable)
-    - "sdk": bundled claude CLI via agent SDK (legacy, has exit code 1 issues)
+    - "sdk": Claude Agent SDK workers, matching the primary Dokumen runtime
+    - "api": direct provider.complete() loop for legacy provider adapters
 
     usage:
-        worker = WorkerAgent(provider=provider, executor_mode="api")
+        worker = WorkerAgent(provider=provider, executor_mode="sdk")
         result = await worker.run(task)
     """
 
@@ -31,7 +31,7 @@ class WorkerAgent:
         self,
         provider: Optional[Any] = None,
         tools_config: Optional[Any] = None,
-        executor_mode: str = "api",
+        executor_mode: str = "sdk",
         base_dir: str = ".",
     ):
         self._provider = provider
@@ -192,6 +192,7 @@ class WorkerAgent:
             task_id=task.id,
             status=WorkerStatus.COMPLETED if effective_success else WorkerStatus.FAILED,
             output=exec_result.final_response or "",
+            tool_calls=exec_result.tool_calls,
             error=exec_result.error if not effective_success else None,
             input_tokens=exec_result.input_tokens,
             output_tokens=exec_result.output_tokens,

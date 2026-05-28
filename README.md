@@ -37,7 +37,8 @@ Useful supporting commands:
 
 - Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
-- Generate new test scaffolds from a natural-language goal.
+- Author new test scaffolds with the packaged Claude Code skill in
+  `.claude/skills/dokumen-test-author`.
 - Track file-level source coverage with `dokumen coverage` and `dokumen status`
   as experimental commands.
 
@@ -77,15 +78,18 @@ Create a test scaffold under `tests/`:
 
 ```yaml
 name: api-authentication-skill
-reason: Verify that an agent can explain supported authentication methods.
+reason: Verify that an agent can apply the API authentication review skill.
 
 files:
   - path: docs/authentication.md
 
 executor:
+  skills:
+    - api-authentication-review
   user_prompt: |
-    Read the authentication docs and explain the supported authentication
-    methods, required headers, and setup steps.
+    Use the api-authentication-review skill to inspect the authentication docs.
+    Report the supported authentication methods, required headers, and setup
+    steps.
   tools:
     - read_file
     - glob
@@ -96,6 +100,15 @@ judges:
       Pass only if the answer is fully grounded in the referenced docs and
       clearly answers the user's question.
       Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
+```
+
+Create the referenced skill under `skills/api-authentication-review.md`:
+
+```markdown
+# API Authentication Review
+
+When reviewing authentication docs, identify supported methods, required
+headers, setup steps, and any missing operational constraints.
 ```
 
 The judge prompt is the success criteria. Keep it specific enough that a fresh
@@ -147,6 +160,16 @@ judges:
 A complete copyable example lives in
 [`examples/skill-use`](examples/skill-use/README.md).
 
+## Authoring With Claude Code
+
+This repo packages a Claude Code skill for creating or revising Dokumen tests:
+`.claude/skills/dokumen-test-author/SKILL.md`.
+
+Use that skill when you want Claude Code to add a test scaffold. It replaces the
+old `dokumen create` command and keeps authoring aligned with the preferred
+skill-use pattern: define or reuse a skill, prompt the executor to use it, and
+write a judge that evaluates explicit success criteria.
+
 Validate and run:
 
 ```bash
@@ -171,7 +194,6 @@ dokumen run --output junit
 | `dokumen coverage` | Show experimental file-level source coverage. |
 | `dokumen status` | Emit an experimental compact coverage status summary. |
 | `dokumen explore` | Discover files relevant to a topic. |
-| `dokumen create` | Generate a scaffold from a natural-language goal. |
 | `dokumen summarize` | Build summary indexes for large source sets. |
 | `dokumen config` | View or edit project configuration. |
 

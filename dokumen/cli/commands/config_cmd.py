@@ -94,8 +94,8 @@ SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
             (
                 "executor_mode",
                 "choice:api,sdk",
-                "api",
-                "api=direct calls for subagents  sdk=claude code cli (legacy)",
+                "sdk",
+                "sdk=Claude Agent SDK workers  api=direct provider calls",
             ),
         ],
     ),

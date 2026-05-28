@@ -18,8 +18,7 @@ guide for coding agents working inside the repo.
 dokumen --help
 dokumen validate
 dokumen run --dry-run
-pytest tests/unit -q
-pytest tests/unit/test_config.py -q
+pytest tests/contracts -q
 ```
 
 ## Where Changes Usually Belong

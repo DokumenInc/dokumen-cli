@@ -100,8 +100,8 @@ The presentation-ready path is local and SDK-backed:
 
 Some integration code remains intentionally optional:
 
-- `DokuRouter` and direct provider classes still support non-test commands such
-  as `create` and `summarize`.
+- `DokuRouter` and direct provider classes still support optional adapters and
+  non-core commands such as `summarize`.
 - Backend-oriented stdin modes and workspace resolution are adapters for the
   hosted product, not required for local scaffold execution.
 - Coordinator, task tracking, and memory are advanced paths and are disabled by

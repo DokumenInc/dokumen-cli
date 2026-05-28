@@ -98,7 +98,7 @@ def list_tests(ctx, verbose: bool, json_output: bool, tree_output: bool):
     # Text output mode
     if not scaffolds:
         click.echo("No test scaffolds found in tests/")
-        click.echo("Run 'dokumen create --goal \"...\"' to create a test.")
+        click.echo("Use the repo-local Claude Code skill at .claude/skills/dokumen-test-author.")
         return
 
     if tree_output:

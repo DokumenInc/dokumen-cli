@@ -335,7 +335,7 @@ class CoordinatorConfig(BaseModel):
         None, description="Model for task decomposition (defaults to provider model)"
     )
     executor_mode: str = Field(
-        "api", description="Worker executor mode: api (direct, reliable) or sdk (bundled CLI)"
+        "sdk", description="Worker executor mode: sdk (Claude Agent SDK) or api (direct provider)"
     )
 
 
