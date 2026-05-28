@@ -1,0 +1,97 @@
+name: tool-smoke
+reason: Verify that Dokumen can expose and execute the runnable core tool surface.
+type: browser
+timeout: 600
+
+files:
+  - path: tests/fixtures/tool-smoke/source-one.txt
+  - path: tests/fixtures/tool-smoke/source-two.txt
+  - path: tests/fixtures/tool-smoke/index.html
+
+setup:
+  - name: start-fixture-server
+    command: python3 -m http.server 8765 --directory tests/fixtures/tool-smoke
+    background: true
+    ready_url: http://127.0.0.1:8765/index.html
+    ready_timeout: 10
+
+browser:
+  headless: true
+  viewport: 1280x720
+
+executor:
+  max_iterations: 35
+  tools:
+    - read_file
+    - write_file
+    - glob
+    - list_directory
+    - read_many_files
+    - run_shell_command
+    - search_file_content
+    - web_fetch
+    - web_search
+    - browser_navigate
+    - browser_click
+    - browser_type
+    - browser_snapshot
+    - browser_screenshot
+    - browser_take_screenshot
+    - browser_wait
+    - browser_close
+    - browser_evaluate
+  user_prompt: |
+    Exercise every tool listed in this scaffold. Use each named tool at least once.
+
+    Required local file and shell checks:
+    - Use read_file on tests/fixtures/tool-smoke/source-one.txt.
+    - Use glob for tests/fixtures/tool-smoke/*.txt.
+    - Use list_directory on tests/fixtures/tool-smoke.
+    - Use read_many_files for tests/fixtures/tool-smoke/*.txt.
+    - Use write_file to create .dokumen-cache/tool-smoke/generated.txt with the text "generated-by-write-file".
+    - Use run_shell_command to print or cat that generated file.
+    - Use search_file_content to find "dokumen-tool-smoke" under tests/fixtures/tool-smoke.
+
+    Required web and browser checks:
+    - Use web_fetch on https://example.com and report the page title or domain.
+    - Use web_search for "Dokumen AI SOP testing framework" and report that it returned results.
+    - Use browser_navigate to open http://127.0.0.1:8765/index.html.
+    - Use browser_snapshot.
+    - Use browser_type to type "typed-by-browser-tool" into #tool-input.
+    - Use browser_click on #action-button.
+    - Use browser_wait briefly.
+    - Use browser_evaluate to read document.querySelector("#result").textContent.
+    - Use browser_screenshot.
+    - Use browser_take_screenshot.
+    - Use browser_close.
+
+    Finish with a concise markdown checklist. Include every tool name exactly as
+    written above and include the observed output marker for each check.
+
+judges:
+  - name: tool-usage-contract
+    include_executor_output: true
+    system_prompt: |
+      You are judging a Dokumen tool smoke test.
+
+      Pass only if the executor tool call log proves the mapped tool surface ran:
+      - Read covers read_file.
+      - Write covers write_file.
+      - Glob covers glob and list_directory.
+      - read_many_files may appear as read_many_files or mcp__dokumen__read_many_files.
+      - Bash covers run_shell_command.
+      - Grep covers search_file_content.
+      - WebFetch covers web_fetch.
+      - WebSearch covers web_search.
+      - Playwright MCP calls cover browser_navigate, browser_click, browser_type,
+        browser_snapshot, browser_screenshot, browser_take_screenshot,
+        browser_wait, browser_close, and browser_evaluate. These may appear with
+        an mcp__playwright__ prefix.
+
+      Also require the executor output to mention:
+      - dokumen-tool-smoke
+      - generated-by-write-file
+      - browser-ok:typed-by-browser-tool
+      - example.com
+
+      Return only JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}.

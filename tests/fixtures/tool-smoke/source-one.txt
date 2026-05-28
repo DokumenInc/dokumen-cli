@@ -1,0 +1,3 @@
+alpha smoke fixture
+shared-token: dokumen-tool-smoke
+read-file-marker: core-read

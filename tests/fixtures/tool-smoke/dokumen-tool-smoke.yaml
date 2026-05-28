@@ -1,0 +1,23 @@
+version: "1.0"
+provider:
+  name: anthropic
+  model: claude-haiku-4-5-20251001
+executor_model: claude-haiku-4-5-20251001
+judge_model: claude-haiku-4-5-20251001
+coverage:
+  include:
+    - tests/fixtures/tool-smoke/**
+  min_threshold: 0
+execution:
+  timeout: 600
+  retries: 0
+explore:
+  enabled: false
+coordinator:
+  enabled: false
+tasks:
+  enabled: false
+compaction:
+  enabled: false
+skills:
+  include_system: false

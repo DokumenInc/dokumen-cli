@@ -1,0 +1,36 @@
+version: '1.0'
+provider:
+  name: anthropic
+  model: claude-opus-4-6
+executor_model: claude-haiku-4-5-20251001
+judge_model: claude-haiku-4-5-20251001
+coverage:
+  # Experimental file-level source coverage.
+  include:
+  - docs/**/*.md
+  min_threshold: 80
+execution:
+  timeout: 3600
+  retries: 2
+explore:
+  enabled: false
+  model: claude-haiku-4-5-20251001
+  max_files: 50
+compaction:
+  token_budget: 1000000
+  enabled: false
+skills:
+  include_system: true
+  max_skills_per_prompt: 5
+coordinator:
+  max_workers: 2
+  enabled: false
+  decompose_model: claude-sonnet-4-6
+  synthesis_strategy: merge
+  worker_model: claude-haiku-4-5-20251001
+  worker_timeout: 1800.0
+  decompose_timeout: 300.0
+  executor_mode: sdk
+tasks:
+  persist_to_disk: false
+  enabled: false

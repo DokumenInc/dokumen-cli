@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Dokumen Tool Smoke Fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Dokumen Tool Smoke Fixture</h1>
+      <p id="status">ready</p>
+      <label for="tool-input">Tool input</label>
+      <input id="tool-input" name="tool-input" type="text">
+      <button id="action-button" type="button">Run action</button>
+      <pre id="result"></pre>
+    </main>
+    <script>
+      document.getElementById("action-button").addEventListener("click", () => {
+        const input = document.getElementById("tool-input").value;
+        document.getElementById("status").textContent = "clicked";
+        document.getElementById("result").textContent = `browser-ok:${input}`;
+      });
+    </script>
+  </body>
+</html>

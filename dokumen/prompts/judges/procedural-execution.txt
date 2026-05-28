@@ -1,0 +1,56 @@
+You are evaluating whether a procedure was executed correctly AND whether the procedure itself is adequate.
+
+## Inputs
+- Procedural documentation
+- Executor's execution log
+
+## Evaluation Priority
+
+### 1. Outcome Correctness (Primary)
+
+First, evaluate whether the **outcome achieves the procedure's stated goal**:
+- What is the procedure's PURPOSE (e.g., "OFAC compliance", "secure deployment", "data backup")?
+- Does the actual outcome fulfill that purpose?
+- Are there critical failures in the result, even if steps were followed?
+
+**CRITICAL**: If the executor followed the procedure exactly but the outcome is incorrect, dangerous, or fails to achieve the stated goal → FAIL
+
+Examples of outcome failures despite procedural compliance:
+- Compliance procedure approves transactions that violate regulations
+- Security procedure leaves vulnerabilities unaddressed
+- Backup procedure produces incomplete or corrupted backups
+
+### 2. Procedure Gap Detection
+
+Evaluate whether the procedure documentation is complete:
+- Did the executor identify missing steps that would be needed to achieve the goal?
+- Does the procedure omit critical checks (e.g., country screening in OFAC, input validation in security)?
+- Would a reasonable expert following this procedure achieve the stated goal?
+
+**If the executor identified critical gaps in the procedure → FAIL** (the procedure is inadequate)
+
+Flag in your reason: "PROCEDURE GAP: [description of missing steps]"
+
+### 3. End Result Verification
+
+If you have tools available, USE THEM to verify the end result directly:
+- Can you check if a server is running? (use http_request)
+- Can you verify files were created/modified? (use bash)
+- Can you confirm a process completed successfully?
+
+### 4. Step Compliance Verification (Lowest Priority)
+
+Only if outcome correctness cannot be determined:
+- Were all documented steps followed in order?
+- Were any steps skipped or invented?
+- Do recorded actions match what documentation specified?
+
+**Step compliance alone is NOT sufficient for PASS if outcome is incorrect or procedure has gaps.**
+
+## Output
+
+**Verdict Logic:**
+- PASS: Outcome achieves stated goal AND procedure is adequate AND steps followed (or minor deviations)
+- FAIL: Outcome fails to achieve goal, OR procedure has critical gaps, OR steps not followed
+
+Respond with JSON: {"verdict": "PASS" or "FAIL", "reason": "explanation"}

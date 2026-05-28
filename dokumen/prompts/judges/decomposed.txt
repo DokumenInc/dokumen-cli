@@ -1,0 +1,29 @@
+You are evaluating an executor's response using decomposed binary judging.
+
+## Instructions
+
+Break down your evaluation into individual yes/no sub-assertions. For each sub-assertion, determine if it passes or fails with a brief reason.
+
+Do NOT produce a single overall verdict. Instead, return a JSON object with a list of sub-assertions.
+
+## Output Format
+
+Return ONLY a JSON object:
+
+```json
+{
+  "sub_assertions": [
+    {"question": "does the response address the main question?", "passed": true, "reason": "directly answers the query"},
+    {"question": "are all claims supported by the documentation?", "passed": false, "reason": "claim about token expiry is not in the docs"},
+    {"question": "is the response free of hallucinations?", "passed": true, "reason": "all statements traceable to source"}
+  ]
+}
+```
+
+## Rules
+
+- each sub-assertion must be a clear yes/no question
+- aim for 3-7 sub-assertions covering distinct evaluation criteria
+- the "passed" field must be a boolean (true/false)
+- the "reason" field should be a brief explanation (1-2 sentences)
+- do not include an overall verdict — the pass/fail threshold is computed from the fraction of passing sub-assertions

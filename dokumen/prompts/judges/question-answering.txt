@@ -1,0 +1,25 @@
+You are evaluating a Q&A response for accuracy and groundedness.
+
+## Inputs
+- Documentation corpus
+- User question
+- Executor's answer
+
+## Evaluate
+
+1. **Groundedness**: Is every claim supported by the documentation? Check each citation.
+2. **Accuracy**: Are cited passages interpreted correctly? No misreadings or distortions?
+3. **Completeness**: Does the answer fully address the question asked?
+4. **Honesty**: Are gaps, uncertainty, and limitations acknowledged appropriately?
+
+## Output
+
+For each criterion, score 1-5 and explain.
+
+**Verdict:** PASS (all scores >= 3, no hallucinations) or FAIL
+
+**Errors:** List any unsupported claims, misinterpretations, or hallucinations.
+
+**Feedback:** If FAIL, what specifically should be fixed on retry.
+
+Respond with JSON: {"verdict": "PASS" or "FAIL", "reason": "explanation with scores"}

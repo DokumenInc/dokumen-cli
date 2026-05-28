@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dokumen"
+version = "4.0.1"
+description = "CLI for testing whether agents follow business SOPs with LLM judges"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    {name = "Justin Lee"}
+]
+keywords = ["business-sops", "agents", "testing", "cli", "llm-evaluation", "agent-evals"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
+
+dependencies = [
+    "click>=8.0",
+    "anthropic>=0.18",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "aiofiles>=23.0",
+    "pypdf>=4.0",  # PDF page count validation
+    "httpx>=0.27.0",  # HTTP client for setup checks and direct provider adapters
+    "claude-agent-sdk>=0.1.0",  # Claude Agent SDK for new executor/judge path
+]
+
+[project.urls]
+Homepage = "https://github.com/DokumenInc/dokumen-cli"
+Repository = "https://github.com/DokumenInc/dokumen-cli"
+Issues = "https://github.com/DokumenInc/dokumen-cli/issues"
+Documentation = "https://github.com/DokumenInc/dokumen-cli#readme"
+
+[project.optional-dependencies]
+integrations = [
+    "onepassword-sdk>=0.3.0",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "pytest-xdist>=3.5",
+    "black>=24.0",
+    "isort>=5.12",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+dokumen = "dokumen.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dokumen*"]
+
+[tool.setuptools.package-data]
+dokumen = ["prompts/**/*.txt", "skills/*.yaml"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["dokumen"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 83
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
