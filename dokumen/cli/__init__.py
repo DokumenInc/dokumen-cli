@@ -74,7 +74,7 @@ class DokumenGroup(click.Group):
 
     COMMAND_GROUPS = [
         ("Core Commands", {"run", "validate", "list"}),
-        ("Supporting Commands", {"explore", "summarize", "config"}),
+        ("Supporting Commands", {"help", "explore", "summarize", "config"}),
         ("Experimental Commands", {"coverage", "status"}),
     ]
 
@@ -193,10 +193,39 @@ def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optio
     logger.info("cli.start", version=get_version("dokumen"), log_level=log_level)
 
 
+@click.command(name="help", context_settings={"ignore_unknown_options": True})
+@click.argument("command_path", nargs=-1)
+@click.pass_context
+def help_command(ctx, command_path: tuple[str, ...]):
+    """Show help for Dokumen or a command."""
+    root_ctx = ctx.parent
+    root_command = root_ctx.command
+
+    if not command_path:
+        click.echo(root_command.get_help(root_ctx))
+        return
+
+    current_command = root_command
+    current_ctx = root_ctx
+    for command_name in command_path:
+        if not isinstance(current_command, click.Group):
+            raise click.ClickException(f"Command has no subcommands: {' '.join(command_path)}")
+
+        next_command = current_command.get_command(current_ctx, command_name)
+        if next_command is None:
+            raise click.ClickException(f"No such command: {' '.join(command_path)}")
+
+        current_ctx = click.Context(next_command, info_name=command_name, parent=current_ctx)
+        current_command = next_command
+
+    click.echo(current_command.get_help(current_ctx))
+
+
 # Register Phase 0 commands only
 cli.add_command(run)
 cli.add_command(validate)
 cli.add_command(list_cmd)
+cli.add_command(help_command)
 cli.add_command(coverage)
 cli.add_command(status)
 cli.add_command(explore)

@@ -13,7 +13,10 @@ This project is designed for focused, test-backed changes.
 ## Verification
 
 ```bash
-pytest tests/unit -q
+uv run --extra dev pytest tests -q
+uv run --extra dev ruff check dokumen dokumen_schema tests
+uv run --extra dev black --check dokumen dokumen_schema tests
+uv run --extra dev dokumen validate
 ```
 
 For CLI changes, include command-level tests for exit codes and output shape.

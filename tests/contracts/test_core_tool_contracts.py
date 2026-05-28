@@ -114,7 +114,16 @@ def test_cli_help_groups_commands_and_keeps_create_removed():
     assert "  run " in result.output
     assert "  validate " in result.output
     assert "  list " in result.output
+    assert "  help " in result.output
     assert "  create " not in result.output
+
+    help_result = runner.invoke(cli, ["help"])
+    assert help_result.exit_code == 0
+    assert "Core Commands:" in help_result.output
+
+    run_help = runner.invoke(cli, ["help", "run"])
+    assert run_help.exit_code == 0
+    assert "Run skill tests." in run_help.output
 
     missing = runner.invoke(cli, ["create", "--help"])
     assert missing.exit_code != 0

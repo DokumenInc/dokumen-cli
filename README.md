@@ -29,7 +29,8 @@ whether an independent judge agrees that it met the stated bar.
 - Run skill tests from YAML scaffolds.
 - Define pass/fail success criteria as judge prompts.
 - Validate scaffolds and project configuration before CI execution.
-- Run exploration before execution so agents can discover relevant files.
+- Optionally run exploration before execution so agents can discover relevant
+  files.
 - Support browser-oriented tests through Playwright MCP tools.
 - Emit JSON, JUnit, TAP, and text output for CI and dashboards.
 
@@ -46,9 +47,17 @@ Useful supporting commands:
 
 Dokumen requires Python 3.11 or newer.
 
+For a local checkout:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -e .
+```
+
+For development:
+
+```bash
 pip install -e ".[dev]"
 ```
 
@@ -202,6 +211,7 @@ Supporting commands:
 
 | Command | Purpose |
 | --- | --- |
+| `dokumen help` | Show general help or help for a command. |
 | `dokumen explore` | Discover files relevant to a topic. |
 | `dokumen summarize` | Build summary indexes for large source sets. |
 | `dokumen config` | View or edit project configuration. |
