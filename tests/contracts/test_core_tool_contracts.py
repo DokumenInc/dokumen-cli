@@ -115,6 +115,8 @@ def test_cli_help_groups_commands_and_keeps_create_removed():
     result = runner.invoke(cli, ["--help"])
 
     assert result.exit_code == 0
+    assert "Business SOP Agent Test CLI" in result.output
+    assert "Test whether agents follow business SOPs" in result.output
     assert "Core Commands:" in result.output
     assert "Supporting Commands:" in result.output
     assert "Experimental Commands:" in result.output
@@ -130,7 +132,7 @@ def test_cli_help_groups_commands_and_keeps_create_removed():
 
     run_help = runner.invoke(cli, ["help", "run"])
     assert run_help.exit_code == 0
-    assert "Run skill tests." in run_help.output
+    assert "Run agent SOP tests." in run_help.output
 
     nested_help = runner.invoke(cli, ["help", "list", "tests"])
     assert nested_help.exit_code == 0
@@ -149,10 +151,14 @@ def test_distribution_metadata_shares_only_the_public_cli_surface():
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     project = pyproject["project"]
 
-    assert project["description"] == "CLI for testing Claude Code-style skills with LLM judges"
+    assert (
+        project["description"]
+        == "CLI for testing whether agents follow business SOPs with LLM judges"
+    )
     assert project["urls"]["Repository"] == "https://github.com/DokumenInc/dokumen-cli"
     assert project["urls"]["Documentation"].endswith("#readme")
-    assert "claude-code" in project["keywords"]
+    assert "business-sops" in project["keywords"]
+    assert "agent-evals" in project["keywords"]
     assert "Topic :: Software Development :: Testing" in project["classifiers"]
     assert project["scripts"] == {"dokumen": "dokumen.cli:cli"}
 
@@ -170,7 +176,7 @@ def test_manifest_includes_docs_examples_and_packaged_authoring_skill():
     assert "include LICENSE" in manifest
     assert "include .claude/skills/dokumen-test-author/SKILL.md" in manifest
     assert "recursive-include docs *.md" in manifest
-    assert "recursive-include examples/skill-use *.md *.yaml *.txt" in manifest
+    assert "recursive-include examples/business-sop *.md *.yaml *.txt" in manifest
     assert "recursive-include tests *.py *.yaml *.txt *.html" in manifest
 
 
@@ -181,15 +187,15 @@ def test_packaged_authoring_skill_has_valid_frontmatter():
     metadata = yaml.safe_load(frontmatter)
 
     assert metadata["name"] == "dokumen-test-author"
-    assert "Dokumen CLI test scaffolds" in metadata["description"]
-    assert "executor.skills" in body
+    assert "business SOP adherence" in metadata["description"]
+    assert "executor.sops" in body
     assert "dokumen validate" in body
 
 
 async def test_coordinator_stage_returns_canonical_executor_result(tmp_path):
     executor = SimpleNamespace(
-        system_prompt="You are testing a skill.",
-        user_prompt="Use the release-note-review skill and report the key findings.",
+        system_prompt="You are testing an SOP.",
+        user_prompt="Follow the refund escalation SOP and report the key findings.",
         tools=[SimpleNamespace(name="read_file")],
         provider=None,
     )
@@ -221,7 +227,7 @@ async def test_coordinator_stage_returns_canonical_executor_result(tmp_path):
     assert result_ctx.executor_output.success is True
     assert "[stub] would execute:" in result_ctx.executor_output.final_response
     assert result_ctx.executor_output.original_user_prompt == (
-        "Use the release-note-review skill and report the key findings."
+        "Follow the refund escalation SOP and report the key findings."
     )
     assert f"OUTPUT FOLDER: {tmp_path}" in result_ctx.executor_output.user_prompt
     assert f"OUTPUT FOLDER: {tmp_path}" in judge.system_prompt
@@ -264,8 +270,8 @@ async def test_coordinator_sdk_worker_mode_maps_executor_result(monkeypatch):
 
 def test_shared_prompt_preparation_updates_executor_and_judges(tmp_path):
     executor = SimpleNamespace(
-        system_prompt="You are testing a skill.",
-        user_prompt="Use the release-note-review skill.",
+        system_prompt="You are testing an SOP.",
+        user_prompt="Follow the refund escalation SOP.",
     )
     judge = SimpleNamespace(id="success-criteria", system_prompt="Judge the executor output.")
     ctx = PipelineContext(
@@ -281,7 +287,7 @@ def test_shared_prompt_preparation_updates_executor_and_judges(tmp_path):
 
     prepare_agent_prompts(ctx, "executor", get_logger("tests.prompting"))
 
-    assert ctx.original_user_prompt == "Use the release-note-review skill."
+    assert ctx.original_user_prompt == "Follow the refund escalation SOP."
     assert f"OUTPUT FOLDER: {tmp_path}" in ctx.executor.user_prompt
     assert f"OUTPUT FOLDER: {tmp_path}" in judge.system_prompt
     assert ctx.original_judge_prompts == {"success-criteria": "Judge the executor output."}
@@ -321,49 +327,51 @@ def test_final_response_reconstruction_uses_assistant_conversation_chunks():
     )
 
 
-def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):
-    skill_dir = tmp_path / "skills"
-    skill_dir.mkdir()
-    (skill_dir / "release-note-review.md").write_text(
-        "# Release Note Review\n\n"
-        "When reviewing release notes, check that the audience, changed behavior, "
-        "and required user action are all explicit.\n",
+def test_executor_is_normally_prompted_to_follow_a_named_sop(tmp_path):
+    sop_dir = tmp_path / "sops"
+    sop_dir.mkdir()
+    (sop_dir / "refund-escalation-sop.md").write_text(
+        "# Refund Escalation SOP\n\n"
+        "When reviewing refund requests, identify the plan, amount, refund-window "
+        "status, escalation requirement, and next action.\n",
         encoding="utf-8",
     )
 
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
-    (docs_dir / "release-notes.md").write_text(
-        "Feature flags now require an owner field before rollout.\n",
+    (docs_dir / "customer-ticket.md").write_text(
+        "Northstar Logistics is on an Enterprise plan and requests a $1,200 refund "
+        "18 days after payment.\n",
         encoding="utf-8",
     )
 
     tests_dir = tmp_path / "tests"
     tests_dir.mkdir()
-    scaffold_path = tests_dir / "release-note-skill.test.yaml"
+    scaffold_path = tests_dir / "refund-escalation.test.yaml"
     scaffold_path.write_text(
         yaml.safe_dump(
             {
-                "name": "release-note-skill",
-                "reason": "Verify the executor applies a named skill before the judge evaluates it.",
-                "files": [{"path": "docs/release-notes.md"}],
+                "name": "refund-escalation",
+                "reason": "Verify the executor follows a named SOP before judging.",
+                "files": [{"path": "docs/customer-ticket.md"}],
                 "executor": {
-                    "skills": ["release-note-review"],
+                    "sops": ["refund-escalation-sop"],
                     "tools": ["read_file"],
                     "user_prompt": (
-                        "Use the release-note-review skill to inspect the referenced "
-                        "release notes file. Report the audience, changed behavior, "
-                        "and required user action."
+                        "Follow the refund-escalation-sop while reviewing the referenced "
+                        "customer ticket. Report the plan, amount, refund-window status, "
+                        "escalation requirement, and next action."
                     ),
                 },
                 "judges": [
                     {
-                        "name": "skill-success-criteria",
+                        "name": "sop-success-criteria",
                         "include_executor_output": True,
                         "system_prompt": (
-                            "Pass only if the executor explicitly applied the "
-                            "release-note-review skill and reported audience, "
-                            "changed behavior, and required user action. Return JSON: "
+                            "Pass only if the executor explicitly followed the "
+                            "refund escalation SOP and reported plan, amount, "
+                            "refund-window status, escalation requirement, and next "
+                            "action. Return JSON: "
                             '{"verdict": "PASS" or "FAIL", "reason": "..."}'
                         ),
                     }
@@ -376,10 +384,10 @@ def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):
 
     test = load_scaffold(str(scaffold_path), project_root=str(tmp_path))
 
-    assert "Use the release-note-review skill" in test.executor.user_prompt
-    assert "## Available Skills" in test.executor.system_prompt
-    assert "Release Note Review" in test.executor.system_prompt
-    assert "release-note-review" in test.resolved_skills
+    assert "Follow the refund-escalation-sop" in test.executor.user_prompt
+    assert "## Available Instructions and SOPs" in test.executor.system_prompt
+    assert "Refund Escalation SOP" in test.executor.system_prompt
+    assert "refund-escalation-sop" in test.resolved_skills
     assert test.coordinator_config is None or test.coordinator_config.enabled is False
 
 

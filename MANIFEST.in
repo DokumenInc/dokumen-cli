@@ -6,7 +6,7 @@ include VERSION
 include dokumen.yaml
 include .claude/skills/dokumen-test-author/SKILL.md
 recursive-include docs *.md
-recursive-include examples/skill-use *.md *.yaml *.txt
+recursive-include examples/business-sop *.md *.yaml *.txt
 recursive-include dokumen/prompts *.txt
 recursive-include dokumen/skills *.yaml
 recursive-include tests *.py *.yaml *.txt *.html

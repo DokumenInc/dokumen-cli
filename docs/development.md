@@ -1,7 +1,7 @@
 # Development
 
 This guide is for engineers changing Dokumen itself. The main product path is a
-CLI command that runs a Claude Code-style skill attempt and then asks LLM judges
+CLI command that runs an agent against a business SOP and then asks LLM judges
 whether the attempt met the scaffold's success criteria.
 
 ## Setup
@@ -45,7 +45,7 @@ when a cleanup needs a durable guardrail.
 - Coverage and status commands are experimental; do not let coverage concerns
   complicate the core executor-plus-judge path.
 - Coordinator mode should remain disabled by default. The standard behavior is
-  one executor prompted to use a skill, followed by LLM judge evaluation.
+  one executor prompted to follow an SOP, followed by LLM judge evaluation.
 
 ## Adding A Command
 

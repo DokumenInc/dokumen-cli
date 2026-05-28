@@ -1,5 +1,5 @@
 """
-Test Object module for the Skill Testing Framework.
+Test Object module for the Agent SOP Testing Framework.
 
 Represents a single test case that orchestrates executor and judge agents.
 """

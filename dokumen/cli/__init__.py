@@ -1,8 +1,8 @@
 """
-CLI for testing Claude Code-style skills with LLM judges.
+CLI for testing whether agents follow business SOPs with LLM judges.
 
 Core Commands:
-    dokumen run               Run skill tests
+    dokumen run               Run agent SOP tests
     dokumen validate          Validate config and test scaffolds
     dokumen list tests|files  List resources
 """
@@ -65,7 +65,7 @@ BANNER = r"""
  / /_/ / /_/ / ,< / /_/ / / / / / /  __/ / / /
 /_____/\____/_/|_|\__,_/_/ /_/ /_/\___/_/ /_/
 
-       Claude Code Skill Test CLI
+       Business SOP Agent Test CLI
 """
 
 
@@ -170,10 +170,10 @@ class DokumenGroup(click.Group):
 @click.option("--log-file", type=click.Path(), help="Log file path for persistent logging")
 @click.pass_context
 def cli(ctx, config: Optional[str], debug: bool, log_level: str, log_file: Optional[str]):
-    """Test Claude Code-style skills with LLM judges.
+    """Test whether agents follow business SOPs with LLM judges.
 
-    Dokumen runs a skill attempt with allowed tools, then judge agents evaluate
-    the result against explicit success criteria.
+    Dokumen runs an agent attempt with allowed tools, then judge agents evaluate
+    whether it followed the configured procedure and success criteria.
     """
     ctx.ensure_object(dict)
     ctx.obj["config_path"] = config

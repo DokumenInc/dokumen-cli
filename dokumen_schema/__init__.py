@@ -82,6 +82,7 @@ class ExecutorConfig(BaseModel):
     tools: Optional[list[str]] = None
     agent: Optional[str] = None
     model: Optional[str] = None
+    sops: Optional[list[str]] = None
     skills: Optional[list[str]] = None
     max_iterations: Optional[int] = None
 
@@ -118,6 +119,7 @@ class JudgeConfig(BaseModel):
     include_executor_output: bool = True
     agent: Optional[str] = None
     model: Optional[str] = None
+    sops: Optional[list[str]] = None
     skills: Optional[list[str]] = None
 
     @field_validator("system_prompt")

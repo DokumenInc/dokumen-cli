@@ -5,10 +5,10 @@ for public-facing explanations; use this file for package-level orientation.
 
 ## Execution Model
 
-Dokumen turns YAML scaffolds into executable skill tests. Each test has an
-executor that performs a grounded task and judges that evaluate the result. The
-test pipeline keeps setup, exploration, execution, judging, memory extraction,
-and artifact collection as separate stages.
+Dokumen turns YAML scaffolds into executable agent SOP tests. Each test has an
+executor that performs a grounded business task and judges that evaluate the
+result. The test pipeline keeps setup, exploration, execution, judging, memory
+extraction, and artifact collection as separate stages.
 
 ## Working Rules
 

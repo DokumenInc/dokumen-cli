@@ -50,7 +50,7 @@ def coverage(
     """View experimental source coverage (file-level).
 
     This helper reports which configured source files have passing, failing, or
-    missing skill tests. It is useful for local triage, but the core Dokumen
+    missing SOP tests. It is useful for local triage, but the core Dokumen
     contract is pass/fail judging from `dokumen run`.
 
     Examples:

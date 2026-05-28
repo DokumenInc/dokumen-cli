@@ -1,5 +1,5 @@
 """
-Anthropic Provider for the Skill Testing Framework.
+Anthropic provider for the Agent SOP Testing Framework.
 """
 
 from typing import Any, Dict, List, Optional

@@ -1,5 +1,5 @@
 """
-Tools Object module for the Skill Testing Framework.
+Tools Object module for the Agent SOP Testing Framework.
 
 Provides legacy tool factories and registries.
 """

@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dokumen"
 version = "4.0.1"
-description = "CLI for testing Claude Code-style skills with LLM judges"
+description = "CLI for testing whether agents follow business SOPs with LLM judges"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Justin Lee"}
 ]
-keywords = ["claude-code", "skills", "agents", "testing", "cli", "llm-evaluation"]
+keywords = ["business-sops", "agents", "testing", "cli", "llm-evaluation", "agent-evals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",

@@ -7,38 +7,41 @@
  / /_/ / /_/ / ,< / /_/ / / / / / /  __/ / / /
 /_____/\____/_/|_|\__,_/_/ /_/ /_/\___/_/ /_/
 
-       Claude Code Skill Test CLI
+       Business SOP Agent Test CLI
 ```
 
-Dokumen is a CLI for testing Claude Code-style skills with LLM judges. You
-define a task, the tools the agent may use, and the success criteria. Dokumen
-runs the skill attempt and then asks judge agents whether the result passed.
+Dokumen is a CLI for testing whether agents can follow business SOPs. You
+define a task, the procedure the agent should follow, the tools the agent may
+use, and the success criteria. Dokumen runs the agent attempt and then asks LLM
+judges whether the result followed the SOP.
 
 This README is for engineers evaluating, presenting, or running the CLI. After
-reading it, you should be able to install Dokumen, write a skill test scaffold
+reading it, you should be able to install Dokumen, write an SOP test scaffold
 with success criteria, run it from the command line, and understand the main
 executor-judge model.
 
 ## What It Does
 
-Dokumen turns skill quality into a repeatable command:
+Dokumen turns SOP adherence into a repeatable command:
 
-1. A scaffold describes the skill task, source files, tools, and judge criteria.
+1. A scaffold describes the business case, source files, tools, SOP references,
+   and judge criteria.
 2. An executor agent attempts the task with the allowed tools.
 3. One or more LLM judges evaluate the final output and tool log against the
    success criteria.
 4. Dokumen writes machine-readable results, CI output, debug traces, and any
    generated artifacts.
 
-This makes agent-facing skills testable in CI. Instead of asking whether a skill
-or workflow looks complete, Dokumen asks whether an agent can execute it and
-whether an independent judge agrees that it met the stated bar.
+This makes agent behavior testable in CI. Instead of asking whether a workflow
+or prompt looks complete, Dokumen asks whether an agent can execute the
+procedure and whether an independent judge agrees that it met the stated bar.
 
 ## Core Capabilities
 
-- Run skill tests from YAML scaffolds.
+- Run agent SOP tests from YAML scaffolds.
 - Define pass/fail success criteria as judge prompts.
 - Validate scaffolds and project configuration before CI execution.
+- Inject reusable SOPs or instructions into executor and judge prompts.
 - Optionally run exploration before execution so agents can discover relevant
   files.
 - Support browser-oriented tests through Playwright MCP tools.
@@ -48,8 +51,8 @@ Useful supporting commands:
 
 - Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
-- Author new test scaffolds with the packaged Claude Code skill named
-  `dokumen-test-author`.
+- Author new test scaffolds with the packaged authoring skill named
+  `dokumen-test-author` when working inside Claude Code.
 - Track file-level source coverage with `dokumen coverage` and `dokumen status`
   as experimental commands.
 
@@ -88,8 +91,6 @@ provider:
   model: claude-haiku-4-5-20251001
 execution:
   timeout: 600
-skills:
-  include_system: true
 explore:
   enabled: false
 compaction:
@@ -98,100 +99,106 @@ coordinator:
   enabled: false
 ```
 
+Create a reusable SOP under `sops/refund-escalation-sop.md`:
+
+```markdown
+# Refund Escalation SOP
+
+When reviewing a refund request:
+
+- Identify the customer's plan, request amount, and stated reason.
+- Confirm whether the request is inside the 30-day refund window.
+- Escalate to Finance when the amount is over $500 or the customer is on an
+  enterprise plan.
+- Include the recommended next action and the reason for that action.
+```
+
 Create a test scaffold under `tests/`:
 
 ```yaml
-name: api-authentication-skill
-reason: Verify that an agent can apply the API authentication review skill.
+name: refund-escalation
+reason: Verify that the executor follows the refund escalation SOP.
 
 files:
-  - path: docs/authentication.md
+  - path: docs/customer-ticket.md
 
 executor:
-  skills:
-    - api-authentication-review
-  user_prompt: |
-    Use the api-authentication-review skill to inspect the authentication docs.
-    Report the supported authentication methods, required headers, and setup
-    steps.
+  sops:
+    - refund-escalation-sop
   tools:
     - read_file
-    - glob
+  user_prompt: |
+    Follow the refund-escalation-sop while reviewing the referenced customer
+    ticket. Report the customer's plan, request amount, refund-window status,
+    escalation requirement, and recommended next action.
 
 judges:
-  - name: groundedness
+  - name: sop-success-criteria
+    include_executor_output: true
     system_prompt: |
-      Pass only if the answer is fully grounded in the referenced docs and
-      clearly answers the user's question.
+      Pass only if the executor output proves it followed the refund escalation
+      SOP and clearly reports the plan, amount, refund-window status,
+      escalation requirement, and recommended next action.
       Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
-```
-
-Create the referenced skill under `skills/api-authentication-review.md`:
-
-```markdown
-# API Authentication Review
-
-When reviewing authentication docs, identify supported methods, required
-headers, setup steps, and any missing operational constraints.
 ```
 
 The judge prompt is the success criteria. Keep it specific enough that a fresh
 LLM judge can decide pass or fail from the executor output and tool log.
 
-## Skill-Use Pattern
+## SOP Test Pattern
 
-The normal Dokumen test shape is a single executor prompted to use a named skill,
-followed by an LLM judge that checks whether the skill was applied correctly.
-Coordinator mode is off by default and is not part of this path.
+The normal Dokumen test shape is a single executor prompted to follow a named
+SOP, followed by an LLM judge that checks whether the procedure was followed
+correctly. Coordinator mode is off by default and is not part of this path.
 
-Place skills in `skills/`:
+Place SOPs in `sops/`:
 
 ```markdown
-# Release Note Review
+# Account Cancellation SOP
 
-When reviewing release notes, identify the audience, changed behavior, required
-user action, and any vague migration language.
+When processing a cancellation request, identify the customer's account tier,
+contract term, cancellation date, required approvals, and retention-risk notes.
 ```
 
-Reference and prompt the skill from a scaffold:
+Reference and prompt the SOP from a scaffold:
 
 ```yaml
-name: release-note-skill
+name: account-cancellation
 
 files:
-  - path: docs/release-notes.md
+  - path: docs/cancellation-ticket.md
 
 executor:
-  skills:
-    - release-note-review
+  sops:
+    - account-cancellation-sop
   tools:
     - read_file
   user_prompt: |
-    Use the release-note-review skill to inspect the referenced release notes
-    file. Report the audience, changed behavior, required user action, and any
-    vague migration language.
+    Follow the account-cancellation-sop while reviewing the referenced ticket.
+    Report the required approvals, risks, and next action.
 
 judges:
-  - name: release-note-success-criteria
+  - name: sop-success-criteria
     include_executor_output: true
     system_prompt: |
-      Pass only if the executor output proves it used the release-note-review
-      skill and clearly reports the audience, changed behavior, required user
-      action, and whether vague migration language exists.
+      Pass only if the executor output follows the SOP and clearly reports the
+      required approvals, risks, and next action.
       Return JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}
 ```
 
+The legacy `executor.skills` field still works for existing scaffolds. New
+business-process tests should prefer `executor.sops` so the intent is clear.
+
 A complete copyable example lives in
-[`examples/skill-use`](examples/skill-use/README.md).
+[`examples/business-sop`](examples/business-sop/README.md).
 
-## Authoring With Claude Code
+## Authoring Tests
 
-This repo packages a Claude Code skill named `dokumen-test-author` for creating
-or revising Dokumen tests. Use that skill when you want Claude Code to add a
-test scaffold. It replaces the removed scaffold-generation command and keeps
-authoring aligned with the preferred skill-use pattern: define or reuse a skill,
-prompt the executor to use it, and write a judge that evaluates explicit success
-criteria.
+This repo packages an authoring helper named `dokumen-test-author` for creating
+or revising Dokumen tests in Claude Code. It replaces the removed
+scaffold-generation command and keeps authoring aligned with the preferred SOP
+test pattern: define or reuse an SOP, prompt the executor to follow it, and
+write a judge that evaluates explicit success criteria.
 
 Validate and run:
 
@@ -213,7 +220,7 @@ Core commands:
 
 | Command | Purpose |
 | --- | --- |
-| `dokumen run` | Execute skill tests. |
+| `dokumen run` | Execute agent SOP tests. |
 | `dokumen validate` | Validate configuration and test scaffolds. |
 | `dokumen list` | List tests, files, or tools. |
 
@@ -246,8 +253,8 @@ Each test runs through a stage pipeline:
 7. Write results and optional experimental coverage files.
 
 The important design choice is that execution and evaluation are separate. The
-executor attempts the skill. The judges prove the result satisfies the test's
-criteria.
+executor attempts the business task. The judges prove the result satisfies the
+test's criteria.
 
 The default test path is intentionally narrow: scaffolds are loaded locally,
 executor and judge agents run through the Claude Agent SDK, browser actions go

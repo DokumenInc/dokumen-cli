@@ -1,5 +1,5 @@
 """
-Test builder for the Skill Testing Framework.
+Test builder for the Agent SOP Testing Framework.
 
 Handles creating LLM providers, constructing SDK executor/judge agents,
 building TestObject instances, and provider configuration from environment/config.

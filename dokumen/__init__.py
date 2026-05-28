@@ -1,7 +1,8 @@
 """
-Dokumen - Skill Testing Framework
+Dokumen - Agent SOP Testing Framework
 
-A framework for testing agent skills against project knowledge and tools.
+A framework for testing whether agents follow business procedures with project
+knowledge and tools.
 """
 
 from pathlib import Path

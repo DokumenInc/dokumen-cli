@@ -1,5 +1,5 @@
 """
-Scaffold module for the Skill Testing Framework.
+Scaffold module for the Agent SOP Testing Framework.
 
 Provides scaffold generation, validation, and discovery.
 """

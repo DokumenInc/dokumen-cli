@@ -1,8 +1,8 @@
 # Architecture
 
 This document is for engineers who need to understand how Dokumen executes a
-skill test or safely extend the runtime. After reading it, you should be able to
-trace a scaffold from YAML into agent execution and result output.
+business SOP test or safely extend the runtime. After reading it, you should be
+able to trace a scaffold from YAML into agent execution and result output.
 
 ## System Model
 
@@ -10,10 +10,12 @@ Dokumen is organized around four concepts:
 
 - A project configuration defines provider/model settings, tools, optional
   experimental coverage settings, and execution defaults.
-- A test scaffold describes an agent skill, the files it covers, the tools
-  the executor can use, and the judge success criteria that evaluate the result.
+- A test scaffold describes a business task, the files it covers, the SOPs or
+  reusable instructions the executor should follow, the tools the executor can
+  use, and the judge success criteria that evaluate the result.
 - A loader resolves scaffolds into executable test objects by applying
-  configuration, skills, agents, tools, and model overrides.
+  configuration, SOPs, reusable instructions, agents, tools, and model
+  overrides.
 - A pipeline runs each test through independent stages and emits a structured
   result.
 
@@ -21,14 +23,15 @@ The executor and judge roles stay separate by design. Executors perform work
 using project knowledge and tools. Judges evaluate whether the work satisfies
 the explicit success criteria in the scaffold.
 
-The default test shape is intentionally simple: one executor is prompted to use
-a named skill, then one or more LLM judges evaluate the outcome. Coordinator
-mode is an advanced opt-in path and should stay disabled by default.
+The default test shape is intentionally simple: one executor is prompted to
+follow a named SOP, then one or more LLM judges evaluate the outcome.
+Coordinator mode is an advanced opt-in path and should stay disabled by
+default.
 
 ## Runtime Flow
 
 1. The CLI loads project configuration and discovers test scaffolds.
-2. The loader validates each scaffold and resolves provider, agent, skill, and
+2. The loader validates each scaffold and resolves provider, agent, SOP, and
    tool settings.
 3. A test suite filters tests by command-line flags and manages cache state.
 4. Each test runs through the pipeline.
@@ -141,7 +144,8 @@ can be human-friendly without breaking integrations.
 Use the existing extension points before adding new framework concepts:
 
 - Add commands through the CLI command group.
-- Add prompt behavior through prompts, skills, or agent definitions.
+- Add prompt behavior through prompts, SOPs, reusable instructions, or agent
+  definitions.
 - Add execution behavior through pipeline stages.
 - Add tools through the tool resolver and SDK/MCP mapping.
 - Add provider support through the provider abstraction or router.

@@ -1,5 +1,5 @@
 """
-Summary index module for the Skill Testing Framework.
+Summary index module for the Agent SOP Testing Framework.
 
 Generates, parses, and manages DOKUMEN_SUMMARIES_INDEX.md files that
 contain pre-computed summaries of documentation files. The explore agent

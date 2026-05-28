@@ -1,5 +1,5 @@
 """
-Loader module for the Skill Testing Framework.
+Loader module for the Agent SOP Testing Framework.
 
 Thin orchestrator that delegates to focused sub-modules:
 - scaffold_parser: YAML parsing, prompt substitution, browser/viewport config
@@ -93,7 +93,7 @@ def _collect_skills(
     scaffold_skill_names: Optional[List[str]],
     base_dir: str,
 ) -> List[Tuple[str, str, str]]:
-    """Collect and merge skills from DB and scaffold sources.
+    """Collect and merge reusable instructions from DB and scaffold sources.
 
     This wrapper exists so that patching `dokumen.loader.get_agent_skills`
     in tests intercepts the call inside skill collection (backward compat).
@@ -110,12 +110,12 @@ def _collect_skills(
             result.append((name, content, "agent:db"))
             seen_names.add(name)
             logger.info(
-                "loader.skill.db",
-                skill_name=name,
+                "loader.instruction.db",
+                instruction_name=name,
                 content_length=len(content),
             )
 
-    # Source B: Scaffold skills (resolved via SkillLoader from workspace)
+    # Source B: Scaffold instructions (resolved via SkillLoader from workspace)
     if scaffold_skill_names:
         loader = SkillLoader()
         workspace_skills = loader.load_skills(base_dir)
@@ -124,8 +124,8 @@ def _collect_skills(
         for skill_name in scaffold_skill_names:
             if skill_name in seen_names:
                 logger.info(
-                    "loader.skill.dedup",
-                    skill_name=skill_name,
+                    "loader.instruction.dedup",
+                    instruction_name=skill_name,
                     kept_source="agent:db",
                 )
                 continue
@@ -133,21 +133,36 @@ def _collect_skills(
             skill_info = workspace_map.get(skill_name)
             if skill_info is None:
                 raise ValueError(
-                    f"Scaffold references skill '{skill_name}' but it was not found "
-                    f"in workspace skill directories. "
+                    f"Scaffold references instruction '{skill_name}' but it was not found "
+                    f"in workspace instruction directories. "
                     f"Searched: {', '.join(SkillLoader()._paths)}"
                 )
 
             result.append((skill_name, skill_info.content, "scaffold"))
             seen_names.add(skill_name)
             logger.info(
-                "loader.skill.scaffold",
-                skill_name=skill_name,
+                "loader.instruction.scaffold",
+                instruction_name=skill_name,
                 file_path=skill_info.file_path,
                 content_length=len(skill_info.content),
             )
 
     return result
+
+
+def _scaffold_instruction_names(section: dict) -> Optional[List[str]]:
+    """Return reusable instruction names from the new SOP field and legacy skills field."""
+    names: List[str] = []
+    for key in ("sops", "skills"):
+        value = section.get(key)
+        if not value:
+            continue
+        if isinstance(value, str):
+            value = [value]
+        for item in value:
+            if item not in names:
+                names.append(item)
+    return names or None
 
 
 # Public alias for backward compatibility
@@ -329,15 +344,15 @@ def load_scaffold(
             prompt_length=len(executor_system_prompt),
         )
 
-    executor_skill_names = executor_data.get("skills", None)
+    executor_skill_names = _scaffold_instruction_names(executor_data)
     executor_skills = collect_skills(scaffold_skill_names=executor_skill_names, base_dir=base_dir)
     if executor_skills:
         executor_system_prompt += format_skills_for_prompt(executor_skills)
         logger.info(
-            "loader.executor_skills_injected",
+            "loader.executor_instructions_injected",
             scaffold=name,
-            skill_count=len(executor_skills),
-            skill_names=[s[0] for s in executor_skills],
+            instruction_count=len(executor_skills),
+            instruction_names=[s[0] for s in executor_skills],
         )
 
     # ── Step 8: Build SDK executor ────────────────────────────────────────
@@ -676,16 +691,16 @@ def _build_single_judge(
     )
 
     # Inject skills
-    judge_skill_names = judge_data.get("skills", None)
+    judge_skill_names = _scaffold_instruction_names(judge_data)
     judge_skills = collect_skills(scaffold_skill_names=judge_skill_names, base_dir=base_dir)
     if judge_skills:
         judge_system_prompt += format_skills_for_prompt(judge_skills)
         logger.info(
-            "loader.judge_skills_injected",
+            "loader.judge_instructions_injected",
             scaffold=name,
             judge=judge_name,
-            skill_count=len(judge_skills),
-            skill_names=[s[0] for s in judge_skills],
+            instruction_count=len(judge_skills),
+            instruction_names=[s[0] for s in judge_skills],
         )
 
     # Per-judge model override
@@ -769,7 +784,7 @@ def _collect_all_skills(
                 "used_by": "executor",
             }
     for judge_data_item in data["judges"]:
-        judge_skill_names_item = judge_data_item.get("skills", None)
+        judge_skill_names_item = _scaffold_instruction_names(judge_data_item)
         if judge_skill_names_item:
             try:
                 judge_skills_item = collect_skills(

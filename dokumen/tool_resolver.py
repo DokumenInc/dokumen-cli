@@ -1,5 +1,5 @@
 """
-Tool resolution for the Skill Testing Framework.
+Tool resolution for the Agent SOP Testing Framework.
 
 Handles resolving tool names to ToolDefinition objects, auto-injection
 of required tools based on agent capabilities, allowed/blocked list filtering,

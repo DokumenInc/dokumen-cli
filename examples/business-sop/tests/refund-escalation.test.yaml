@@ -1,0 +1,30 @@
+name: refund-escalation
+reason: Verify that the executor follows the refund escalation SOP.
+
+files:
+  - path: docs/customer-ticket.md
+
+executor:
+  sops:
+    - refund-escalation-sop
+  tools:
+    - read_file
+  user_prompt: |
+    Follow the refund-escalation-sop while reviewing the referenced customer
+    ticket. Report the customer's plan, request amount, refund-window status,
+    escalation requirement, and recommended next action.
+
+judges:
+  - name: sop-success-criteria
+    include_executor_output: true
+    system_prompt: |
+      Pass only if the executor output proves it followed the refund escalation
+      SOP and clearly reports:
+      - the customer is on an Enterprise plan
+      - the refund request is for $1,200
+      - the request is inside the 30-day refund window
+      - Finance escalation is required because the amount is over $500 or the
+        customer is on an enterprise plan
+      - the recommended next action
+
+      Return only JSON: {"verdict": "PASS" or "FAIL", "reason": "..."}.

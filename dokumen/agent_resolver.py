@@ -1,5 +1,5 @@
 """
-Agent resolution for the Skill Testing Framework.
+Agent resolution for the Agent SOP Testing Framework.
 
 Handles loading agent definitions from YAML files, merging agent defaults
 with scaffold overrides, skills collection and formatting, and
@@ -302,9 +302,9 @@ def compute_user_dirs(base_dir: str, agents_config: Optional[Any]) -> Optional[l
 def format_skills_for_prompt(
     skills: List[Tuple[str, str, str]],
 ) -> str:
-    """Format skills for injection into a system prompt.
+    """Format reusable instructions for injection into a system prompt.
 
-    Each skill is a (name, content, source) tuple where source indicates
+    Each item is a (name, content, source) tuple where source indicates
     origin: "agent:db", "scaffold", etc.
 
     Args:
@@ -321,20 +321,20 @@ def format_skills_for_prompt(
         sections.append(f"### {name} (source: {source})\n\n{content}")
 
     body = "\n\n---\n\n".join(sections)
-    return f"\n\n## Available Skills\n\n{body}"
+    return f"\n\n## Available Instructions and SOPs\n\n{body}"
 
 
 def collect_skills(
     scaffold_skill_names: Optional[List[str]],
     base_dir: str,
 ) -> List[Tuple[str, str, str]]:
-    """Collect and merge skills from DB and scaffold sources.
+    """Collect and merge reusable instructions from DB and scaffold sources.
 
-    DB skills (from agent_loader) take priority over scaffold skills
+    DB skills (from agent_loader) take priority over scaffold instructions
     with the same name.
 
     Args:
-        scaffold_skill_names: Skill names from scaffold YAML.
+        scaffold_skill_names: Instruction names from scaffold YAML.
         base_dir: Workspace root for SkillLoader scanning.
 
     Returns:
@@ -355,12 +355,12 @@ def collect_skills(
             result.append((name, content, "agent:db"))
             seen_names.add(name)
             logger.info(
-                "loader.skill.db",
-                skill_name=name,
+                "loader.instruction.db",
+                instruction_name=name,
                 content_length=len(content),
             )
 
-    # Source B: Scaffold skills (resolved via SkillLoader from workspace)
+    # Source B: Scaffold instructions (resolved via SkillLoader from workspace)
     if scaffold_skill_names:
         loader = SkillLoader()
         workspace_skills = loader.load_skills(base_dir)
@@ -369,8 +369,8 @@ def collect_skills(
         for skill_name in scaffold_skill_names:
             if skill_name in seen_names:
                 logger.info(
-                    "loader.skill.dedup",
-                    skill_name=skill_name,
+                    "loader.instruction.dedup",
+                    instruction_name=skill_name,
                     kept_source="agent:db",
                 )
                 continue
@@ -378,16 +378,16 @@ def collect_skills(
             skill_info = workspace_map.get(skill_name)
             if skill_info is None:
                 raise ValueError(
-                    f"Scaffold references skill '{skill_name}' but it was not found "
-                    f"in workspace skill directories. "
+                    f"Scaffold references instruction '{skill_name}' but it was not found "
+                    f"in workspace instruction directories. "
                     f"Searched: {', '.join(SkillLoader()._paths)}"
                 )
 
             result.append((skill_name, skill_info.content, "scaffold"))
             seen_names.add(skill_name)
             logger.info(
-                "loader.skill.scaffold",
-                skill_name=skill_name,
+                "loader.instruction.scaffold",
+                instruction_name=skill_name,
                 file_path=skill_info.file_path,
                 content_length=len(skill_info.content),
             )
@@ -406,8 +406,8 @@ def collect_skills(
             result.append((skill.name, skill.prompt, "system"))
             seen_names.add(skill.name)
             logger.info(
-                "loader.skill.system",
-                skill_name=skill.name,
+                "loader.instruction.system",
+                instruction_name=skill.name,
                 content_length=len(skill.prompt),
             )
     except ImportError:

@@ -1,5 +1,5 @@
 """
-Explore Agent module for the Skill Testing Framework.
+Explore Agent module for the Agent SOP Testing Framework.
 
 Provides an exploration phase that runs before the main executor to discover
 relevant documentation files and provide context.

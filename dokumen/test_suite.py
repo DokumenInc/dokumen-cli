@@ -1,5 +1,5 @@
 """
-Test Suite module for the Skill Testing Framework.
+Test Suite module for the Agent SOP Testing Framework.
 
 Manages collections of tests, caching, and coverage reporting.
 """

@@ -54,7 +54,7 @@ executor:
 
     Required web and browser checks:
     - Use web_fetch on https://example.com and report the page title or domain.
-    - Use web_search for "Dokumen AI skill testing framework" and report that it returned results.
+    - Use web_search for "Dokumen AI SOP testing framework" and report that it returned results.
     - Use browser_navigate to open http://127.0.0.1:8765/index.html.
     - Use browser_snapshot.
     - Use browser_type to type "typed-by-browser-tool" into #tool-input.

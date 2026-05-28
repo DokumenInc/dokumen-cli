@@ -1,4 +1,4 @@
-"""Workspace skill discovery used by scaffold skill references."""
+"""Workspace instruction discovery used by scaffold SOP/skill references."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import yaml
 
 @dataclass
 class SkillInfo:
-    """A discovered skill file."""
+    """A discovered reusable instruction file."""
 
     name: str
     description: str
@@ -20,13 +20,13 @@ class SkillInfo:
 
 
 class SkillLoader:
-    """Load skills from conventional workspace skill directories."""
+    """Load reusable instructions from conventional workspace directories."""
 
     def __init__(self, paths: Optional[list[str]] = None):
-        self._paths = paths or ["skills", ".dokumen/skills"]
+        self._paths = paths or ["sops", "skills", ".dokumen/sops", ".dokumen/skills"]
 
     def load_skills(self, base_dir: str = ".") -> list[SkillInfo]:
-        """Discover markdown and YAML skills below base_dir."""
+        """Discover markdown and YAML reusable instruction files below base_dir."""
         root = Path(base_dir)
         skills: list[SkillInfo] = []
         seen: set[str] = set()

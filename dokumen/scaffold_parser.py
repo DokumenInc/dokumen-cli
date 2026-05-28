@@ -1,5 +1,5 @@
 """
-Scaffold parsing utilities for the Skill Testing Framework.
+Scaffold parsing utilities for the Agent SOP Testing Framework.
 
 Handles YAML scaffold parsing, prompt variable substitution, browser/viewport
 config parsing, model normalization, and file path extraction.

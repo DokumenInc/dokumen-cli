@@ -85,7 +85,7 @@ def run(
     parallel: Optional[int],
     debug: bool,
 ):
-    """Run skill tests.
+    """Run agent SOP tests.
 
     Executes tests and reports results.
 
