@@ -13,7 +13,7 @@ execution:
   timeout: 3600
   retries: 2
 explore:
-  enabled: true
+  enabled: false
   model: claude-haiku-4-5-20251001
   max_files: 50
 compaction:
@@ -30,7 +30,7 @@ coordinator:
   worker_model: claude-haiku-4-5-20251001
   worker_timeout: 1800.0
   decompose_timeout: 300.0
-  executor_mode: api
+  executor_mode: sdk
 tasks:
   persist_to_disk: false
   enabled: false

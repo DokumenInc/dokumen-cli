@@ -37,7 +37,7 @@ SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
     (
         "compaction",
         [
-            ("enabled", "bool", True, "auto-compact conversations"),
+            ("enabled", "bool", False, "auto-compact conversations"),
             ("token_threshold", "choice:0.7,0.8,0.9,0.95", 0.9, "compact at this % of budget"),
             ("token_budget", "choice:200000,400000,1000000", 1000000, "max token budget"),
             ("keep_recent_turns", "choice:5,10,15,20,30", 20, "turns to keep after compaction"),
@@ -126,7 +126,7 @@ SCHEMA: List[Tuple[str, List[Tuple[str, str, Any, str]]]] = [
     (
         "explore",
         [
-            ("enabled", "bool", True, "scan codebase before execution"),
+            ("enabled", "bool", False, "scan codebase before execution"),
             ("max_files", "choice:50,100,200,500", 100, "max files to discover"),
         ],
     ),

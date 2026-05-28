@@ -500,13 +500,11 @@ dependencies = [
     { name = "claude-agent-sdk" },
     { name = "click" },
     { name = "httpx" },
-    { name = "onepassword-sdk" },
     { name = "pydantic" },
     { name = "pypdf" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "sentry-sdk" },
 ]
 
 [package.optional-dependencies]
@@ -519,6 +517,10 @@ dev = [
     { name = "pytest-xdist" },
     { name = "ruff" },
 ]
+integrations = [
+    { name = "onepassword-sdk" },
+    { name = "sentry-sdk" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -529,7 +531,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12" },
-    { name = "onepassword-sdk", specifier = ">=0.3.0" },
+    { name = "onepassword-sdk", marker = "extra == 'integrations'", specifier = ">=0.3.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pypdf", specifier = ">=4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
@@ -540,9 +542,9 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.31" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
-    { name = "sentry-sdk", specifier = ">=1.40.0" },
+    { name = "sentry-sdk", marker = "extra == 'integrations'", specifier = ">=1.40.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["integrations", "dev"]
 
 [[package]]
 name = "execnet"

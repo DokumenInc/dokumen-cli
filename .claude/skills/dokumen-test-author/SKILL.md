@@ -12,7 +12,8 @@ Use this workflow to add or revise a Dokumen test scaffold.
 1. Read the nearest `dokumen.yaml`, existing `tests/*.test.yaml`, and any local
    `skills/` examples before writing a new scaffold.
 2. Prefer the default skill-use shape: one executor prompted to use a named
-   skill, followed by one or more LLM judges that evaluate success criteria.
+   skill through `executor.skills`, followed by one or more LLM judges that
+   evaluate success criteria.
 3. If the requested skill does not exist, add a concise skill file under the
    target project's `skills/` directory before writing the test.
 4. Write the scaffold under `tests/<kebab-name>.test.yaml`.

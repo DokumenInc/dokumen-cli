@@ -3,9 +3,6 @@
 import os
 import logging
 
-import sentry_sdk
-from sentry_sdk.integrations.logging import LoggingIntegration
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +31,9 @@ def init_sentry() -> None:
     environment = os.environ.get("SENTRY_ENVIRONMENT", "production")
 
     try:
+        import sentry_sdk
+        from sentry_sdk.integrations.logging import LoggingIntegration
+
         sentry_logging = LoggingIntegration(
             level=logging.WARNING,  # Breadcrumbs from WARNING+
             event_level=logging.ERROR,  # Events from ERROR+

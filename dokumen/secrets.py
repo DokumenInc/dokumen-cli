@@ -56,7 +56,13 @@ class CLISecretsManager:
             ValueError: If OP_SERVICE_ACCOUNT_TOKEN not set or auth fails
         """
         if self._client is None:
-            from onepassword import client
+            try:
+                from onepassword import client
+            except ImportError as exc:
+                raise ValueError(
+                    "1Password integration requires the optional integrations extra. "
+                    'Install with: pip install "dokumen[integrations]"'
+                ) from exc
 
             token = os.getenv("OP_SERVICE_ACCOUNT_TOKEN")
             if not token:

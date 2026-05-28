@@ -1,12 +1,10 @@
 """
 CLI for testing Claude Code-style skills with LLM judges.
 
-Phase 0 Commands:
+Core Commands:
     dokumen run               Run skill tests
     dokumen validate          Validate config and test scaffolds
     dokumen list tests|files  List resources
-    dokumen coverage          View experimental source coverage
-    dokumen status            Quick experimental coverage status for CI/CD
 """
 
 from pathlib import Path
@@ -74,17 +72,11 @@ BANNER = r"""
 class DokumenGroup(click.Group):
     """Custom group that preserves command insertion order and groups commands."""
 
-    # Define which commands are "main" vs "other"
-    MAIN_COMMANDS = {
-        "run",
-        "validate",
-        "list",
-        "coverage",
-        "status",
-        "explore",
-        "summarize",
-        "config",
-    }
+    COMMAND_GROUPS = [
+        ("Core Commands", {"run", "validate", "list"}),
+        ("Supporting Commands", {"explore", "summarize", "config"}),
+        ("Experimental Commands", {"coverage", "status"}),
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,30 +105,32 @@ class DokumenGroup(click.Group):
         if not commands:
             return
 
-        # Split into main and other
-        main_cmds = [(name, cmd) for name, cmd in commands if name in self.MAIN_COMMANDS]
-        other_cmds = [(name, cmd) for name, cmd in commands if name not in self.MAIN_COMMANDS]
-
-        # Calculate max width
         limit = formatter.width - 6 - max(len(name) for name, _ in commands)
+        rendered = set()
 
-        # Write main commands
-        if main_cmds:
-            with formatter.section("Main Commands"):
-                rows = []
-                for subcommand, cmd in main_cmds:
-                    help_text = cmd.get_short_help_str(limit=limit)
-                    rows.append((subcommand, help_text))
-                formatter.write_dl(rows)
+        for section_name, command_names in self.COMMAND_GROUPS:
+            section_cmds = [(name, cmd) for name, cmd in commands if name in command_names]
+            if not section_cmds:
+                continue
 
-        # Write other commands
+            with formatter.section(section_name):
+                formatter.write_dl(
+                    [
+                        (subcommand, cmd.get_short_help_str(limit=limit))
+                        for subcommand, cmd in section_cmds
+                    ]
+                )
+            rendered.update(name for name, _ in section_cmds)
+
+        other_cmds = [(name, cmd) for name, cmd in commands if name not in rendered]
         if other_cmds:
             with formatter.section("Other Commands"):
-                rows = []
-                for subcommand, cmd in other_cmds:
-                    help_text = cmd.get_short_help_str(limit=limit)
-                    rows.append((subcommand, help_text))
-                formatter.write_dl(rows)
+                formatter.write_dl(
+                    [
+                        (subcommand, cmd.get_short_help_str(limit=limit))
+                        for subcommand, cmd in other_cmds
+                    ]
+                )
 
     def format_options(self, ctx, formatter):
         """Override to NOT call format_commands (we handle that separately)."""

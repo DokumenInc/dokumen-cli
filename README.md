@@ -37,8 +37,8 @@ Useful supporting commands:
 
 - Generate summaries for text, image, and PDF source material with
   `dokumen summarize`.
-- Author new test scaffolds with the packaged Claude Code skill in
-  `.claude/skills/dokumen-test-author`.
+- Author new test scaffolds with the packaged Claude Code skill named
+  `dokumen-test-author`.
 - Track file-level source coverage with `dokumen coverage` and `dokumen status`
   as experimental commands.
 
@@ -67,11 +67,16 @@ version: "1.0"
 provider:
   name: anthropic
   model: claude-haiku-4-5-20251001
-coverage:
-  include:
-    - docs/**/*.md
 execution:
   timeout: 600
+skills:
+  include_system: true
+explore:
+  enabled: false
+compaction:
+  enabled: false
+coordinator:
+  enabled: false
 ```
 
 Create a test scaffold under `tests/`:
@@ -162,13 +167,12 @@ A complete copyable example lives in
 
 ## Authoring With Claude Code
 
-This repo packages a Claude Code skill for creating or revising Dokumen tests:
-`.claude/skills/dokumen-test-author/SKILL.md`.
-
-Use that skill when you want Claude Code to add a test scaffold. It replaces the
-old `dokumen create` command and keeps authoring aligned with the preferred
-skill-use pattern: define or reuse a skill, prompt the executor to use it, and
-write a judge that evaluates explicit success criteria.
+This repo packages a Claude Code skill named `dokumen-test-author` for creating
+or revising Dokumen tests. Use that skill when you want Claude Code to add a
+test scaffold. It replaces the removed scaffold-generation command and keeps
+authoring aligned with the preferred skill-use pattern: define or reuse a skill,
+prompt the executor to use it, and write a judge that evaluates explicit success
+criteria.
 
 Validate and run:
 
@@ -186,23 +190,35 @@ dokumen run --output junit
 
 ## Command Overview
 
+Core commands:
+
 | Command | Purpose |
 | --- | --- |
 | `dokumen run` | Execute skill tests. |
 | `dokumen validate` | Validate configuration and test scaffolds. |
 | `dokumen list` | List tests, files, or tools. |
-| `dokumen coverage` | Show experimental file-level source coverage. |
-| `dokumen status` | Emit an experimental compact coverage status summary. |
+
+Supporting commands:
+
+| Command | Purpose |
+| --- | --- |
 | `dokumen explore` | Discover files relevant to a topic. |
 | `dokumen summarize` | Build summary indexes for large source sets. |
 | `dokumen config` | View or edit project configuration. |
+
+Experimental commands:
+
+| Command | Purpose |
+| --- | --- |
+| `dokumen coverage` | Show file-level source coverage. |
+| `dokumen status` | Emit a compact coverage status summary. |
 
 ## Test Lifecycle
 
 Each test runs through a stage pipeline:
 
 1. Prepare output directories and setup resources when requested.
-2. Explore the workspace and inject discovered context.
+2. Optionally explore the workspace and inject discovered context.
 3. Run the SDK-backed executor.
 4. Compact context when enabled.
 5. Run judges concurrently.

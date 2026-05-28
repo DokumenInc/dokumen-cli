@@ -41,7 +41,7 @@ The test pipeline uses small stages with a shared context object:
 - Browser setup prepares output directories for browser artifacts. The Claude
   Agent SDK starts Playwright MCP when browser tools are allowed.
 - Setup runs pre-test commands or background processes.
-- Explore discovers relevant files and injects retrieval context.
+- Explore optionally discovers relevant files and injects retrieval context.
 - Executor runs the main SDK-backed agent. Optional coordinator mode can
   decompose larger work across multiple workers when explicitly enabled.
 - Compaction reduces long context before judging.
@@ -100,10 +100,9 @@ The presentation-ready path is local and SDK-backed:
 
 Some integration code remains intentionally optional:
 
-- `DokuRouter` and direct provider classes still support optional adapters and
-  non-core commands such as `summarize`.
-- Backend-oriented stdin modes and workspace resolution are adapters for the
-  hosted product, not required for local scaffold execution.
+- Direct provider classes support optional adapter paths outside the primary
+  SDK-backed executor and judge flow.
+- Workspace resolution helpers are not required for local scaffold execution.
 - Coordinator, task tracking, and memory are advanced paths and are disabled by
   default.
 

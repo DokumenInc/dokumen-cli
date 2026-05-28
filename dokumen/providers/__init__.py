@@ -1,8 +1,9 @@
 """
 Providers module for the Dokumen CLI.
 
-Contains AnthropicProvider (native anthropic SDK), DokuRouter (in-house
-multi-provider gateway), and retry utilities.
+Contains AnthropicProvider, optional direct provider adapters, and retry
+utilities. The default executor and judge path runs through the Claude Agent
+SDK.
 """
 
 from .anthropic import AnthropicProvider

@@ -1,12 +1,8 @@
-"""
-DokuRouter — in-house LLM gateway. zero external dependencies beyond httpx.
+"""Optional direct provider adapter for non-SDK execution paths.
 
-supports: anthropic, openai, gemini, and custom (any openai-compatible endpoint).
-replaces litellm after pypi supply chain compromise (2026-03-24).
-
-each provider backend is a thin httpx wrapper that speaks the provider's native
-API format and normalizes responses to our internal format. no magic, no 97M
-download attack surface.
+The default executor and judge runtime uses the Claude Agent SDK. This adapter
+keeps older direct provider flows available without making them part of the
+primary public CLI story.
 """
 
 import json
@@ -82,7 +78,7 @@ def _infer_provider(model: str) -> str:
 
 
 class DokuRouter(Provider):
-    """in-house LLM gateway. direct API calls via httpx. no litellm.
+    """Direct provider adapter. Uses provider APIs through httpx.
 
     usage:
         # explicit provider

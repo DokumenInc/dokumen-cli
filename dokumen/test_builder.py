@@ -40,7 +40,7 @@ def create_provider(name: str, api_key: str = None, model: str = None, **kwargs)
 
         return AnthropicProvider(api_key=api_key, model=model)
 
-    # everything else goes through dokurouter (our in-house gateway)
+    # Non-Anthropic direct-provider adapters go through DokuRouter.
     from .providers.dokurouter import DokuRouter
 
     return DokuRouter(

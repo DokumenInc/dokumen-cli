@@ -139,7 +139,7 @@ class ExploreConfig(BaseModel):
     relevant documentation files.
     """
 
-    enabled: bool = Field(True, description="Enable/disable the explore phase")
+    enabled: bool = Field(False, description="Enable/disable the explore phase")
     model: str = Field(
         DEFAULT_BALANCED_MODEL,
         description="Model to use for explore agents (can use cheaper/faster model)",
@@ -291,7 +291,7 @@ class MemoryConfig(BaseModel):
 class CompactionConfig(BaseModel):
     """Configuration for context compaction."""
 
-    enabled: bool = Field(True, description="Enable automatic context compaction during execution")
+    enabled: bool = Field(False, description="Enable automatic context compaction during execution")
     token_threshold: float = Field(
         0.9, ge=0.1, le=0.95, description="Compact when token usage exceeds this fraction of budget"
     )

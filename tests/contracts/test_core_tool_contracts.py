@@ -1,9 +1,20 @@
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 import yaml
+from click.testing import CliRunner
 
-from dokumen.config import CoordinatorConfig, TasksConfig, load_config
+from dokumen.cli import cli
+from dokumen.config import (
+    CompactionConfig,
+    CoordinatorConfig,
+    ExploreConfig,
+    TasksConfig,
+    load_config,
+)
+from dokumen.coordinator.types import WorkerStatus, WorkerTask
+from dokumen.coordinator.worker import WorkerAgent
 from dokumen.loader import load_scaffold
 from dokumen.output_schemas import AssertionResult
 from dokumen.pipeline import PipelineContext
@@ -75,6 +86,8 @@ def test_sdk_resolver_rejects_unresolved_dokumen_tools():
 
 
 def test_advanced_runtime_features_default_off():
+    assert ExploreConfig().enabled is False
+    assert CompactionConfig().enabled is False
     assert CoordinatorConfig().enabled is False
     assert CoordinatorConfig().executor_mode == "sdk"
     assert TasksConfig().enabled is False
@@ -84,7 +97,40 @@ def test_checked_in_config_keeps_coordinator_off_by_default():
     config = load_config("dokumen.yaml")
 
     assert config.coordinator.enabled is False
+    assert config.coordinator.executor_mode == "sdk"
     assert config.tasks.enabled is False
+    assert config.explore.enabled is False
+    assert config.compaction.enabled is False
+
+
+def test_cli_help_groups_commands_and_keeps_create_removed():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"])
+
+    assert result.exit_code == 0
+    assert "Core Commands:" in result.output
+    assert "Supporting Commands:" in result.output
+    assert "Experimental Commands:" in result.output
+    assert "  run " in result.output
+    assert "  validate " in result.output
+    assert "  list " in result.output
+    assert "  create " not in result.output
+
+    missing = runner.invoke(cli, ["create", "--help"])
+    assert missing.exit_code != 0
+    assert "No such command 'create'" in missing.output
+
+
+def test_packaged_authoring_skill_has_valid_frontmatter():
+    skill_path = Path(".claude/skills/dokumen-test-author/SKILL.md")
+    content = skill_path.read_text(encoding="utf-8")
+    _leading, frontmatter, body = content.split("---", 2)
+    metadata = yaml.safe_load(frontmatter)
+
+    assert metadata["name"] == "dokumen-test-author"
+    assert "Dokumen CLI test scaffolds" in metadata["description"]
+    assert "executor.skills" in body
+    assert "dokumen validate" in body
 
 
 async def test_coordinator_stage_returns_canonical_executor_result(tmp_path):
@@ -126,6 +172,41 @@ async def test_coordinator_stage_returns_canonical_executor_result(tmp_path):
     )
     assert f"OUTPUT FOLDER: {tmp_path}" in result_ctx.executor_output.user_prompt
     assert f"OUTPUT FOLDER: {tmp_path}" in judge.system_prompt
+
+
+async def test_coordinator_sdk_worker_mode_maps_executor_result(monkeypatch):
+    from dokumen.sdk.agent_wrapper import SdkExecutorWrapper
+
+    async def fake_run(self):
+        return ExecutorResult(
+            success=True,
+            final_response="sdk worker completed",
+            tool_calls=[{"tool_name": "Read", "parameters": {"file_path": "README.md"}}],
+            input_tokens=7,
+            output_tokens=11,
+        )
+
+    monkeypatch.setattr(SdkExecutorWrapper, "run", fake_run)
+
+    worker = WorkerAgent(
+        provider=SimpleNamespace(model="claude-haiku-4-5-20251001"),
+        executor_mode="sdk",
+    )
+    result = await worker.run(
+        WorkerTask(
+            id="sdk-worker-contract",
+            name="sdk-worker",
+            goal="Read the README and report the purpose.",
+            tools=["read_file"],
+            timeout=10.0,
+        )
+    )
+
+    assert result.status is WorkerStatus.COMPLETED
+    assert result.output == "sdk worker completed"
+    assert result.tool_calls == [{"tool_name": "Read", "parameters": {"file_path": "README.md"}}]
+    assert result.input_tokens == 7
+    assert result.output_tokens == 11
 
 
 def test_executor_is_normally_prompted_to_use_a_named_skill(tmp_path):
