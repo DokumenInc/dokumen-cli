@@ -64,7 +64,27 @@ Useful supporting commands:
 
 Dokumen requires Python 3.11 or newer.
 
-For a local checkout:
+Install the CLI as a user-level command:
+
+```bash
+uv tool install git+https://github.com/DokumenInc/dokumen-cli.git
+dokumen --help
+```
+
+From a local checkout:
+
+```bash
+uv tool install --force .
+```
+
+If `dokumen` is not found after installation, add uv's tool directory to your
+shell:
+
+```bash
+uv tool update-shell
+```
+
+For an editable development checkout:
 
 ```bash
 python3 -m venv .venv
